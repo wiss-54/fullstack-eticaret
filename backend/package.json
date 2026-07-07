@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --coverage --runInBand",
+    "audit:check": "npm audit --audit-level=high"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,8 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.0.4",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.1.1"
   }
 }
