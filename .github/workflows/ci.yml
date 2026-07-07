@@ -24,8 +24,10 @@ jobs:
 
       - name: Block tracked .env files
         run: |
-          if git ls-files | grep -E '(^|/)\.env(\.|$)|\.env\.local$'; then
-            echo "::error::Secret dosyalari repoda takip ediliyor. .env dosyalarini git'ten cikarin."
+          TRACKED=$(git ls-files | grep -E '\.env($|\.)' | grep -v '\.env\.example$' || true)
+          if [ -n "$TRACKED" ]; then
+            echo "::error::Gizli dosyalar repoda takip ediliyor:"
+            echo "$TRACKED"
             exit 1
           fi
           echo "Secret dosya kontrolu basarili."
