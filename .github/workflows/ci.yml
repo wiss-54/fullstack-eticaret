@@ -95,15 +95,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.2
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script_stop: true
-          script: |
-            set -euo pipefail
-            export APP_DIR="/home/beratav/fullstack-eticaret"
-            cd "$APP_DIR"
-            bash scripts/deploy.sh
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=yes "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'ENDSSH'
+          set -euo pipefail
+          export APP_DIR="/home/beratav/fullstack-eticaret"
+          cd "$APP_DIR"
+          bash scripts/deploy.sh
+          ENDSSH
