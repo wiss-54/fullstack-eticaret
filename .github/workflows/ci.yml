@@ -53,6 +53,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Security lint
+        run: npm run lint:security
+
       - name: Security audit (high+)
         run: npm run audit:check
 
@@ -84,7 +87,6 @@ jobs:
 
       - name: Security audit (high+)
         run: npm run audit:check
-        continue-on-error: true
 
   deploy:
     name: Deploy to Production

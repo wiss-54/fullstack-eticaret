@@ -1,0 +1,44 @@
+name: DAST (OWASP ZAP)
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Taranacak URL (ornek: https://api.siteniz.com/api/test-db)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap-baseline:
+    name: OWASP ZAP Baseline Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target URL
+        id: target
+        run: |
+          URL="${{ github.event.inputs.target_url }}"
+          if [ -z "$URL" ]; then
+            URL="${{ secrets.ZAP_TARGET_URL }}"
+          fi
+          if [ -z "$URL" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "ZAP_TARGET_URL secret veya workflow input yok; DAST atlaniyor."
+            exit 0
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: ZAP Baseline Scan
+        if: steps.target.outputs.skip != 'true'
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ steps.target.outputs.url }}
+          allow_issue_writing: true
+          issue_title: 'DAST (ZAP) Bulgulari'
+          token: ${{ secrets.GITHUB_TOKEN }}
