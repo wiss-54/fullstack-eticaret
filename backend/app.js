@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { pool } = require('./db');
+const productsRoutes = require('./routes/products.routes');
 
 const app = express();
 
@@ -34,5 +35,7 @@ app.get('/api/test-db', async (req, res) => {
     });
   }
 });
+
+app.use('/api/products', productsRoutes);
 
 module.exports = app;
