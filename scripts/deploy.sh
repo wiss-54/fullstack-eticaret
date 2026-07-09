@@ -35,6 +35,11 @@ fi
 
 pm2 save
 
+echo "==> Nginx"
+if [ -f "$APP_DIR/scripts/setup-nginx-domains.sh" ]; then
+  bash "$APP_DIR/scripts/setup-nginx-domains.sh"
+fi
+
 echo "==> Health check"
 sleep 5
 curl -fsS http://localhost:5000/api/test-db

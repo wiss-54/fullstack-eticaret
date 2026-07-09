@@ -1,8 +1,8 @@
 import type { Product, ProductsResponse } from './types';
-import { API_URL } from './config';
+import { getApiBaseUrl } from './config';
 
 export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${API_URL}/api/products`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/products`, {
     cache: 'no-store',
   });
 

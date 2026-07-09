@@ -12,6 +12,7 @@ import {
   clearAdminToken,
   getAdminToken,
 } from '@/lib/admin-api';
+import { getAdminPaths } from '@/lib/admin-paths';
 
 type ProductFormState = {
   name: string;
@@ -59,8 +60,10 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    const paths = getAdminPaths();
+
     if (!getAdminToken()) {
-      router.replace('/admin/login');
+      router.replace(paths.login);
       return;
     }
 
@@ -145,7 +148,7 @@ export default function AdminPage() {
 
   function handleLogout() {
     clearAdminToken();
-    router.push('/admin/login');
+    router.push(getAdminPaths().login);
   }
 
   return (
@@ -160,7 +163,7 @@ export default function AdminPage() {
           </div>
           <div className="flex gap-3">
             <Link
-              href="/"
+              href={getAdminPaths().site}
               className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
             >
               Siteye Git

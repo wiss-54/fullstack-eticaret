@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminLogin } from '@/lib/admin-api';
+import { getAdminPaths } from '@/lib/admin-paths';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function AdminLoginPage() {
 
     try {
       await adminLogin(username, password);
-      router.push('/admin');
+      router.push(getAdminPaths().dashboard);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Giris basarisiz');
     } finally {

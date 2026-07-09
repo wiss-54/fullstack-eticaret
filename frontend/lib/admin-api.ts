@@ -1,5 +1,5 @@
 import type { Product } from './types';
-import { API_URL } from './config';
+import { getApiBaseUrl } from './config';
 
 const TOKEN_KEY = 'admin_token';
 
@@ -38,7 +38,7 @@ async function adminFetch<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...options,
     headers,
   });
@@ -53,7 +53,7 @@ async function adminFetch<T>(
 }
 
 export async function adminLogin(username: string, password: string) {
-  const response = await fetch(`${API_URL}/api/admin/login`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/admin/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
@@ -91,7 +91,7 @@ export async function adminUpdateProduct(
 
 export async function adminDeleteProduct(id: number) {
   const token = getAdminToken();
-  const response = await fetch(`${API_URL}/api/products/${id}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/products/${id}`, {
     method: 'DELETE',
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
