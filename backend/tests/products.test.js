@@ -6,6 +6,10 @@ jest.mock('../db', () => ({
   },
 }));
 
+jest.mock('../middleware/auth.middleware', () => ({
+  requireAdmin: (_req, _res, next) => next(),
+}));
+
 const { pool } = require('../db');
 const app = require('../app');
 

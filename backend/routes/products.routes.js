@@ -12,6 +12,7 @@ const {
   updateProduct,
   deleteProduct,
 } = require('../services/products.service');
+const { requireAdmin } = require('../middleware/auth.middleware');
 
 function parsePositiveInt(value) {
   const n = Number(value);
@@ -50,7 +51,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   const parsed = productCreateSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
@@ -69,7 +70,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
     return res.status(400).json({ success: false, error: 'Invalid id' });
@@ -97,7 +98,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {

@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { pool } = require('./db');
 const productsRoutes = require('./routes/products.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
@@ -37,5 +38,6 @@ app.get('/api/test-db', async (req, res) => {
 });
 
 app.use('/api/products', productsRoutes);
+app.use('/api/admin', adminRoutes);
 
 module.exports = app;
