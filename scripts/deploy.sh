@@ -3,6 +3,8 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-/home/beratav/fullstack-eticaret}"
 BACKEND_DIR="$APP_DIR/backend"
+FRONTEND_DIR="$APP_DIR/frontend"
+DOMAIN="${DOMAIN:-https://test.hatiraniyarat.com}"
 
 echo "==> Deploy basliyor: $APP_DIR"
 
@@ -10,6 +12,7 @@ cd "$APP_DIR"
 git fetch origin main
 git reset --hard origin/main
 
+echo "==> Backend"
 cd "$BACKEND_DIR"
 npm ci --omit=dev
 
@@ -19,10 +22,27 @@ else
   pm2 start ecosystem.config.cjs
 fi
 
+echo "==> Frontend"
+cd "$FRONTEND_DIR"
+npm ci
+NEXT_PUBLIC_API_URL="$DOMAIN" npm run build
+
+if pm2 describe eticaret-frontend > /dev/null 2>&1; then
+  pm2 restart eticaret-frontend --update-env
+else
+  pm2 start ecosystem.config.cjs
+fi
+
 pm2 save
 
+echo "==> Nginx"
+if [ -f "$APP_DIR/scripts/setup-nginx-domains.sh" ]; then
+  bash "$APP_DIR/scripts/setup-nginx-domains.sh"
+fi
+
 echo "==> Health check"
-sleep 3
+sleep 5
 curl -fsS http://localhost:5000/api/test-db
+curl -fsS http://localhost:3000 > /dev/null
 
 echo "==> Deploy tamamlandi"
