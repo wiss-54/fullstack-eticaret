@@ -72,17 +72,22 @@ export async function adminGetProducts(): Promise<Product[]> {
   return adminFetch<Product[]>('/api/products');
 }
 
-export async function adminCreateProduct(input: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) {
+export type ProductInput = {
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  imageUrl?: string | null;
+};
+
+export async function adminCreateProduct(input: ProductInput) {
   return adminFetch<Product>('/api/products', {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
-export async function adminUpdateProduct(
-  id: number,
-  input: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>,
-) {
+export async function adminUpdateProduct(id: number, input: ProductInput) {
   return adminFetch<Product>(`/api/products/${id}`, {
     method: 'PUT',
     body: JSON.stringify(input),

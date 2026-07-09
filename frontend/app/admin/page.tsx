@@ -110,12 +110,13 @@ export default function AdminPage() {
     setSaving(true);
     setError(null);
 
+    const imageUrl = form.imageUrl.trim();
     const payload = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: Number(form.price),
-      stock: Number(form.stock),
-      imageUrl: form.imageUrl.trim() || null,
+      stock: Math.floor(Number(form.stock)),
+      ...(imageUrl ? { imageUrl } : {}),
     };
 
     try {
