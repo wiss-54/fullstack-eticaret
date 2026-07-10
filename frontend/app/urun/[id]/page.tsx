@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import AddToCartButton from '@/components/AddToCartButton';
 import StoreHeader from '@/components/StoreHeader';
 import { getProduct } from '@/lib/api';
 
@@ -61,14 +62,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </p>
           <p className="mt-4 text-zinc-600 dark:text-zinc-400">{product.description}</p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button
-              type="button"
-              disabled={product.stock < 1}
-              className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {product.stock > 0 ? 'Sepete Ekle (yakinda)' : 'Stokta Yok'}
-            </button>
+          <div className="mt-8 flex flex-wrap items-start gap-3">
+            <AddToCartButton
+              productId={product.id}
+              name={product.name}
+              price={product.price}
+              imageUrl={product.imageUrl}
+              stock={product.stock}
+            />
             <Link
               href="/"
               className="rounded-xl border border-zinc-300 px-5 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
