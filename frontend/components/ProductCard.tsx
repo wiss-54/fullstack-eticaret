@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { Product } from '@/lib/types';
 
 type ProductCardProps = {
@@ -13,7 +14,8 @@ function formatPrice(price: number) {
 
 export default function ProductCard({ product }: ProductCardProps) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
+    <Link href={`/urun/${product.id}`} className="block h-full">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
       <div className="flex h-40 items-center justify-center bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-600">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -45,5 +47,6 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
     </article>
+    </Link>
   );
 }
