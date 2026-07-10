@@ -92,7 +92,6 @@ async function getSystemStatus() {
       productCount,
     },
     links: {
-      codecov: 'https://codecov.io/gh/wiss-54/fullstack-eticaret',
       githubActions: 'https://github.com/wiss-54/fullstack-eticaret/actions',
     },
   };
