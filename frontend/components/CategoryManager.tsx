@@ -31,7 +31,24 @@ export default function CategoryManager() {
   }
 
   useEffect(() => {
-    void loadCategories();
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const data = await adminGetCategories();
+        if (!cancelled) setCategories(data);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Kategoriler yuklenemedi');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function resetForm() {

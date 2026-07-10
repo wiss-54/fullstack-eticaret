@@ -60,8 +60,8 @@ function getAvailableValueIds(
 
 export default function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
   const { addItem } = useCart();
-  const variantAxes = product.variantAxes ?? [];
-  const variants = product.variants ?? [];
+  const variantAxes = useMemo(() => product.variantAxes ?? [], [product.variantAxes]);
+  const variants = useMemo(() => product.variants ?? [], [product.variants]);
   const hasVariants = product.productType === 'variant' && variantAxes.length > 0 && variants.length > 0;
   const textOptions = (product.options ?? []).filter((option) => option.optionType === 'text');
 

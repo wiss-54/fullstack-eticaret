@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ProductVariant, VariantAxis, VariantAxisInput, VariantRowInput } from '@/lib/types';
 import { adminSaveProductVariants } from '@/lib/admin-api';
 
@@ -126,12 +126,6 @@ export default function ProductVariantsEditor({
   const [error, setError] = useState<string | null>(null);
 
   const combinationCount = useMemo(() => rows.length, [rows]);
-
-  useEffect(() => {
-    const nextAxes = toDraftAxes(initialAxes);
-    setAxes(nextAxes);
-    setRows(buildRowsFromAxes(nextAxes, initialVariants));
-  }, [productId, initialAxes, initialVariants]);
 
   function regenerateRows() {
     setRows(buildRowsFromAxes(axes, []));

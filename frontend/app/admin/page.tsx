@@ -57,6 +57,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [variantsEditorKey, setVariantsEditorKey] = useState(0);
 
   async function loadProducts() {
     setLoading(true);
@@ -88,8 +89,30 @@ export default function AdminPage() {
       return;
     }
 
-    void loadProducts();
-    void loadCategories();
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const [productData, categoryData] = await Promise.all([
+          adminGetProducts(),
+          adminGetCategories(),
+        ]);
+        if (!cancelled) {
+          setProducts(productData);
+          setCategories(categoryData);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Urunler yuklenemedi');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   async function startEdit(product: Product) {
@@ -305,6 +328,7 @@ export default function AdminPage() {
             {editingId ? (
               <>
                 <ProductVariantsEditor
+                  key={variantsEditorKey}
                   productId={editingId}
                   productName={form.name}
                   initialAxes={editingAxes}
@@ -313,6 +337,7 @@ export default function AdminPage() {
                     setEditingAxes(axes);
                     setEditingVariants(variants);
                     setEditingProductType(variants.length > 0 ? 'variant' : 'simple');
+                    setVariantsEditorKey((current) => current + 1);
                     void loadProducts();
                   }}
                 />
