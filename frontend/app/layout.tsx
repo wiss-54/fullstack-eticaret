@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import DeployWatcher from "@/components/DeployWatcher";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'E-Ticaret | Ürünler',
-  description: 'Full stack e-ticaret uygulaması',
+  title: 'Hatira Niyat | E-Ticaret',
+  description: 'Hatira Niyat online magaza',
 };
 
 export default function RootLayout({
@@ -27,7 +28,10 @@ export default function RootLayout({
       lang="tr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <DeployWatcher />
+      </body>
     </html>
   );
 }

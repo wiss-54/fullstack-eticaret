@@ -1,4 +1,5 @@
 import ProductCard from '@/components/ProductCard';
+import StoreHeader from '@/components/StoreHeader';
 import { getProducts } from '@/lib/api';
 import type { Product } from '@/lib/types';
 
@@ -16,19 +17,16 @@ export default async function Home() {
 
   return (
     <div className="min-h-full bg-zinc-50 dark:bg-black">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div>
-            <p className="text-sm font-medium text-zinc-500">E-Ticaret</p>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-              Ürünler
-            </h1>
-          </div>
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-            {products.length} ürün
-          </span>
+      <StoreHeader title="Magazamiz" badge={`${products.length} urun`} />
+
+      <section className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <p className="max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
+            Kaliteli urunler, guvenli alisveris. Yeni eklenen urunler otomatik olarak bu sayfada
+            guncellenir.
+          </p>
         </div>
-      </header>
+      </section>
 
       <main className="mx-auto max-w-6xl px-6 py-10">
         {error ? (
@@ -37,7 +35,7 @@ export default async function Home() {
           </div>
         ) : products.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
-            Henüz ürün yok. Backend API&apos;ye ürün ekleyince burada görünecek.
+            Henuz urun yok. Admin panelden urun ekleyince burada gorunecek.
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
