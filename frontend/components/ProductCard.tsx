@@ -14,39 +14,40 @@ function formatPrice(price: number) {
 
 export default function ProductCard({ product }: ProductCardProps) {
   return (
-    <Link href={`/urun/${product.id}`} className="block h-full">
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex h-40 items-center justify-center bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-600">
-        {product.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <span className="text-sm">Görsel yok</span>
-        )}
-      </div>
-      <div className="flex flex-1 flex-col gap-3 p-5">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            {product.name}
-          </h2>
-          <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {product.description}
-          </p>
-        </div>
-        <div className="mt-auto flex items-center justify-between">
-          <span className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-            {formatPrice(product.price)}
-          </span>
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+    <Link href={`/urun/${product.id}`} className="group block h-full">
+      <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-amber-100/80 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg dark:border-amber-900/30 dark:bg-zinc-950">
+        <div className="relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br from-amber-50 to-zinc-100 text-zinc-400 dark:from-zinc-900 dark:to-zinc-950 dark:text-zinc-600">
+          {product.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <span className="text-sm">Gorsel yok</span>
+          )}
+          <span className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-amber-900 shadow-sm dark:bg-zinc-950/90 dark:text-amber-200">
             Stok: {product.stock}
           </span>
         </div>
-      </div>
-    </article>
+        <div className="flex flex-1 flex-col gap-3 p-5">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{product.name}</h2>
+            <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+              {product.description}
+            </p>
+          </div>
+          <div className="mt-auto flex items-center justify-between gap-3">
+            <span className="text-xl font-bold text-amber-900 dark:text-amber-200">
+              {formatPrice(product.price)}
+            </span>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              Incele
+            </span>
+          </div>
+        </div>
+      </article>
     </Link>
   );
 }

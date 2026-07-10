@@ -12,6 +12,11 @@ const {
   updateProduct,
   deleteProduct,
 } = require('../services/products.service');
+const {
+  listOptionsByProductId,
+  replaceProductOptions,
+} = require('../services/product-options.service');
+const { replaceProductOptionsSchema } = require('../validation/product-options.schemas');
 const { requireAdmin } = require('../middleware/auth.middleware');
 
 function parsePositiveInt(value) {
@@ -44,7 +49,8 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
-    res.json({ success: true, data: product });
+    const options = await listOptionsByProductId(id);
+    res.json({ success: true, data: { ...product, options } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Unexpected server error' });
@@ -92,6 +98,44 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 
     res.json({ success: true, data: product });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Unexpected server error' });
+  }
+});
+
+router.put('/:id/options', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ success: false, error: 'Invalid id' });
+  }
+
+  const parsed = replaceProductOptionsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid product options payload',
+      details: parsed.error.issues,
+    });
+  }
+
+  try {
+    const product = await getProductById(id);
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
+    for (const option of parsed.data) {
+      if (option.optionType === 'select' && (!option.choices || option.choices.length === 0)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Select tipi seceneklerde en az bir deger olmali',
+        });
+      }
+    }
+
+    const options = await replaceProductOptions(id, parsed.data);
+    res.json({ success: true, data: options });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Unexpected server error' });

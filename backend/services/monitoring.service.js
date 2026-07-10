@@ -44,9 +44,12 @@ async function getProductCount() {
 }
 
 async function getSystemStatus() {
-  const shopUrl = process.env.MONITOR_SHOP_URL || 'http://127.0.0.1:3000';
-  const adminUrl = process.env.MONITOR_ADMIN_URL || 'http://127.0.0.1:3000/admin/login';
-  const apiUrl = process.env.MONITOR_API_URL || 'http://127.0.0.1:5000/api/test-db';
+  const shopUrl =
+    process.env.MONITOR_SHOP_URL || 'https://test.hatiraniyarat.com';
+  const adminUrl =
+    process.env.MONITOR_ADMIN_URL || 'https://admintest.hatiraniyarat.com/login';
+  const apiUrl =
+    process.env.MONITOR_API_URL || 'https://test.hatiraniyarat.com/api/test-db';
 
   const [database, shop, adminPanel, api] = await Promise.all([
     checkDatabase().catch((err) => ({

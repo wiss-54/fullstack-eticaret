@@ -1,3 +1,28 @@
+export type ProductOptionChoice = {
+  id: number;
+  label: string;
+  priceDelta: number;
+  sortOrder: number;
+};
+
+export type ProductOption = {
+  id: number;
+  productId?: number;
+  label: string;
+  optionType: 'select' | 'text';
+  required: boolean;
+  sortOrder: number;
+  choices: ProductOptionChoice[];
+};
+
+export type ProductOptionInput = {
+  label: string;
+  optionType: 'select' | 'text';
+  required?: boolean;
+  sortOrder?: number;
+  choices?: { label: string; priceDelta?: number; sortOrder?: number }[];
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -7,6 +32,7 @@ export type Product = {
   imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  options?: ProductOption[];
 };
 
 export type ProductsResponse = {

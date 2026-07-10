@@ -10,7 +10,7 @@ import type { SystemStatus } from '@/lib/types';
 function formatUptime(seconds: number) {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  return `${hours}s ${minutes}dk`;
+  return `${hours} sa ${minutes} dk`;
 }
 
 function StatusBadge({ status }: { status: 'up' | 'down' }) {
