@@ -16,6 +16,8 @@ export type CartItem = {
   quantity: number;
   selectedOptions: SelectedOption[];
   customerNote: string;
+  variantId: number | null;
+  variantLabel: string;
 };
 
 export type CartState = {
@@ -37,15 +39,19 @@ type LegacyCartItem = {
   lineId?: string;
   selectedOptions?: SelectedOption[];
   customerNote?: string;
+  variantId?: number | null;
+  variantLabel?: string;
 };
 
 export function buildLineId(
   productId: number,
   selectedOptions: SelectedOption[],
   customerNote: string,
+  variantId?: number | null,
 ): string {
   const payload = JSON.stringify({
     productId,
+    variantId: variantId ?? null,
     selectedOptions: [...selectedOptions].sort((a, b) => a.optionId - b.optionId),
     customerNote: customerNote.trim(),
   });
@@ -59,7 +65,8 @@ function normalizeItem(raw: LegacyCartItem): CartItem {
   const optionDelta = selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
   const unitPrice = raw.unitPrice ?? basePrice + optionDelta;
   const lineId =
-    raw.lineId ?? buildLineId(raw.productId, selectedOptions, customerNote);
+    raw.lineId ??
+    buildLineId(raw.productId, selectedOptions, customerNote, raw.variantId ?? null);
 
   return {
     lineId,
@@ -72,6 +79,8 @@ function normalizeItem(raw: LegacyCartItem): CartItem {
     quantity: raw.quantity,
     selectedOptions,
     customerNote,
+    variantId: raw.variantId ?? null,
+    variantLabel: raw.variantLabel ?? '',
   };
 }
 
@@ -117,13 +126,20 @@ export type AddCartItemInput = {
   quantity?: number;
   selectedOptions: SelectedOption[];
   customerNote: string;
+  variantId?: number | null;
+  variantLabel?: string;
 };
 
 export function addItemToCart(current: CartItem[], input: AddCartItemInput): CartItem[] {
   const quantityToAdd = input.quantity ?? 1;
   const optionDelta = input.selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
   const unitPrice = input.basePrice + optionDelta;
-  const lineId = buildLineId(input.productId, input.selectedOptions, input.customerNote);
+  const lineId = buildLineId(
+    input.productId,
+    input.selectedOptions,
+    input.customerNote,
+    input.variantId ?? null,
+  );
   const existing = current.find((item) => item.lineId === lineId);
 
   if (existing) {
@@ -148,6 +164,8 @@ export function addItemToCart(current: CartItem[], input: AddCartItemInput): Car
       quantity: Math.min(quantityToAdd, input.stock),
       selectedOptions: input.selectedOptions,
       customerNote: input.customerNote.trim(),
+      variantId: input.variantId ?? null,
+      variantLabel: input.variantLabel?.trim() ?? '',
     },
   ];
 }

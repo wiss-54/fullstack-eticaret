@@ -1,3 +1,62 @@
+export type Category = {
+  id: number;
+  name: string;
+  slug: string;
+  parentId: number | null;
+  sortOrder: number;
+  createdAt: string;
+};
+
+export type VariantAxisValue = {
+  id: number;
+  label: string;
+  colorHex: string | null;
+  sortOrder: number;
+};
+
+export type VariantAxis = {
+  id: number;
+  name: string;
+  displayStyle: 'list' | 'button' | 'color';
+  sortOrder: number;
+  values: VariantAxisValue[];
+};
+
+export type VariantSelection = {
+  axisId: number;
+  axisValueId: number;
+  label: string;
+  colorHex: string | null;
+};
+
+export type ProductVariant = {
+  id: number;
+  productId: number;
+  optionKey: string;
+  sku: string | null;
+  price: number | null;
+  stock: number;
+  isActive: boolean;
+  sortOrder: number;
+  selections: VariantSelection[];
+};
+
+export type VariantAxisInput = {
+  name: string;
+  displayStyle?: 'list' | 'button' | 'color';
+  sortOrder?: number;
+  values: { label: string; colorHex?: string | null; sortOrder?: number }[];
+};
+
+export type VariantRowInput = {
+  valueLabels: string[];
+  sku?: string | null;
+  price?: number | null;
+  stock?: number;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
 export type ProductOptionChoice = {
   id: number;
   label: string;
@@ -30,9 +89,14 @@ export type Product = {
   price: number;
   stock: number;
   imageUrl: string | null;
+  categoryId: number | null;
+  categoryName: string | null;
+  productType: 'simple' | 'variant';
   createdAt: string;
   updatedAt: string;
   options?: ProductOption[];
+  variantAxes?: VariantAxis[];
+  variants?: ProductVariant[];
 };
 
 export type ProductsResponse = {

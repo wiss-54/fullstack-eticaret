@@ -39,6 +39,7 @@ app.get('/api/test-db', async (req, res) => {
 });
 
 app.use('/api/products', productsRoutes);
+app.use('/api/categories', require('./routes/categories.routes'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/version', versionRoutes);
 

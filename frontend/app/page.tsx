@@ -1,18 +1,32 @@
 import ProductCard from '@/components/ProductCard';
+import CategoryFilter from '@/components/CategoryFilter';
 import StoreFooter from '@/components/StoreFooter';
 import StoreHeader from '@/components/StoreHeader';
 import StoreHero from '@/components/StoreHero';
-import { getProducts } from '@/lib/api';
-import type { Product } from '@/lib/types';
+import { getCategories, getProducts } from '@/lib/api';
+import type { Category, Product } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Home() {
+type HomeProps = {
+  searchParams: Promise<{ category?: string }>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const params = await searchParams;
+  const categoryId = params.category ? Number(params.category) : undefined;
+  const activeCategoryId =
+    categoryId && Number.isInteger(categoryId) && categoryId > 0 ? categoryId : undefined;
+
   let products: Product[] = [];
+  let categories: Category[] = [];
   let error: string | null = null;
 
   try {
-    products = await getProducts();
+    [products, categories] = await Promise.all([
+      getProducts(activeCategoryId),
+      getCategories(),
+    ]);
   } catch {
     error = 'Ürünler yüklenemedi. Backend çalışıyor mu kontrol et.';
   }
@@ -31,10 +45,11 @@ export default async function Home() {
             <h2 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">One cikan urunler</h2>
           </div>
           <p className="max-w-md text-sm text-zinc-600 dark:text-zinc-400">
-            Her urun detayinda secenekler ve siparis notu alani bulunur. Admin panelden urun
-            seceneklerini yonetebilirsin.
+            Varyantli urunlerde beden/renk bazli stok, kategoriler ve kisisellestirme alanlari desteklenir.
           </p>
         </div>
+
+        <CategoryFilter categories={categories} activeCategoryId={activeCategoryId} />
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">

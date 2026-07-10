@@ -110,8 +110,7 @@ export default function ProductOptionsEditor({
       </div>
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Ornek: Beden (liste), Renk (liste), Uzerine yazilacak isim (metin). Musteri siparis verirken
-        bu alanlari doldurur.
+        Kisilestirme alanlari (metin). Beden/renk stoklari icin yukaridaki Varyant Matrisi bolumunu kullan.
       </p>
 
       {draft.length === 0 ? (

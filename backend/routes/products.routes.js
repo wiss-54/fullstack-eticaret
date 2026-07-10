@@ -16,6 +16,11 @@ const {
   listOptionsByProductId,
   replaceProductOptions,
 } = require('../services/product-options.service');
+const {
+  listVariantsByProductId,
+  replaceProductVariants,
+} = require('../services/product-variants.service');
+const { replaceProductVariantsSchema } = require('../validation/product-variants.schemas');
 const { replaceProductOptionsSchema } = require('../validation/product-options.schemas');
 const { requireAdmin } = require('../middleware/auth.middleware');
 
@@ -29,7 +34,8 @@ router.get('/', async (req, res) => {
   try {
     const limit = parsePositiveInt(req.query.limit) ?? 20;
     const offset = parsePositiveInt(req.query.offset) ?? 0;
-    const products = await listProducts(limit, offset);
+    const categoryId = parsePositiveInt(req.query.categoryId);
+    const products = await listProducts(limit, offset, categoryId || null);
     res.json({ success: true, data: products });
   } catch (err) {
     console.error(err);
@@ -50,7 +56,16 @@ router.get('/:id', async (req, res) => {
     }
 
     const options = await listOptionsByProductId(id);
-    res.json({ success: true, data: { ...product, options } });
+    const variantData = await listVariantsByProductId(id);
+    res.json({
+      success: true,
+      data: {
+        ...product,
+        options,
+        variantAxes: variantData.axes,
+        variants: variantData.variants,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Unexpected server error' });
@@ -136,6 +151,54 @@ router.put('/:id/options', requireAdmin, async (req, res) => {
 
     const options = await replaceProductOptions(id, parsed.data);
     res.json({ success: true, data: options });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Unexpected server error' });
+  }
+});
+
+router.put('/:id/variants', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ success: false, error: 'Invalid id' });
+  }
+
+  const parsed = replaceProductVariantsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid product variants payload',
+      details: parsed.error.issues,
+    });
+  }
+
+  try {
+    const product = await getProductById(id);
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+
+    if (parsed.data.axes.length > 0) {
+      for (const axis of parsed.data.axes) {
+        if (!axis.values || axis.values.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Her varyant ekseninde en az bir deger olmali',
+          });
+        }
+      }
+    }
+
+    const variantData = await replaceProductVariants(id, parsed.data);
+    const updatedProduct = await getProductById(id);
+    res.json({
+      success: true,
+      data: {
+        ...updatedProduct,
+        variantAxes: variantData.axes,
+        variants: variantData.variants,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Unexpected server error' });

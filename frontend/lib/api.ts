@@ -1,8 +1,22 @@
-import type { Product, ProductsResponse } from './types';
+import type { Category, Product, ProductsResponse } from './types';
 import { getApiBaseUrl } from './config';
 
-export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${getApiBaseUrl()}/api/products`, {
+export async function getCategories(): Promise<Category[]> {
+  const response = await fetch(`${getApiBaseUrl()}/api/categories`, {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('Kategoriler yuklenemedi');
+  }
+
+  const json: { success: boolean; data: Category[] } = await response.json();
+  return json.data;
+}
+
+export async function getProducts(categoryId?: number): Promise<Product[]> {
+  const query = categoryId ? `?categoryId=${categoryId}` : '';
+  const response = await fetch(`${getApiBaseUrl()}/api/products${query}`, {
     cache: 'no-store',
   });
 

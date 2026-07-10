@@ -1,4 +1,11 @@
-import type { Product, ProductOption, ProductOptionInput } from './types';
+import type {
+  Category,
+  Product,
+  ProductOption,
+  ProductOptionInput,
+  VariantAxisInput,
+  VariantRowInput,
+} from './types';
 import { getApiBaseUrl } from './config';
 
 const TOKEN_KEY = 'admin_token';
@@ -82,7 +89,56 @@ export type ProductInput = {
   price: number;
   stock: number;
   imageUrl?: string | null;
+  categoryId?: number | null;
+  productType?: 'simple' | 'variant';
 };
+
+export type CategoryInput = {
+  name: string;
+  slug?: string;
+  parentId?: number | null;
+  sortOrder?: number;
+};
+
+export async function adminGetCategories(): Promise<Category[]> {
+  return adminFetch<Category[]>('/api/categories');
+}
+
+export async function adminCreateCategory(input: CategoryInput) {
+  return adminFetch<Category>('/api/categories', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function adminUpdateCategory(id: number, input: CategoryInput) {
+  return adminFetch<Category>(`/api/categories/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function adminDeleteCategory(id: number) {
+  const token = getAdminToken();
+  const response = await fetch(`${getApiBaseUrl()}/api/categories/${id}`, {
+    method: 'DELETE',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const json: ApiResponse<null> = await response.json();
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'Kategori silinemedi');
+  }
+}
+
+export async function adminSaveProductVariants(
+  id: number,
+  payload: { axes: VariantAxisInput[]; variants: VariantRowInput[] },
+): Promise<Product> {
+  return adminFetch<Product>(`/api/products/${id}/variants`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
 
 export async function adminGetStatus() {
   return adminFetch<import('./types').SystemStatus>('/api/admin/status');

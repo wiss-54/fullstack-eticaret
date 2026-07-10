@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { Product, ProductOption } from '@/lib/types';
+import type { Product, ProductOption, ProductVariant, VariantAxis } from '@/lib/types';
 import { useCart } from '@/components/CartProvider';
 import type { SelectedOption } from '@/lib/cart';
 
@@ -16,58 +16,101 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
+function findVariant(
+  variants: ProductVariant[],
+  selectedByAxis: Map<number, number>,
+  axisCount: number,
+) {
+  if (selectedByAxis.size !== axisCount) return null;
+
+  return (
+    variants.find((variant) => {
+      if (!variant.isActive) return false;
+      return variant.selections.every(
+        (selection) => selectedByAxis.get(selection.axisId) === selection.axisValueId,
+      );
+    }) ?? null
+  );
+}
+
+function getAvailableValueIds(
+  variants: ProductVariant[],
+  axisId: number,
+  selectedByAxis: Map<number, number>,
+) {
+  const available = new Set<number>();
+
+  for (const variant of variants) {
+    if (!variant.isActive || variant.stock < 1) continue;
+
+    const matchesOtherAxes = variant.selections.every((selection) => {
+      if (selection.axisId === axisId) return true;
+      const selected = selectedByAxis.get(selection.axisId);
+      return selected === undefined || selected === selection.axisValueId;
+    });
+
+    if (!matchesOtherAxes) continue;
+
+    const current = variant.selections.find((selection) => selection.axisId === axisId);
+    if (current) available.add(current.axisValueId);
+  }
+
+  return available;
+}
+
 export default function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
   const { addItem } = useCart();
-  const options = product.options ?? [];
+  const variantAxes = useMemo(() => product.variantAxes ?? [], [product.variantAxes]);
+  const variants = useMemo(() => product.variants ?? [], [product.variants]);
+  const hasVariants = product.productType === 'variant' && variantAxes.length > 0 && variants.length > 0;
+  const textOptions = (product.options ?? []).filter((option) => option.optionType === 'text');
 
-  const [selectValues, setSelectValues] = useState<Record<number, string>>({});
+  const [selectedByAxis, setSelectedByAxis] = useState<Record<number, number>>({});
   const [textValues, setTextValues] = useState<Record<number, string>>({});
   const [customerNote, setCustomerNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  const selectedMap = useMemo(() => new Map(Object.entries(selectedByAxis).map(([k, v]) => [Number(k), v])), [selectedByAxis]);
+
+  const selectedVariant = useMemo(
+    () => (hasVariants ? findVariant(variants, selectedMap, variantAxes.length) : null),
+    [hasVariants, variants, selectedMap, variantAxes.length],
+  );
+
   const selectedOptions = useMemo(() => {
     const result: SelectedOption[] = [];
+    for (const option of textOptions) {
+      const value = textValues[option.id]?.trim();
+      if (!value) continue;
+      result.push({
+        optionId: option.id,
+        label: option.label,
+        value,
+        priceDelta: 0,
+      });
+    }
+    return result;
+  }, [textOptions, textValues]);
 
-    for (const option of options) {
-      if (option.optionType === 'select') {
-        const value = selectValues[option.id];
-        if (!value) continue;
-        const choice = option.choices.find((item) => item.label === value);
-        if (!choice) continue;
-        result.push({
-          optionId: option.id,
-          label: option.label,
-          value: choice.label,
-          priceDelta: choice.priceDelta,
-        });
-      } else {
-        const value = textValues[option.id]?.trim();
-        if (!value) continue;
-        result.push({
-          optionId: option.id,
-          label: option.label,
-          value,
-          priceDelta: 0,
-        });
+  const unitPrice = selectedVariant?.price ?? product.price;
+  const availableStock = selectedVariant?.stock ?? product.stock;
+
+  function validateForm(): string | null {
+    if (hasVariants) {
+      for (const axis of variantAxes) {
+        if (!selectedByAxis[axis.id]) {
+          return `"${axis.name}" secimi zorunlu`;
+        }
       }
+      if (!selectedVariant) return 'Gecerli bir varyant sec';
+      if (selectedVariant.stock < 1) return 'Secilen varyant stokta yok';
+    } else if (product.stock < 1) {
+      return 'Urun stokta yok';
     }
 
-    return result;
-  }, [options, selectValues, textValues]);
-
-  const optionDelta = selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
-  const unitPrice = product.price + optionDelta;
-
-  function validateOptions(): string | null {
-    for (const option of options) {
-      if (!option.required) continue;
-
-      if (option.optionType === 'select' && !selectValues[option.id]) {
-        return `"${option.label}" secimi zorunlu`;
-      }
-
-      if (option.optionType === 'text' && !textValues[option.id]?.trim()) {
+    for (const option of textOptions) {
+      if (option.required && !textValues[option.id]?.trim()) {
         return `"${option.label}" alani zorunlu`;
       }
     }
@@ -76,7 +119,7 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
   }
 
   function handleAddToCart() {
-    const validationError = validateOptions();
+    const validationError = validateForm();
     if (validationError) {
       setError(validationError);
       return;
@@ -86,23 +129,23 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
     addItem({
       productId: product.id,
       name: product.name,
-      basePrice: product.price,
+      basePrice: unitPrice,
       imageUrl: product.imageUrl,
-      stock: product.stock,
+      stock: availableStock,
       selectedOptions,
       customerNote,
+      variantId: selectedVariant?.id ?? null,
+      variantLabel: selectedVariant
+        ? selectedVariant.selections.map((selection) => selection.label).join(' / ')
+        : '',
     });
     setMessage('Sepete eklendi');
     window.setTimeout(() => setMessage(null), 2000);
   }
 
-  if (product.stock < 1) {
+  if (!hasVariants && product.stock < 1) {
     return (
-      <button
-        type="button"
-        disabled
-        className="rounded-xl bg-zinc-300 px-5 py-3 text-sm font-medium text-zinc-600"
-      >
+      <button type="button" disabled className="rounded-xl bg-zinc-300 px-5 py-3 text-sm font-medium text-zinc-600">
         Stokta Yok
       </button>
     );
@@ -110,51 +153,57 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
 
   return (
     <div className="space-y-5">
-      {options.length > 0 ? (
+      {hasVariants ? (
         <div className="space-y-4 rounded-2xl border border-amber-100 bg-amber-50/60 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-            Urun Secenekleri
-          </p>
-          {options.map((option) => (
-            <OptionField
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Varyant Sec</p>
+          {variantAxes.map((axis) => (
+            <VariantAxisPicker
+              key={axis.id}
+              axis={axis}
+              variants={variants}
+              selectedValueId={selectedByAxis[axis.id]}
+              selectedByAxis={selectedMap}
+              onSelect={(valueId) =>
+                setSelectedByAxis((current) => ({ ...current, [axis.id]: valueId }))
+              }
+            />
+          ))}
+          {selectedVariant ? (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Secilen: {selectedVariant.selections.map((selection) => selection.label).join(' / ')} · Stok:{' '}
+              {selectedVariant.stock}
+              {selectedVariant.sku ? ` · SKU: ${selectedVariant.sku}` : ''}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {textOptions.length > 0 ? (
+        <div className="space-y-4 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-800">
+          <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Kisilestirme</p>
+          {textOptions.map((option) => (
+            <TextOptionField
               key={option.id}
               option={option}
-              selectValue={selectValues[option.id] ?? ''}
-              textValue={textValues[option.id] ?? ''}
-              onSelectChange={(value) =>
-                setSelectValues((current) => ({ ...current, [option.id]: value }))
-              }
-              onTextChange={(value) =>
-                setTextValues((current) => ({ ...current, [option.id]: value }))
-              }
+              value={textValues[option.id] ?? ''}
+              onChange={(value) => setTextValues((current) => ({ ...current, [option.id]: value }))}
             />
           ))}
         </div>
       ) : null}
 
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Siparis notu (opsiyonel)
-        </span>
+        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Siparis notu (opsiyonel)</span>
         <textarea
           className="min-h-24 w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          placeholder="Ornek: Lutfen paket uzerine isim yazin"
+          placeholder="Ornek: Hediye paketi olsun"
           value={customerNote}
           onChange={(event) => setCustomerNote(event.target.value)}
           maxLength={500}
         />
       </label>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-          {formatPrice(unitPrice)}
-        </p>
-        {optionDelta > 0 ? (
-          <span className="text-sm text-amber-700 dark:text-amber-300">
-            (+{formatPrice(optionDelta)} secenek)
-          </span>
-        ) : null}
-      </div>
+      <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{formatPrice(unitPrice)}</p>
 
       <div className="flex flex-col gap-2">
         <button
@@ -171,18 +220,74 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
   );
 }
 
-function OptionField({
+function VariantAxisPicker({
+  axis,
+  variants,
+  selectedValueId,
+  selectedByAxis,
+  onSelect,
+}: {
+  axis: VariantAxis;
+  variants: ProductVariant[];
+  selectedValueId?: number;
+  selectedByAxis: Map<number, number>;
+  onSelect: (valueId: number) => void;
+}) {
+  const availableIds = getAvailableValueIds(variants, axis.id, selectedByAxis);
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{axis.name}</p>
+      <div className="flex flex-wrap gap-2">
+        {axis.values.map((value) => {
+          const isAvailable = availableIds.has(value.id);
+          const isSelected = selectedValueId === value.id;
+
+          if (axis.displayStyle === 'color' && value.colorHex) {
+            return (
+              <button
+                key={value.id}
+                type="button"
+                disabled={!isAvailable}
+                onClick={() => onSelect(value.id)}
+                title={value.label}
+                className={`h-10 w-10 rounded-full border-2 disabled:opacity-30 ${
+                  isSelected ? 'border-amber-700' : 'border-transparent'
+                }`}
+                style={{ backgroundColor: value.colorHex }}
+              />
+            );
+          }
+
+          return (
+            <button
+              key={value.id}
+              type="button"
+              disabled={!isAvailable}
+              onClick={() => onSelect(value.id)}
+              className={`rounded-xl border px-4 py-2 text-sm disabled:opacity-40 ${
+                isSelected
+                  ? 'border-amber-700 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
+                  : 'border-zinc-300 dark:border-zinc-700'
+              }`}
+            >
+              {value.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TextOptionField({
   option,
-  selectValue,
-  textValue,
-  onSelectChange,
-  onTextChange,
+  value,
+  onChange,
 }: {
   option: ProductOption;
-  selectValue: string;
-  textValue: string;
-  onSelectChange: (value: string) => void;
-  onTextChange: (value: string) => void;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <label className="block space-y-2">
@@ -190,31 +295,12 @@ function OptionField({
         {option.label}
         {option.required ? ' *' : ''}
       </span>
-      {option.optionType === 'select' ? (
-        <select
-          className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          value={selectValue}
-          onChange={(event) => onSelectChange(event.target.value)}
-        >
-          <option value="">Seciniz</option>
-          {option.choices.map((choice) => (
-            <option key={choice.id} value={choice.label}>
-              {choice.label}
-              {choice.priceDelta > 0
-                ? ` (+${new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(choice.priceDelta)})`
-                : ''}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          value={textValue}
-          onChange={(event) => onTextChange(event.target.value)}
-          placeholder={option.label}
-          maxLength={200}
-        />
-      )}
+      <input
+        className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        maxLength={200}
+      />
     </label>
   );
 }
