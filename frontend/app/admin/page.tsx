@@ -11,10 +11,10 @@ import {
   adminGetProducts,
   adminUpdateProduct,
   clearAdminToken,
-  getAdminToken,
 } from '@/lib/admin-api';
 import ProductOptionsEditor from '@/components/ProductOptionsEditor';
 import { getAdminPaths } from '@/lib/admin-paths';
+import { useAdminGuard } from '@/lib/use-admin-guard';
 
 type ProductFormState = {
   name: string;
@@ -41,6 +41,7 @@ function formatPrice(price: number) {
 
 export default function AdminPage() {
   const router = useRouter();
+  const ready = useAdminGuard();
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -63,34 +64,9 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    const paths = getAdminPaths();
-
-    if (!getAdminToken()) {
-      router.replace(paths.login);
-      return;
-    }
-
-    let cancelled = false;
-
-    void (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await adminGetProducts();
-        if (!cancelled) setProducts(data);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Urunler yuklenemedi');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    if (!ready) return;
+    void loadProducts();
+  }, [ready]);
 
   async function startEdit(product: Product) {
     setEditingId(product.id);

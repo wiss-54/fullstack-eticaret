@@ -3,6 +3,13 @@ import { getApiBaseUrl } from './config';
 
 const TOKEN_KEY = 'admin_token';
 
+export class AdminAuthError extends Error {
+  constructor(message = 'Giris gerekli') {
+    super(message);
+    this.name = 'AdminAuthError';
+  }
+}
+
 type ApiResponse<T> = {
   success: boolean;
   data?: T;
@@ -45,11 +52,28 @@ async function adminFetch<T>(
 
   const json: ApiResponse<T> = await response.json();
 
+  if (response.status === 401) {
+    clearAdminToken();
+    throw new AdminAuthError(json.error ?? 'Giris gerekli');
+  }
+
   if (!response.ok || !json.success) {
     throw new Error(json.error ?? 'Istek basarisiz');
   }
 
   return json.data as T;
+}
+
+export async function validateAdminSession(): Promise<boolean> {
+  if (!getAdminToken()) return false;
+
+  try {
+    await adminFetch<{ username: string; role: string }>('/api/admin/me');
+    return true;
+  } catch (error) {
+    if (error instanceof AdminAuthError) return false;
+    throw error;
+  }
 }
 
 export async function adminLogin(username: string, password: string) {

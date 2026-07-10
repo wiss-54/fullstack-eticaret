@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminLogin } from '@/lib/admin-api';
+import { adminLogin, validateAdminSession } from '@/lib/admin-api';
 import { getAdminPaths } from '@/lib/admin-paths';
 
 export default function AdminLoginPage() {
@@ -11,6 +11,13 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const paths = getAdminPaths();
+    void validateAdminSession().then((valid) => {
+      if (valid) router.replace(paths.dashboard);
+    });
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

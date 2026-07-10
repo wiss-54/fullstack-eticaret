@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { adminGetStatus, getAdminToken } from '@/lib/admin-api';
+import { AdminAuthError, adminGetStatus } from '@/lib/admin-api';
 import { getAdminPaths } from '@/lib/admin-paths';
+import { useAdminGuard } from '@/lib/use-admin-guard';
 import type { SystemStatus } from '@/lib/types';
 
 function formatUptime(seconds: number) {
@@ -52,6 +53,7 @@ function ServiceCard({
 export default function AdminMonitoringPage() {
   const router = useRouter();
   const paths = getAdminPaths();
+  const ready = useAdminGuard();
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,10 @@ export default function AdminMonitoringPage() {
       const data = await adminGetStatus();
       setStatus(data);
     } catch (err) {
+      if (err instanceof AdminAuthError) {
+        router.replace(paths.login);
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Monitoring verisi alinamadi');
     } finally {
       setLoading(false);
@@ -70,32 +76,9 @@ export default function AdminMonitoringPage() {
   }
 
   useEffect(() => {
-    if (!getAdminToken()) {
-      router.replace(paths.login);
-      return;
-    }
-
-    let cancelled = false;
-
-    void (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await adminGetStatus();
-        if (!cancelled) setStatus(data);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Monitoring verisi alinamadi');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router, paths.login]);
+    if (!ready) return;
+    void loadStatus();
+  }, [ready]);
 
   return (
     <div className="min-h-full bg-zinc-50 dark:bg-black">
@@ -126,6 +109,10 @@ export default function AdminMonitoringPage() {
       </header>
 
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
+        {!ready ? (
+          <p className="text-zinc-500">Oturum kontrol ediliyor...</p>
+        ) : null}
+
         {error ? (
           <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
             {error}
@@ -134,7 +121,7 @@ export default function AdminMonitoringPage() {
 
         {loading ? (
           <p className="text-zinc-500">Monitoring verisi yukleniyor...</p>
-        ) : status ? (
+        ) : ready && status ? (
           <>
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <ServiceCard title="Veritabani" check={status.services.database} />
