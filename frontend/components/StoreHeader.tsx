@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CartNav from '@/components/CartNav';
 
 type StoreHeaderProps = {
   title?: string;
@@ -20,11 +21,14 @@ export default function StoreHeader({
           </Link>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{title}</h1>
         </div>
-        {badge ? (
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-            {badge}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {badge ? (
+            <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              {badge}
+            </span>
+          ) : null}
+          <CartNav />
+        </div>
       </div>
     </header>
   );
