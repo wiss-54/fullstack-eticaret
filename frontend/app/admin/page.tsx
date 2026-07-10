@@ -72,15 +72,6 @@ export default function AdminPage() {
     }
   }
 
-  async function loadCategories() {
-    try {
-      const data = await adminGetCategories();
-      setCategories(data);
-    } catch {
-      setCategories([]);
-    }
-  }
-
   useEffect(() => {
     const paths = getAdminPaths();
 
