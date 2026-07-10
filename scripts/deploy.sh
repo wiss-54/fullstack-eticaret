@@ -12,6 +12,10 @@ cd "$APP_DIR"
 git fetch origin main
 git reset --hard origin/main
 
+COMMIT_SHA="$(git rev-parse --short HEAD)"
+DEPLOYED_AT="$(date -Iseconds)"
+echo "{\"commit\":\"$COMMIT_SHA\",\"deployedAt\":\"$DEPLOYED_AT\"}" > "$BACKEND_DIR/.deploy-info.json"
+
 echo "==> Backend"
 cd "$BACKEND_DIR"
 npm ci --omit=dev

@@ -82,4 +82,26 @@ describe('Admin auth', () => {
     expect(response.status).toBe(201);
     expect(response.body.data.name).toBe('Telefon');
   });
+
+  it('token ile monitoring status doner', async () => {
+    const token = jwt.sign({ role: 'admin', username: 'admin' }, process.env.JWT_SECRET);
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    });
+
+    pool.query
+      .mockResolvedValueOnce({ rows: [{ '?column?': 1 }] })
+      .mockResolvedValueOnce({ rows: [{ count: 2 }] });
+
+    const response = await request(app)
+      .get('/api/admin/status')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.services.database.status).toBe('up');
+    expect(response.body.data.stats.productCount).toBe(2);
+  });
 });

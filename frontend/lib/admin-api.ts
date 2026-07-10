@@ -80,6 +80,10 @@ export type ProductInput = {
   imageUrl?: string | null;
 };
 
+export async function adminGetStatus() {
+  return adminFetch<import('./types').SystemStatus>('/api/admin/status');
+}
+
 export async function adminCreateProduct(input: ProductInput) {
   return adminFetch<Product>('/api/products', {
     method: 'POST',

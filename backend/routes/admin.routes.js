@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { requireAdmin } = require('../middleware/auth.middleware');
+const { getSystemStatus } = require('../services/monitoring.service');
 
 const router = express.Router();
 
@@ -43,6 +44,16 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', requireAdmin, (req, res) => {
   res.json({ success: true, data: { username: req.admin.username, role: req.admin.role } });
+});
+
+router.get('/status', requireAdmin, async (_req, res) => {
+  try {
+    const data = await getSystemStatus();
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Monitoring verisi alinamadi' });
+  }
 });
 
 module.exports = router;
