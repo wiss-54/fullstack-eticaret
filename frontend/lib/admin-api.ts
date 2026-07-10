@@ -1,4 +1,4 @@
-import type { Product } from './types';
+import type { Product, ProductOption, ProductOptionInput } from './types';
 import { getApiBaseUrl } from './config';
 
 const TOKEN_KEY = 'admin_token';
@@ -72,6 +72,10 @@ export async function adminGetProducts(): Promise<Product[]> {
   return adminFetch<Product[]>('/api/products');
 }
 
+export async function adminGetProduct(id: number): Promise<Product> {
+  return adminFetch<Product>(`/api/products/${id}`);
+}
+
 export type ProductInput = {
   name: string;
   description: string;
@@ -109,4 +113,14 @@ export async function adminDeleteProduct(id: number) {
   if (!response.ok || !json.success) {
     throw new Error(json.error ?? 'Silme basarisiz');
   }
+}
+
+export async function adminSaveProductOptions(
+  id: number,
+  options: ProductOptionInput[],
+): Promise<ProductOption[]> {
+  return adminFetch<ProductOption[]>(`/api/products/${id}/options`, {
+    method: 'PUT',
+    body: JSON.stringify(options),
+  });
 }

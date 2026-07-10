@@ -16,11 +16,11 @@ export default function CartPageClient() {
   if (items.length === 0) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-950">
+        <div className="rounded-2xl border border-dashed border-amber-200 bg-white p-10 text-center dark:border-amber-900/40 dark:bg-zinc-950">
           <p className="text-zinc-600 dark:text-zinc-400">Sepetin bos.</p>
           <Link
             href="/"
-            className="mt-4 inline-block rounded-xl bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"
+            className="mt-4 inline-block rounded-xl bg-amber-800 px-4 py-2 text-sm text-white dark:bg-amber-500 dark:text-zinc-950"
           >
             Alisverise Basla
           </Link>
@@ -35,7 +35,7 @@ export default function CartPageClient() {
         <section className="space-y-4">
           {items.map((item) => (
             <article
-              key={item.productId}
+              key={item.lineId}
               className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900">
@@ -57,12 +57,32 @@ export default function CartPageClient() {
                       {item.name}
                     </Link>
                     <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                      {formatPrice(item.price)}
+                      {formatPrice(item.unitPrice)}
+                      {item.unitPrice !== item.basePrice ? (
+                        <span className="text-zinc-500"> (baz {formatPrice(item.basePrice)})</span>
+                      ) : null}
                     </p>
+                    {item.selectedOptions.length > 0 ? (
+                      <ul className="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        {item.selectedOptions.map((option) => (
+                          <li key={`${item.lineId}-${option.optionId}`}>
+                            {option.label}: {option.value}
+                            {option.priceDelta > 0
+                              ? ` (+${formatPrice(option.priceDelta)})`
+                              : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {item.customerNote ? (
+                      <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
+                        Not: {item.customerNote}
+                      </p>
+                    ) : null}
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeItem(item.productId)}
+                    onClick={() => removeItem(item.lineId)}
                     className="text-sm text-red-600 dark:text-red-300"
                   >
                     Sil
@@ -72,7 +92,7 @@ export default function CartPageClient() {
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setQuantity(item.productId, item.quantity - 1)}
+                    onClick={() => setQuantity(item.lineId, item.quantity - 1)}
                     className="h-8 w-8 rounded-lg border border-zinc-300 dark:border-zinc-700"
                   >
                     -
@@ -80,7 +100,7 @@ export default function CartPageClient() {
                   <span className="min-w-8 text-center text-sm">{item.quantity}</span>
                   <button
                     type="button"
-                    onClick={() => setQuantity(item.productId, item.quantity + 1)}
+                    onClick={() => setQuantity(item.lineId, item.quantity + 1)}
                     disabled={item.quantity >= item.stock}
                     className="h-8 w-8 rounded-lg border border-zinc-300 disabled:opacity-50 dark:border-zinc-700"
                   >
@@ -99,12 +119,12 @@ export default function CartPageClient() {
             {formatPrice(total)}
           </p>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Odeme adimi bir sonraki guncellemede eklenecek.
+            Odeme ve siparis kaydi bir sonraki guncellemede eklenecek.
           </p>
           <button
             type="button"
             disabled
-            className="mt-6 w-full rounded-xl bg-zinc-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+            className="mt-6 w-full rounded-xl bg-amber-800 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
           >
             Odemeye Gec (yakinda)
           </button>

@@ -3,15 +3,17 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Product } from '@/lib/types';
+import type { Product, ProductOption } from '@/lib/types';
 import {
   adminCreateProduct,
   adminDeleteProduct,
+  adminGetProduct,
   adminGetProducts,
   adminUpdateProduct,
   clearAdminToken,
   getAdminToken,
 } from '@/lib/admin-api';
+import ProductOptionsEditor from '@/components/ProductOptionsEditor';
 import { getAdminPaths } from '@/lib/admin-paths';
 
 type ProductFormState = {
@@ -42,6 +44,7 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingOptions, setEditingOptions] = useState<ProductOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,7 +92,7 @@ export default function AdminPage() {
     };
   }, [router]);
 
-  function startEdit(product: Product) {
+  async function startEdit(product: Product) {
     setEditingId(product.id);
     setForm({
       name: product.name,
@@ -98,10 +101,18 @@ export default function AdminPage() {
       stock: String(product.stock),
       imageUrl: product.imageUrl ?? '',
     });
+
+    try {
+      const fullProduct = await adminGetProduct(product.id);
+      setEditingOptions(fullProduct.options ?? []);
+    } catch {
+      setEditingOptions([]);
+    }
   }
 
   function resetForm() {
     setEditingId(null);
+    setEditingOptions([]);
     setForm(emptyForm);
   }
 
@@ -254,6 +265,14 @@ export default function AdminPage() {
               ) : null}
             </div>
           </form>
+
+          {editingId ? (
+            <ProductOptionsEditor
+              productId={editingId}
+              initialOptions={editingOptions}
+              onSaved={setEditingOptions}
+            />
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">

@@ -1,10 +1,21 @@
+export type SelectedOption = {
+  optionId: number;
+  label: string;
+  value: string;
+  priceDelta: number;
+};
+
 export type CartItem = {
+  lineId: string;
   productId: number;
   name: string;
-  price: number;
+  basePrice: number;
+  unitPrice: number;
   imageUrl: string | null;
   stock: number;
   quantity: number;
+  selectedOptions: SelectedOption[];
+  customerNote: string;
 };
 
 export type CartState = {
@@ -13,6 +24,56 @@ export type CartState = {
 };
 
 const CART_KEY = 'hatira_cart';
+
+type LegacyCartItem = {
+  productId: number;
+  name: string;
+  price?: number;
+  basePrice?: number;
+  unitPrice?: number;
+  imageUrl: string | null;
+  stock: number;
+  quantity: number;
+  lineId?: string;
+  selectedOptions?: SelectedOption[];
+  customerNote?: string;
+};
+
+export function buildLineId(
+  productId: number,
+  selectedOptions: SelectedOption[],
+  customerNote: string,
+): string {
+  const payload = JSON.stringify({
+    productId,
+    selectedOptions: [...selectedOptions].sort((a, b) => a.optionId - b.optionId),
+    customerNote: customerNote.trim(),
+  });
+  return `${productId}-${btoa(unescape(encodeURIComponent(payload))).slice(0, 24)}`;
+}
+
+function normalizeItem(raw: LegacyCartItem): CartItem {
+  const selectedOptions = raw.selectedOptions ?? [];
+  const customerNote = raw.customerNote ?? '';
+  const basePrice = raw.basePrice ?? raw.price ?? 0;
+  const optionDelta = selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
+  const unitPrice = raw.unitPrice ?? basePrice + optionDelta;
+  const lineId =
+    raw.lineId ?? buildLineId(raw.productId, selectedOptions, customerNote);
+
+  return {
+    lineId,
+    productId: raw.productId,
+    name: raw.name,
+    basePrice,
+    unitPrice,
+    imageUrl: raw.imageUrl,
+    stock: raw.stock,
+    quantity: raw.quantity,
+    selectedOptions,
+    customerNote,
+  };
+}
 
 export function readCart(): CartState {
   if (typeof window === 'undefined') {
@@ -26,7 +87,10 @@ export function readCart(): CartState {
     if (!Array.isArray(parsed.items)) {
       return { items: [], updatedAt: new Date().toISOString() };
     }
-    return parsed;
+    return {
+      ...parsed,
+      items: parsed.items.map((item) => normalizeItem(item as LegacyCartItem)),
+    };
   } catch {
     return { items: [], updatedAt: new Date().toISOString() };
   }
@@ -41,46 +105,63 @@ export function getCartCount(items: CartItem[]) {
 }
 
 export function getCartTotal(items: CartItem[]) {
-  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  return items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 }
 
-export function addItemToCart(
-  current: CartItem[],
-  input: Omit<CartItem, 'quantity'> & { quantity?: number },
-): CartItem[] {
+export type AddCartItemInput = {
+  productId: number;
+  name: string;
+  basePrice: number;
+  imageUrl: string | null;
+  stock: number;
+  quantity?: number;
+  selectedOptions: SelectedOption[];
+  customerNote: string;
+};
+
+export function addItemToCart(current: CartItem[], input: AddCartItemInput): CartItem[] {
   const quantityToAdd = input.quantity ?? 1;
-  const existing = current.find((item) => item.productId === input.productId);
+  const optionDelta = input.selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
+  const unitPrice = input.basePrice + optionDelta;
+  const lineId = buildLineId(input.productId, input.selectedOptions, input.customerNote);
+  const existing = current.find((item) => item.lineId === lineId);
 
   if (existing) {
     const nextQuantity = Math.min(existing.quantity + quantityToAdd, input.stock);
     return current.map((item) =>
-      item.productId === input.productId ? { ...item, quantity: nextQuantity, stock: input.stock } : item,
+      item.lineId === lineId
+        ? { ...item, quantity: nextQuantity, stock: input.stock, unitPrice }
+        : item,
     );
   }
 
   return [
     ...current,
     {
+      lineId,
       productId: input.productId,
       name: input.name,
-      price: input.price,
+      basePrice: input.basePrice,
+      unitPrice,
       imageUrl: input.imageUrl,
       stock: input.stock,
       quantity: Math.min(quantityToAdd, input.stock),
+      selectedOptions: input.selectedOptions,
+      customerNote: input.customerNote.trim(),
     },
   ];
 }
 
-export function updateItemQuantity(current: CartItem[], productId: number, quantity: number) {
+export function updateItemQuantity(current: CartItem[], lineId: string, quantity: number) {
   return current
     .map((item) => {
-      if (item.productId !== productId) return item;
+      if (item.lineId !== lineId) return item;
       const nextQuantity = Math.max(0, Math.min(quantity, item.stock));
       return { ...item, quantity: nextQuantity };
     })
     .filter((item) => item.quantity > 0);
 }
 
-export function removeItemFromCart(current: CartItem[], productId: number) {
-  return current.filter((item) => item.productId !== productId);
+export function removeItemFromCart(current: CartItem[], lineId: string) {
+  return current.filter((item) => item.lineId !== lineId);
 }

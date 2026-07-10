@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { CartItem } from '@/lib/cart';
+import type { AddCartItemInput, CartItem } from '@/lib/cart';
 import {
   addItemToCart,
   getCartCount,
@@ -20,22 +20,13 @@ import {
   writeCart,
 } from '@/lib/cart';
 
-type AddToCartInput = {
-  productId: number;
-  name: string;
-  price: number;
-  imageUrl: string | null;
-  stock: number;
-  quantity?: number;
-};
-
 type CartContextValue = {
   items: CartItem[];
   itemCount: number;
   total: number;
-  addItem: (input: AddToCartInput) => void;
-  setQuantity: (productId: number, quantity: number) => void;
-  removeItem: (productId: number) => void;
+  addItem: (input: AddCartItemInput) => void;
+  setQuantity: (lineId: string, quantity: number) => void;
+  removeItem: (lineId: string) => void;
   clearCart: () => void;
 };
 
@@ -66,25 +57,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     writeCart({ items, updatedAt: new Date().toISOString() });
   }, [items, ready]);
 
-  const addItem = useCallback((input: AddToCartInput) => {
-    setItems((current) =>
-      addItemToCart(current, {
-        productId: input.productId,
-        name: input.name,
-        price: input.price,
-        imageUrl: input.imageUrl,
-        stock: input.stock,
-        quantity: input.quantity,
-      }),
-    );
+  const addItem = useCallback((input: AddCartItemInput) => {
+    setItems((current) => addItemToCart(current, input));
   }, []);
 
-  const setQuantity = useCallback((productId: number, quantity: number) => {
-    setItems((current) => updateItemQuantity(current, productId, quantity));
+  const setQuantity = useCallback((lineId: string, quantity: number) => {
+    setItems((current) => updateItemQuantity(current, lineId, quantity));
   }, []);
 
-  const removeItem = useCallback((productId: number) => {
-    setItems((current) => removeItemFromCart(current, productId));
+  const removeItem = useCallback((lineId: string) => {
+    setItems((current) => removeItemFromCart(current, lineId));
   }, []);
 
   const clearCart = useCallback(() => {
