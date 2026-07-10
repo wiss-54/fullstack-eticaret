@@ -48,7 +48,6 @@ export type SystemStatus = {
     productCount: number | null;
   };
   links: {
-    codecov: string;
     githubActions: string;
   };
 };

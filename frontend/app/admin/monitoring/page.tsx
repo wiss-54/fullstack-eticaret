@@ -200,15 +200,7 @@ export default function AdminMonitoringPage() {
                     rel="noreferrer"
                     className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
                   >
-                    GitHub Actions
-                  </a>
-                  <a
-                    href={status.links.codecov}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-                  >
-                    Codecov Raporu
+                    CI & Coverage (Actions)
                   </a>
                 </div>
               </div>

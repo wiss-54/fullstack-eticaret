@@ -53,14 +53,44 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Upload coverage to Codecov
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@v5
+      - name: Coverage ozeti
+        if: always()
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+          const coveragePath = 'coverage/coverage-summary.json';
+
+          if (!fs.existsSync(coveragePath)) {
+            fs.appendFileSync(summaryPath, '### Backend Test Coverage\n\nRapor bulunamadi.\n');
+            process.exit(0);
+          }
+
+          const { total } = JSON.parse(fs.readFileSync(coveragePath, 'utf8'));
+          const fmt = (metric) => `${metric.pct}% (${metric.covered}/${metric.total})`;
+          const markdown = [
+            '### Backend Test Coverage',
+            '',
+            '| Metrik | Oran |',
+            '|--------|------|',
+            `| Satirlar | ${fmt(total.lines)} |`,
+            `| Fonksiyonlar | ${fmt(total.functions)} |`,
+            `| Dallar | ${fmt(total.branches)} |`,
+            `| Ifadeler | ${fmt(total.statements)} |`,
+            '',
+            'Detayli HTML rapor: bu workflow run → **Artifacts** → `coverage-report`',
+          ].join('\n');
+
+          fs.appendFileSync(summaryPath, `${markdown}\n`);
+          NODE
+
+      - name: Coverage raporunu kaydet
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: backend/coverage/lcov.info
-          flags: backend
-          fail_ci_if_error: false
+          name: coverage-report
+          path: backend/coverage/
+          retention-days: 14
 
       - name: Security lint
         run: npm run lint:security
