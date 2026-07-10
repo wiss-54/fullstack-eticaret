@@ -5,12 +5,18 @@ export function getAdminPaths(hostname?: string) {
     hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '');
 
   if (host === ADMIN_HOST) {
-    return { dashboard: '/', login: '/login', site: 'https://test.hatiraniyarat.com' };
+    return {
+      dashboard: '/',
+      login: '/login',
+      monitoring: '/monitoring',
+      site: 'https://test.hatiraniyarat.com',
+    };
   }
 
   return {
     dashboard: '/admin',
     login: '/admin/login',
+    monitoring: '/admin/monitoring',
     site: '/',
   };
 }

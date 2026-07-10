@@ -13,6 +13,10 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL('/admin/login', request.url));
     }
 
+    if (pathname === '/monitoring') {
+      return NextResponse.rewrite(new URL('/admin/monitoring', request.url));
+    }
+
     if (pathname === '/') {
       return NextResponse.rewrite(new URL('/admin', request.url));
     }

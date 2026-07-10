@@ -12,6 +12,10 @@ cd "$APP_DIR"
 git fetch origin main
 git reset --hard origin/main
 
+COMMIT_SHA="$(git rev-parse --short HEAD)"
+DEPLOYED_AT="$(date -Iseconds)"
+echo "{\"commit\":\"$COMMIT_SHA\",\"deployedAt\":\"$DEPLOYED_AT\"}" > "$BACKEND_DIR/.deploy-info.json"
+
 echo "==> Backend"
 cd "$BACKEND_DIR"
 npm ci --omit=dev
@@ -34,11 +38,6 @@ else
 fi
 
 pm2 save
-
-echo "==> Nginx"
-if [ -f "$APP_DIR/scripts/setup-nginx-domains.sh" ]; then
-  bash "$APP_DIR/scripts/setup-nginx-domains.sh"
-fi
 
 echo "==> Health check"
 sleep 5

@@ -55,6 +55,34 @@ describe('Product CRUD', () => {
     expect(response.body.data.createdAt).toBe(createdAt.toISOString());
   });
 
+  it('POST /api/products imageUrl null ile urun ekler', async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 2,
+          name: 'Telefon',
+          description: 'Akilli telefon',
+          price: '10000',
+          stock: 5,
+          imageUrl: null,
+          createdAt: new Date('2026-07-09T06:00:00.000Z'),
+          updatedAt: new Date('2026-07-09T06:00:00.000Z'),
+        },
+      ],
+    });
+
+    const response = await request(app).post('/api/products').send({
+      name: 'Telefon',
+      description: 'Akilli telefon',
+      price: 10000,
+      stock: 5,
+      imageUrl: null,
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.name).toBe('Telefon');
+  });
+
   it('POST /api/products ile geçersiz veri gelirse 400 döner', async () => {
     const response = await request(app).post('/api/products').send({
       // name yok

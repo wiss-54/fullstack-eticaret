@@ -17,7 +17,11 @@ const nonNegativeInt = z.preprocess(
 );
 
 const imageUrlSchema = z.preprocess(
-  (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+  (v) => {
+    if (v === null || v === undefined) return undefined;
+    if (typeof v === 'string' && v.trim() === '') return undefined;
+    return v;
+  },
   z.string().url().optional(),
 );
 

@@ -110,12 +110,13 @@ export default function AdminPage() {
     setSaving(true);
     setError(null);
 
+    const imageUrl = form.imageUrl.trim();
     const payload = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: Number(form.price),
-      stock: Number(form.stock),
-      imageUrl: form.imageUrl.trim() || null,
+      stock: Math.floor(Number(form.stock)),
+      ...(imageUrl ? { imageUrl } : {}),
     };
 
     try {
@@ -162,6 +163,12 @@ export default function AdminPage() {
             </h1>
           </div>
           <div className="flex gap-3">
+            <Link
+              href={getAdminPaths().monitoring}
+              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+            >
+              Monitoring
+            </Link>
             <Link
               href={getAdminPaths().site}
               className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"

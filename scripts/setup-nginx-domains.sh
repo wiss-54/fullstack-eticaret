@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Nginx domain configlerini kurar. Root veya sudo yetkisi gerekir.
+# Ilk kurulumda bir kez calistir: sudo bash scripts/setup-nginx-domains.sh
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/home/beratav/fullstack-eticaret}"
