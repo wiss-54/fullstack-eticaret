@@ -34,6 +34,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="flex flex-1 flex-col gap-3 p-5">
           <div>
             <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{product.name}</h2>
+            {product.categoryName ? (
+              <p className="mt-1 text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                {product.categoryName}
+              </p>
+            ) : null}
             <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               {product.description}
             </p>

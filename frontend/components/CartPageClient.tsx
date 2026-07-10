@@ -62,6 +62,11 @@ export default function CartPageClient() {
                         <span className="text-zinc-500"> (baz {formatPrice(item.basePrice)})</span>
                       ) : null}
                     </p>
+                    {item.variantLabel ? (
+                      <p className="mt-2 text-sm font-medium text-amber-800 dark:text-amber-200">
+                        Varyant: {item.variantLabel}
+                      </p>
+                    ) : null}
                     {item.selectedOptions.length > 0 ? (
                       <ul className="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
                         {item.selectedOptions.map((option) => (

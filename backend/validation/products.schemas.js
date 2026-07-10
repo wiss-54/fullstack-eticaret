@@ -31,6 +31,8 @@ const productCreateSchema = z.object({
   price: positivePrice,
   stock: nonNegativeInt,
   imageUrl: imageUrlSchema.optional(),
+  categoryId: z.number().int().positive().nullable().optional(),
+  productType: z.enum(['simple', 'variant']).optional(),
 });
 
 const productUpdateSchema = productCreateSchema;
