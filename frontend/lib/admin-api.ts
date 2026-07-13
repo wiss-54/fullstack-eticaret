@@ -1,5 +1,7 @@
 import type {
   Category,
+  Order,
+  OrderStatus,
   Product,
   ProductOption,
   ProductOptionInput,
@@ -202,5 +204,20 @@ export async function adminSaveProductOptions(
   return adminFetch<ProductOption[]>(`/api/products/${id}/options`, {
     method: 'PUT',
     body: JSON.stringify(options),
+  });
+}
+
+export async function adminGetOrders() {
+  return adminFetch<Order[]>('/api/admin/orders');
+}
+
+export async function adminGetOrder(id: number) {
+  return adminFetch<Order>(`/api/admin/orders/${id}`);
+}
+
+export async function adminUpdateOrderStatus(id: number, status: OrderStatus) {
+  return adminFetch<Order>(`/api/admin/orders/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
   });
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CartNav from '@/components/CartNav';
+import CustomerNav from '@/components/CustomerNav';
 
 type StoreHeaderProps = {
   title?: string;
@@ -31,6 +32,7 @@ export default function StoreHeader({
             </span>
           ) : null}
           <CartNav />
+          <CustomerNav />
         </div>
       </div>
     </header>

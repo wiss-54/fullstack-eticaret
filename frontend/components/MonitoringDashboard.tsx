@@ -280,6 +280,12 @@ export default function MonitoringDashboard() {
             >
               Urunler
             </Link>
+            <Link
+              href={paths.orders}
+              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+            >
+              Siparisler
+            </Link>
             <button
               type="button"
               onClick={() => void handleManualRefresh()}

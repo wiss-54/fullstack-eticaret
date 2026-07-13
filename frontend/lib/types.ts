@@ -104,6 +104,49 @@ export type ProductsResponse = {
   data: Product[];
 };
 
+export type User = {
+  id: number;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'cancelled';
+
+export type OrderItem = {
+  id: number;
+  orderId: number;
+  productId: number;
+  variantId: number | null;
+  productName: string;
+  variantLabel: string | null;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+  selectedOptions: { optionId: number; label: string; value: string; priceDelta?: number }[];
+  customerNote: string | null;
+  sortOrder: number;
+};
+
+export type Order = {
+  id: number;
+  userId: number;
+  status: OrderStatus;
+  paymentMethod: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  shippingAddress: string;
+  orderNote: string | null;
+  subtotal: number;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+  items?: OrderItem[];
+};
+
 export type ServiceCheck = {
   status: 'up' | 'down';
   latencyMs?: number;
