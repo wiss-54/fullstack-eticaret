@@ -206,6 +206,12 @@ export default function AdminPage() {
           </div>
           <div className="flex gap-3">
             <Link
+              href={getAdminPaths().orders}
+              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+            >
+              Siparisler
+            </Link>
+            <Link
               href={getAdminPaths().monitoring}
               className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
             >

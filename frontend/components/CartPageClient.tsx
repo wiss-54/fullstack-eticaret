@@ -124,15 +124,14 @@ export default function CartPageClient() {
             {formatPrice(total)}
           </p>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Odeme ve siparis kaydi bir sonraki guncellemede eklenecek.
+            Siparisini tamamlamak icin giris yapman gerekiyor.
           </p>
-          <button
-            type="button"
-            disabled
-            className="mt-6 w-full rounded-xl bg-amber-800 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
+          <Link
+            href="/odeme"
+            className="mt-6 block w-full rounded-xl bg-amber-800 px-4 py-3 text-center text-sm font-medium text-white dark:bg-amber-500 dark:text-zinc-950"
           >
-            Odemeye Gec (yakinda)
-          </button>
+            Odemeye Gec
+          </Link>
           <button
             type="button"
             onClick={clearCart}

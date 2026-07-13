@@ -9,6 +9,7 @@ export function getAdminPaths(hostname?: string) {
       dashboard: '/',
       login: '/login',
       monitoring: '/monitoring',
+      orders: '/siparisler',
       site: 'https://test.hatiraniyarat.com',
     };
   }
@@ -17,6 +18,7 @@ export function getAdminPaths(hostname?: string) {
     dashboard: '/admin',
     login: '/admin/login',
     monitoring: '/admin/monitoring',
+    orders: '/admin/orders',
     site: '/',
   };
 }

@@ -17,6 +17,10 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL('/admin/monitoring', request.url));
     }
 
+    if (pathname === '/siparisler') {
+      return NextResponse.rewrite(new URL('/admin/orders', request.url));
+    }
+
     if (pathname === '/') {
       return NextResponse.rewrite(new URL('/admin', request.url));
     }
