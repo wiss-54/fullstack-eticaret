@@ -147,6 +147,31 @@ export type Order = {
   items?: OrderItem[];
 };
 
+export type StoreFeatureCard = {
+  title: string;
+  text: string;
+};
+
+export type StoreSettings = {
+  brandName: string;
+  logoUrl: string | null;
+  accentColor: string;
+  heroEyebrow: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroCtaLabel: string;
+  heroCtaHref: string;
+  heroSecondaryCtaLabel: string;
+  heroSecondaryCtaHref: string;
+  featureCards: StoreFeatureCard[];
+  productsEyebrow: string;
+  productsTitle: string;
+  productsSubtitle: string;
+  footerLeft: string;
+  footerRight: string;
+  updatedAt?: string;
+};
+
 export type ServiceCheck = {
   status: 'up' | 'down';
   latencyMs?: number;

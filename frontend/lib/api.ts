@@ -1,4 +1,4 @@
-import type { Category, Product, ProductsResponse } from './types';
+import type { Category, Product, ProductsResponse, StoreSettings } from './types';
 import { getApiBaseUrl } from './config';
 
 export async function getCategories(): Promise<Category[]> {
@@ -11,6 +11,19 @@ export async function getCategories(): Promise<Category[]> {
   }
 
   const json: { success: boolean; data: Category[] } = await response.json();
+  return json.data;
+}
+
+export async function getStoreSettings(): Promise<StoreSettings> {
+  const response = await fetch(`${getApiBaseUrl()}/api/store-settings`, {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('Magaza ayarlari yuklenemedi');
+  }
+
+  const json: { success: boolean; data: StoreSettings } = await response.json();
   return json.data;
 }
 

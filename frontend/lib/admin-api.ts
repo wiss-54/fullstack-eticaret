@@ -246,3 +246,14 @@ export async function adminUploadImage(file: File): Promise<{ imageUrl: string }
 
   return json.data;
 }
+
+export async function adminGetStoreSettings() {
+  return adminFetch<import('./types').StoreSettings>('/api/store-settings');
+}
+
+export async function adminUpdateStoreSettings(input: import('./types').StoreSettings) {
+  return adminFetch<import('./types').StoreSettings>('/api/store-settings', {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}

@@ -74,6 +74,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/categories', require('./routes/categories.routes'));
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/orders', require('./routes/orders.routes'));
+app.use('/api/store-settings', require('./routes/store-settings.routes'));
 app.use('/api/admin/uploads', require('./routes/uploads.routes'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/version', versionRoutes);
