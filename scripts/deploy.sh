@@ -42,13 +42,9 @@ fi
 
 pm2 save
 
-echo "==> Nginx (uploads dahil)"
-if [ -d "$APP_DIR/deploy/nginx" ] && command -v nginx >/dev/null 2>&1; then
-  for conf in "$APP_DIR/deploy/nginx/"*.conf; do
-    name="$(basename "$conf")"
-    sudo cp "$conf" "/etc/nginx/sites-available/$name"
-    sudo ln -sfn "/etc/nginx/sites-available/$name" "/etc/nginx/sites-enabled/$name"
-  done
+echo "==> Nginx uploads proxy (SSL configleri bozulmadan)"
+if command -v nginx >/dev/null 2>&1 && [ -f "$APP_DIR/scripts/patch-nginx-uploads.py" ]; then
+  sudo python3 "$APP_DIR/scripts/patch-nginx-uploads.py"
   sudo nginx -t
   sudo systemctl reload nginx
 fi
