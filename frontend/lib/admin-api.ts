@@ -221,3 +221,28 @@ export async function adminUpdateOrderStatus(id: number, status: OrderStatus) {
     body: JSON.stringify({ status }),
   });
 }
+
+export async function adminUploadImage(file: File): Promise<{ imageUrl: string }> {
+  const token = getAdminToken();
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${getApiBaseUrl()}/api/admin/uploads`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  });
+
+  const json: ApiResponse<{ imageUrl: string }> = await response.json();
+
+  if (response.status === 401) {
+    clearAdminToken();
+    throw new AdminAuthError(json.error ?? 'Giris gerekli');
+  }
+
+  if (!response.ok || !json.success || !json.data) {
+    throw new Error(json.error ?? 'Gorsel yuklenemedi');
+  }
+
+  return json.data;
+}

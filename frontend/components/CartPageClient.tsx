@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCart } from '@/components/CartProvider';
+import { safeMediaUrl } from '@/lib/safe-media-url';
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('tr-TR', {
@@ -33,15 +34,17 @@ export default function CartPageClient() {
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr]">
         <section className="space-y-4">
-          {items.map((item) => (
+          {items.map((item) => {
+            const imageSrc = safeMediaUrl(item.imageUrl);
+            return (
             <article
               key={item.lineId}
               className="flex gap-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900">
-                {item.imageUrl ? (
+                {imageSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                  <img src={imageSrc} alt={item.name} className="h-full w-full object-cover" />
                 ) : (
                   <span className="text-xs text-zinc-500">Gorsel yok</span>
                 )}
@@ -115,7 +118,8 @@ export default function CartPageClient() {
                 </div>
               </div>
             </article>
-          ))}
+            );
+          })}
         </section>
 
         <aside className="h-fit rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">

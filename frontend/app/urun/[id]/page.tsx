@@ -4,6 +4,7 @@ import ProductPurchasePanel from '@/components/ProductPurchasePanel';
 import StoreFooter from '@/components/StoreFooter';
 import StoreHeader from '@/components/StoreHeader';
 import { getProduct } from '@/lib/api';
+import { safeMediaUrl } from '@/lib/safe-media-url';
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('tr-TR', {
@@ -38,6 +39,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const hasOptions = (product.options?.length ?? 0) > 0;
+  const imageSrc = safeMediaUrl(product.imageUrl);
 
   return (
     <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
@@ -46,10 +48,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <main className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-6 py-10 lg:grid-cols-2">
         <div className="overflow-hidden rounded-3xl border border-amber-100 bg-white shadow-sm dark:border-amber-900/30 dark:bg-zinc-950">
           <div className="flex min-h-96 items-center justify-center bg-gradient-to-br from-amber-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
-            {product.imageUrl ? (
+            {imageSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={product.imageUrl}
+                src={imageSrc}
                 alt={product.name}
                 className="h-full w-full object-cover"
               />

@@ -42,6 +42,17 @@ fi
 
 pm2 save
 
+echo "==> Nginx (uploads dahil)"
+if [ -d "$APP_DIR/deploy/nginx" ] && command -v nginx >/dev/null 2>&1; then
+  for conf in "$APP_DIR/deploy/nginx/"*.conf; do
+    name="$(basename "$conf")"
+    sudo cp "$conf" "/etc/nginx/sites-available/$name"
+    sudo ln -sfn "/etc/nginx/sites-available/$name" "/etc/nginx/sites-enabled/$name"
+  done
+  sudo nginx -t
+  sudo systemctl reload nginx
+fi
+
 echo "==> Health check"
 sleep 5
 curl -fsS http://localhost:5000/api/test-db

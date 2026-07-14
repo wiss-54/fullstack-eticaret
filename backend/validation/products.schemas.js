@@ -18,11 +18,25 @@ const nonNegativeInt = z.preprocess(
 
 const imageUrlSchema = z.preprocess(
   (v) => {
-    if (v === null || v === undefined) return undefined;
-    if (typeof v === 'string' && v.trim() === '') return undefined;
-    return v;
+    if (v === null) return null;
+    if (v === undefined) return undefined;
+    if (typeof v === 'string' && v.trim() === '') return null;
+    return typeof v === 'string' ? v.trim() : v;
   },
-  z.string().url().optional(),
+  z
+    .union([
+      z
+        .string()
+        .max(2000)
+        .refine(
+          (value) =>
+            value.startsWith('/uploads/') ||
+            /^https?:\/\/.+/i.test(value),
+          { message: 'Gorsel URL veya yuklenen /uploads/ yolu olmali' },
+        ),
+      z.null(),
+    ])
+    .optional(),
 );
 
 const productCreateSchema = z.object({

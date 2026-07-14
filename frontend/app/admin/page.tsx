@@ -15,6 +15,7 @@ import {
   getAdminToken,
 } from '@/lib/admin-api';
 import CategoryManager from '@/components/CategoryManager';
+import ProductImageField from '@/components/ProductImageField';
 import ProductOptionsEditor from '@/components/ProductOptionsEditor';
 import ProductVariantsEditor from '@/components/ProductVariantsEditor';
 import { getAdminPaths } from '@/lib/admin-paths';
@@ -58,6 +59,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [variantsEditorKey, setVariantsEditorKey] = useState(0);
+  const [serverImageUrl, setServerImageUrl] = useState<string | null>(null);
 
   async function loadProducts() {
     setLoading(true);
@@ -108,6 +110,7 @@ export default function AdminPage() {
 
   async function startEdit(product: Product) {
     setEditingId(product.id);
+    setServerImageUrl(product.imageUrl);
     setForm({
       name: product.name,
       description: product.description,
@@ -138,6 +141,7 @@ export default function AdminPage() {
 
   function resetForm() {
     setEditingId(null);
+    setServerImageUrl(null);
     setEditingOptions([]);
     setEditingAxes([]);
     setEditingVariants([]);
@@ -157,7 +161,7 @@ export default function AdminPage() {
       price: Number(form.price),
       stock: Math.floor(Number(form.stock)),
       categoryId: form.categoryId ? Number(form.categoryId) : null,
-      ...(imageUrl ? { imageUrl } : {}),
+      imageUrl: imageUrl || null,
     };
 
     try {
@@ -295,11 +299,13 @@ export default function AdminPage() {
                   Varyantli urunlerde toplam stok, asagidaki matristeki satirlardan otomatik hesaplanir.
                 </p>
               ) : null}
-              <input
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-                placeholder="Gorsel URL (opsiyonel)"
+              <ProductImageField
                 value={form.imageUrl}
-                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                serverImageUrl={serverImageUrl}
+                onChange={(imageUrl) => {
+                  setForm({ ...form, imageUrl });
+                  if (!imageUrl) setServerImageUrl(null);
+                }}
               />
 
               <div className="flex gap-3">
