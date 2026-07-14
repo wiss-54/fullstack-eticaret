@@ -1,39 +1,105 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { adminUploadImage } from '@/lib/admin-api';
-import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type ProductImageFieldProps = {
   value: string;
   onChange: (value: string) => void;
+  /** API'den gelen kayitli gorsel — form text input'undan bagimsiz (CodeQL XSS-through-DOM). */
+  serverImageUrl?: string | null;
 };
 
-export default function ProductImageField({ value, onChange }: ProductImageFieldProps) {
+function toSafeUploadPath(imageUrl: string): string | null {
+  if (!imageUrl.startsWith('/uploads/')) return null;
+  const fileName = imageUrl.slice('/uploads/'.length).replace(/[^a-zA-Z0-9._-]/g, '');
+  if (!fileName || fileName.includes('..')) return null;
+  return `/uploads/${fileName}`;
+}
+
+function toSafeHttpUrl(imageUrl: string): string | null {
+  try {
+    const parsed = new URL(imageUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
+  } catch {
+    return null;
+  }
+}
+
+function toServerPreview(imageUrl: string | null | undefined): string | null {
+  if (!imageUrl) return null;
+  return toSafeUploadPath(imageUrl) ?? toSafeHttpUrl(imageUrl);
+}
+
+/**
+ * img src asla text input (DOM) degerinden set edilmez.
+ * Onizleme: blob: (yerel dosya) veya sunucu /uploads|http(s) yolu.
+ */
+export default function ProductImageField({
+  value,
+  onChange,
+  serverImageUrl = null,
+}: ProductImageFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const previewSrc = safeMediaUrl(value);
+  const [blobPreview, setBlobPreview] = useState<string | null>(null);
+  const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (blobPreview) URL.revokeObjectURL(blobPreview);
+    };
+  }, [blobPreview]);
+
+  const serverPreview = toServerPreview(serverImageUrl);
+  const previewSrc = blobPreview ?? uploadedPreview ?? serverPreview;
 
   async function handleFileChange(file: File | null) {
     if (!file) return;
+
+    if (blobPreview) URL.revokeObjectURL(blobPreview);
+    const objectUrl = URL.createObjectURL(file);
+    setBlobPreview(objectUrl);
+    setUploadedPreview(null);
     setUploading(true);
     setError(null);
+
     try {
       const result = await adminUploadImage(file);
-      onChange(result.imageUrl);
+      const safePath = toSafeUploadPath(result.imageUrl);
+      if (!safePath) {
+        throw new Error('Sunucu gecersiz gorsel yolu dondurdu');
+      }
+      setUploadedPreview(safePath);
+      onChange(safePath);
+      URL.revokeObjectURL(objectUrl);
+      setBlobPreview(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Yukleme basarisiz');
+      URL.revokeObjectURL(objectUrl);
+      setBlobPreview(null);
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
     }
   }
 
+  function handleClear() {
+    if (blobPreview) URL.revokeObjectURL(blobPreview);
+    setBlobPreview(null);
+    setUploadedPreview(null);
+    onChange('');
+  }
+
   return (
     <div className="space-y-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Urun gorseli</p>
-      <p className="text-xs text-zinc-500">PC&apos;den yukleyebilir veya dis URL yapistirabilirsin.</p>
+      <p className="text-xs text-zinc-500">
+        PC&apos;den yukle (onizlemeli) veya https URL yapistir. Yapistirilan URL kayit edilir; onizleme
+        sadece yuklenen / kayitli dosyada gosterilir.
+      </p>
 
       {previewSrc ? (
         <div className="flex items-start gap-3">
@@ -43,16 +109,12 @@ export default function ProductImageField({ value, onChange }: ProductImageField
           </div>
           <button
             type="button"
-            onClick={() => onChange('')}
+            onClick={handleClear}
             className="text-sm text-red-600 dark:text-red-300"
           >
             Gorseli kaldir
           </button>
         </div>
-      ) : value.trim() ? (
-        <p className="text-sm text-amber-700 dark:text-amber-300">
-          Gecersiz gorsel adresi. http(s):// veya /uploads/ yolu kullan.
-        </p>
       ) : null}
 
       <div className="flex flex-wrap gap-2">

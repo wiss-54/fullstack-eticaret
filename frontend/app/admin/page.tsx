@@ -59,6 +59,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [variantsEditorKey, setVariantsEditorKey] = useState(0);
+  const [serverImageUrl, setServerImageUrl] = useState<string | null>(null);
 
   async function loadProducts() {
     setLoading(true);
@@ -109,6 +110,7 @@ export default function AdminPage() {
 
   async function startEdit(product: Product) {
     setEditingId(product.id);
+    setServerImageUrl(product.imageUrl);
     setForm({
       name: product.name,
       description: product.description,
@@ -139,6 +141,7 @@ export default function AdminPage() {
 
   function resetForm() {
     setEditingId(null);
+    setServerImageUrl(null);
     setEditingOptions([]);
     setEditingAxes([]);
     setEditingVariants([]);
@@ -298,7 +301,11 @@ export default function AdminPage() {
               ) : null}
               <ProductImageField
                 value={form.imageUrl}
-                onChange={(imageUrl) => setForm({ ...form, imageUrl })}
+                serverImageUrl={serverImageUrl}
+                onChange={(imageUrl) => {
+                  setForm({ ...form, imageUrl });
+                  if (!imageUrl) setServerImageUrl(null);
+                }}
               />
 
               <div className="flex gap-3">
