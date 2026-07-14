@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { adminUploadImage } from '@/lib/admin-api';
+import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type ProductImageFieldProps = {
   value: string;
@@ -12,6 +13,7 @@ export default function ProductImageField({ value, onChange }: ProductImageField
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewSrc = safeMediaUrl(value);
 
   async function handleFileChange(file: File | null) {
     if (!file) return;
@@ -33,11 +35,11 @@ export default function ProductImageField({ value, onChange }: ProductImageField
       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Urun gorseli</p>
       <p className="text-xs text-zinc-500">PC&apos;den yukleyebilir veya dis URL yapistirabilirsin.</p>
 
-      {value ? (
+      {previewSrc ? (
         <div className="flex items-start gap-3">
           <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-900">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt="Urun gorseli onizleme" className="h-full w-full object-cover" />
+            <img src={previewSrc} alt="Urun gorseli onizleme" className="h-full w-full object-cover" />
           </div>
           <button
             type="button"
@@ -47,6 +49,10 @@ export default function ProductImageField({ value, onChange }: ProductImageField
             Gorseli kaldir
           </button>
         </div>
+      ) : value.trim() ? (
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          Gecersiz gorsel adresi. http(s):// veya /uploads/ yolu kullan.
+        </p>
       ) : null}
 
       <div className="flex flex-wrap gap-2">

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Product } from '@/lib/types';
+import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type ProductCardProps = {
   product: Product;
@@ -13,14 +14,16 @@ function formatPrice(price: number) {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const imageSrc = safeMediaUrl(product.imageUrl);
+
   return (
     <Link href={`/urun/${product.id}`} className="group block h-full">
       <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-amber-100/80 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg dark:border-amber-900/30 dark:bg-zinc-950">
         <div className="relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br from-amber-50 to-zinc-100 text-zinc-400 dark:from-zinc-900 dark:to-zinc-950 dark:text-zinc-600">
-          {product.imageUrl ? (
+          {imageSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={product.imageUrl}
+              src={imageSrc}
               alt={product.name}
               className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             />
