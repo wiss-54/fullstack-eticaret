@@ -6,15 +6,23 @@ const { pool } = require('./db');
 const productsRoutes = require('./routes/products.routes');
 const adminRoutes = require('./routes/admin.routes');
 const versionRoutes = require('./routes/version.routes');
+const { ensureUploadDir, UPLOAD_DIR } = require('./middleware/upload.middleware');
 
 const app = express();
 
 // Nginx arkasinda gercek client IP icin gerekli; yoksa tum trafige tek bucket dusuyor.
 app.set('trust proxy', 1);
 
-app.use(helmet());
+ensureUploadDir();
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+);
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -66,6 +74,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/categories', require('./routes/categories.routes'));
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/orders', require('./routes/orders.routes'));
+app.use('/api/admin/uploads', require('./routes/uploads.routes'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/version', versionRoutes);
 
