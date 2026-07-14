@@ -44,9 +44,14 @@ pm2 save
 
 echo "==> Nginx uploads proxy (SSL configleri bozulmadan)"
 if command -v nginx >/dev/null 2>&1 && [ -f "$APP_DIR/scripts/patch-nginx-uploads.py" ]; then
-  sudo python3 "$APP_DIR/scripts/patch-nginx-uploads.py"
-  sudo nginx -t
-  sudo systemctl reload nginx
+  if sudo -n true 2>/dev/null; then
+    sudo -n python3 "$APP_DIR/scripts/patch-nginx-uploads.py"
+    sudo -n nginx -t
+    sudo -n systemctl reload nginx
+  else
+    echo "WARN: passwordless sudo yok; nginx patch atlandi."
+    echo "WARN: Gerekirse manuel: sudo python3 $APP_DIR/scripts/patch-nginx-uploads.py && sudo nginx -t && sudo systemctl reload nginx"
+  fi
 fi
 
 echo "==> Health check"
