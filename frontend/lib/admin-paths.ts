@@ -10,6 +10,7 @@ export function getAdminPaths(hostname?: string) {
       login: '/login',
       monitoring: '/monitoring',
       orders: '/siparisler',
+      settings: '/ayarlar',
       site: 'https://test.hatiraniyarat.com',
     };
   }
@@ -19,6 +20,7 @@ export function getAdminPaths(hostname?: string) {
     login: '/admin/login',
     monitoring: '/admin/monitoring',
     orders: '/admin/orders',
+    settings: '/admin/settings',
     site: '/',
   };
 }

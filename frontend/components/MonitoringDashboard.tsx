@@ -286,6 +286,12 @@ export default function MonitoringDashboard() {
             >
               Siparisler
             </Link>
+            <Link
+              href={paths.settings}
+              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+            >
+              Magaza
+            </Link>
             <button
               type="button"
               onClick={() => void handleManualRefresh()}
