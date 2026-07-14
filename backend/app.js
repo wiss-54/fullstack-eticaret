@@ -9,17 +9,41 @@ const versionRoutes = require('./routes/version.routes');
 
 const app = express();
 
+// Nginx arkasinda gercek client IP icin gerekli; yoksa tum trafige tek bucket dusuyor.
+app.set('trust proxy', 1);
+
 app.use(helmet());
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-  }),
-);
 app.use(cors());
 app.use(express.json());
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Cok fazla deneme. Lutfen biraz sonra tekrar dene.' },
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 2000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    const path = (req.originalUrl || req.url || '').split('?')[0];
+    return (
+      path === '/api/test-db' ||
+      path === '/api/version' ||
+      path.startsWith('/api/version/')
+    );
+  },
+  message: { success: false, error: 'Cok fazla istek. Lutfen biraz sonra tekrar dene.' },
+});
+
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/admin/login', authLimiter);
+app.use('/api', apiLimiter);
 
 app.get('/api/test-db', async (req, res) => {
   try {
