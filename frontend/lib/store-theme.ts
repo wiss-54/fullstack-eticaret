@@ -1,5 +1,11 @@
 import type { StoreSettings } from './types';
 
+export const FONT_STYLE_LABELS: Record<StoreSettings['fontStyle'], string> = {
+  classic: 'Klasik (sade)',
+  modern: 'Modern (sik)',
+  elegant: 'Zarif (serif)',
+};
+
 export function getStoreShellClass(settings: StoreSettings) {
   const surface = {
     warm: 'bg-zinc-50 dark:bg-black',
@@ -9,9 +15,9 @@ export function getStoreShellClass(settings: StoreSettings) {
   }[settings.surfaceStyle];
 
   const font = {
-    classic: 'font-sans tracking-normal',
-    modern: 'font-sans tracking-tight',
-    elegant: 'font-serif tracking-wide',
+    classic: 'font-store-classic tracking-normal',
+    modern: 'font-store-modern tracking-tight',
+    elegant: 'font-store-elegant tracking-wide',
   }[settings.fontStyle];
 
   return `${surface} ${font}`;
