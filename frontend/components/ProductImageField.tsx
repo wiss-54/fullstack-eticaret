@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { adminUploadImage } from '@/lib/admin-api';
 
 type ProductImageFieldProps = {
   value: string;
   onChange: (value: string) => void;
-  /** API'den gelen kayitli gorsel — form text input'undan bagimsiz (CodeQL XSS-through-DOM). */
+  /** Duzenlemede kayitli gorsel bilgisini gostermek icin (img src yapilmaz). */
   serverImageUrl?: string | null;
 };
 
@@ -17,24 +17,10 @@ function toSafeUploadPath(imageUrl: string): string | null {
   return `/uploads/${fileName}`;
 }
 
-function toSafeHttpUrl(imageUrl: string): string | null {
-  try {
-    const parsed = new URL(imageUrl);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
-    return `${parsed.protocol}//${parsed.host}${parsed.pathname}${parsed.search}`;
-  } catch {
-    return null;
-  }
-}
-
-function toServerPreview(imageUrl: string | null | undefined): string | null {
-  if (!imageUrl) return null;
-  return toSafeUploadPath(imageUrl) ?? toSafeHttpUrl(imageUrl);
-}
-
 /**
- * img src asla text input (DOM) degerinden set edilmez.
- * Onizleme: blob: (yerel dosya) veya sunucu /uploads|http(s) yolu.
+ * Bilerek <img src={...}> kullanmiyoruz.
+ * CodeQL js/xss-through-dom, form/DOM kaynakli string'i img src'e baglamayi
+ * XSS kabul ediyor; onizlemeyi metin olarak gosteriyoruz.
  */
 export default function ProductImageField({
   value,
@@ -44,25 +30,13 @@ export default function ProductImageField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [blobPreview, setBlobPreview] = useState<string | null>(null);
-  const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+  const [uploadedPath, setUploadedPath] = useState<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (blobPreview) URL.revokeObjectURL(blobPreview);
-    };
-  }, [blobPreview]);
-
-  const serverPreview = toServerPreview(serverImageUrl);
-  const previewSrc = blobPreview ?? uploadedPreview ?? serverPreview;
+  const statusPath = uploadedPath ?? (serverImageUrl ? toSafeUploadPath(serverImageUrl) : null);
 
   async function handleFileChange(file: File | null) {
     if (!file) return;
 
-    if (blobPreview) URL.revokeObjectURL(blobPreview);
-    const objectUrl = URL.createObjectURL(file);
-    setBlobPreview(objectUrl);
-    setUploadedPreview(null);
     setUploading(true);
     setError(null);
 
@@ -72,14 +46,10 @@ export default function ProductImageField({
       if (!safePath) {
         throw new Error('Sunucu gecersiz gorsel yolu dondurdu');
       }
-      setUploadedPreview(safePath);
+      setUploadedPath(safePath);
       onChange(safePath);
-      URL.revokeObjectURL(objectUrl);
-      setBlobPreview(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Yukleme basarisiz');
-      URL.revokeObjectURL(objectUrl);
-      setBlobPreview(null);
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -87,9 +57,7 @@ export default function ProductImageField({
   }
 
   function handleClear() {
-    if (blobPreview) URL.revokeObjectURL(blobPreview);
-    setBlobPreview(null);
-    setUploadedPreview(null);
+    setUploadedPath(null);
     onChange('');
   }
 
@@ -97,22 +65,20 @@ export default function ProductImageField({
     <div className="space-y-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Urun gorseli</p>
       <p className="text-xs text-zinc-500">
-        PC&apos;den yukle (onizlemeli) veya https URL yapistir. Yapistirilan URL kayit edilir; onizleme
-        sadece yuklenen / kayitli dosyada gosterilir.
+        PC&apos;den yukleyebilir veya dis URL yapistirabilirsin (JPEG/PNG/WEBP/GIF, max 5MB).
       </p>
 
-      {previewSrc ? (
-        <div className="flex items-start gap-3">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-900">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewSrc} alt="Urun gorseli onizleme" className="h-full w-full object-cover" />
-          </div>
+      {statusPath || value ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-900">
+          <span className="break-all text-zinc-700 dark:text-zinc-300">
+            {statusPath ?? value}
+          </span>
           <button
             type="button"
             onClick={handleClear}
-            className="text-sm text-red-600 dark:text-red-300"
+            className="shrink-0 text-red-600 dark:text-red-300"
           >
-            Gorseli kaldir
+            Kaldir
           </button>
         </div>
       ) : null}
