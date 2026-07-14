@@ -1,17 +1,22 @@
 const { pool } = require('../db');
-
-const DEFAULT_FEATURES = [
-  { title: 'Kisisellestirme', text: 'Her urune ozel secenekler ve not alani' },
-  { title: 'Guvenli Siparis', text: 'Stok ve secenek kontrolu otomatik' },
-  { title: 'Hizli Yonetim', text: 'Admin panelden urun ve secenek yonetimi' },
-  { title: 'Canli Takip', text: 'Monitoring ile sistem durumu izleme' },
-];
+const {
+  DEFAULT_FEATURES,
+  DEFAULT_SECTIONS,
+  getThemePreset,
+  listThemePresets,
+} = require('./store-theme-presets');
 
 function mapRow(row) {
   return {
     brandName: row.brandName,
     logoUrl: row.logoUrl,
     accentColor: row.accentColor,
+    themeId: row.themeId ?? 'classic-amber',
+    surfaceStyle: row.surfaceStyle ?? 'warm',
+    radiusStyle: row.radiusStyle ?? 'rounded',
+    buttonStyle: row.buttonStyle ?? 'pill',
+    heroLayout: row.heroLayout ?? 'split',
+    fontStyle: row.fontStyle ?? 'classic',
     heroEyebrow: row.heroEyebrow,
     heroTitle: row.heroTitle,
     heroSubtitle: row.heroSubtitle,
@@ -25,6 +30,7 @@ function mapRow(row) {
     productsSubtitle: row.productsSubtitle,
     footerLeft: row.footerLeft,
     footerRight: row.footerRight,
+    sections: Array.isArray(row.sections) && row.sections.length > 0 ? row.sections : DEFAULT_SECTIONS,
     updatedAt: row.updatedAt,
   };
 }
@@ -34,6 +40,12 @@ const SELECT_SQL = `
     brand_name AS "brandName",
     logo_url AS "logoUrl",
     accent_color AS "accentColor",
+    theme_id AS "themeId",
+    surface_style AS "surfaceStyle",
+    radius_style AS "radiusStyle",
+    button_style AS "buttonStyle",
+    hero_layout AS "heroLayout",
+    font_style AS "fontStyle",
     hero_eyebrow AS "heroEyebrow",
     hero_title AS "heroTitle",
     hero_subtitle AS "heroSubtitle",
@@ -47,6 +59,7 @@ const SELECT_SQL = `
     products_subtitle AS "productsSubtitle",
     footer_left AS "footerLeft",
     footer_right AS "footerRight",
+    sections,
     updated_at AS "updatedAt"
   FROM store_settings
   WHERE id = 1
@@ -71,25 +84,38 @@ async function updateStoreSettings(input) {
         brand_name = $1,
         logo_url = $2,
         accent_color = $3,
-        hero_eyebrow = $4,
-        hero_title = $5,
-        hero_subtitle = $6,
-        hero_cta_label = $7,
-        hero_cta_href = $8,
-        hero_secondary_cta_label = $9,
-        hero_secondary_cta_href = $10,
-        feature_cards = $11::jsonb,
-        products_eyebrow = $12,
-        products_title = $13,
-        products_subtitle = $14,
-        footer_left = $15,
-        footer_right = $16,
+        theme_id = $4,
+        surface_style = $5,
+        radius_style = $6,
+        button_style = $7,
+        hero_layout = $8,
+        font_style = $9,
+        hero_eyebrow = $10,
+        hero_title = $11,
+        hero_subtitle = $12,
+        hero_cta_label = $13,
+        hero_cta_href = $14,
+        hero_secondary_cta_label = $15,
+        hero_secondary_cta_href = $16,
+        feature_cards = $17::jsonb,
+        products_eyebrow = $18,
+        products_title = $19,
+        products_subtitle = $20,
+        footer_left = $21,
+        footer_right = $22,
+        sections = $23::jsonb,
         updated_at = NOW()
       WHERE id = 1
       RETURNING
         brand_name AS "brandName",
         logo_url AS "logoUrl",
         accent_color AS "accentColor",
+        theme_id AS "themeId",
+        surface_style AS "surfaceStyle",
+        radius_style AS "radiusStyle",
+        button_style AS "buttonStyle",
+        hero_layout AS "heroLayout",
+        font_style AS "fontStyle",
         hero_eyebrow AS "heroEyebrow",
         hero_title AS "heroTitle",
         hero_subtitle AS "heroSubtitle",
@@ -103,12 +129,19 @@ async function updateStoreSettings(input) {
         products_subtitle AS "productsSubtitle",
         footer_left AS "footerLeft",
         footer_right AS "footerRight",
+        sections,
         updated_at AS "updatedAt"
     `,
     [
       input.brandName,
       input.logoUrl ?? null,
       input.accentColor,
+      input.themeId,
+      input.surfaceStyle,
+      input.radiusStyle,
+      input.buttonStyle,
+      input.heroLayout,
+      input.fontStyle,
       input.heroEyebrow,
       input.heroTitle,
       input.heroSubtitle,
@@ -122,6 +155,7 @@ async function updateStoreSettings(input) {
       input.productsSubtitle,
       input.footerLeft,
       input.footerRight,
+      JSON.stringify(input.sections ?? DEFAULT_SECTIONS),
     ],
   );
 
@@ -133,8 +167,30 @@ async function updateStoreSettings(input) {
   return mapRow(result.rows[0]);
 }
 
+async function applyThemePreset(themeId) {
+  const preset = getThemePreset(themeId);
+  if (!preset) {
+    const error = new Error('Tema bulunamadi');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const current = await getStoreSettings();
+  return updateStoreSettings({
+    ...current,
+    ...preset.settings,
+    brandName: current.brandName,
+    logoUrl: current.logoUrl,
+    footerLeft: current.footerLeft,
+    footerRight: current.footerRight,
+  });
+}
+
 module.exports = {
   getStoreSettings,
   updateStoreSettings,
+  applyThemePreset,
+  listThemePresets,
   DEFAULT_FEATURES,
+  DEFAULT_SECTIONS,
 };

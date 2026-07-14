@@ -257,3 +257,14 @@ export async function adminUpdateStoreSettings(input: import('./types').StoreSet
     body: JSON.stringify(input),
   });
 }
+
+export async function adminGetStoreThemes() {
+  return adminFetch<import('./types').StoreThemePreset[]>('/api/store-settings/themes');
+}
+
+export async function adminApplyStoreTheme(themeId: import('./types').StoreThemeId) {
+  return adminFetch<import('./types').StoreSettings>('/api/store-settings/apply-theme', {
+    method: 'POST',
+    body: JSON.stringify({ themeId }),
+  });
+}
