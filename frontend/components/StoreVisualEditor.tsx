@@ -26,6 +26,15 @@ const emptyFeatures = [
   { title: '', text: '' },
 ];
 
+const chrome =
+  'border-stone-200 bg-stone-50 text-stone-900 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-50';
+const panel =
+  'border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-950';
+const btnGhost =
+  'rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-900';
+const btnPrimary =
+  'rounded-lg bg-amber-900 px-4 py-2 text-sm font-semibold text-amber-50 transition hover:bg-amber-800 disabled:opacity-60';
+
 export default function StoreVisualEditor() {
   const router = useRouter();
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -132,6 +141,13 @@ export default function StoreVisualEditor() {
     if (selectedId === id) setSelectedId(next[0]?.id ?? null);
   }
 
+  function handleProductCreated(product: Product) {
+    setProducts((current) => [product, ...current]);
+    const productsSection = settings?.sections.find((section) => section.type === 'products');
+    if (productsSection) setSelectedId(productsSection.id);
+    setSaved(false);
+  }
+
   async function handleApplyTheme(themeId: StoreThemePreset['id']) {
     setApplyingTheme(themeId);
     setError(null);
@@ -186,41 +202,29 @@ export default function StoreVisualEditor() {
 
   if (loading || !settings) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-zinc-100 dark:bg-black">
-        <p className="text-zinc-500">{error ?? 'Gorsel editor yukleniyor...'}</p>
+      <div className={`flex min-h-full items-center justify-center ${chrome}`}>
+        <p className="text-sm text-stone-500">{error ?? 'Gorsel editor yukleniyor...'}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-zinc-100 dark:bg-black">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className={`flex h-[100dvh] flex-col ${chrome}`}>
+      <header className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 ${panel}`}>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Gorsel tasarim</p>
-          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            Sayfayi fare ile yerlestir
-          </h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-500">
+            Magaza tasarimi
+          </p>
+          <h1 className="text-lg font-semibold tracking-tight">Sayfayi gorerek yerlestir</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={getAdminPaths().dashboard}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-          >
+          <Link href={getAdminPaths().dashboard} className={btnGhost}>
             Urunler
           </Link>
-          <Link
-            href={getAdminPaths().site}
-            target="_blank"
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-          >
+          <Link href={getAdminPaths().site} target="_blank" className={btnGhost}>
             Canli site
           </Link>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving}
-            className="rounded-lg bg-amber-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
+          <button type="button" onClick={() => void handleSave()} disabled={saving} className={btnPrimary}>
             {saving ? 'Kaydediliyor...' : 'Kaydet'}
           </button>
           <button
@@ -229,7 +233,7 @@ export default function StoreVisualEditor() {
               clearAdminToken();
               router.push(getAdminPaths().login);
             }}
-            className="rounded-lg px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300"
+            className="rounded-lg px-3 py-2 text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
           >
             Cikis
           </button>
@@ -237,15 +241,45 @@ export default function StoreVisualEditor() {
       </header>
 
       {(error || saved) && (
-        <div className="border-b border-zinc-200 bg-white px-4 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className={`border-b px-4 py-2 text-sm ${panel}`}>
           {error ? <p className="text-red-600">{error}</p> : null}
           {saved ? <p className="text-emerald-700">Kaydedildi. Canli sitede gorunur.</p> : null}
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[220px_minmax(0,1fr)_300px]">
-        <aside className="overflow-y-auto border-r border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
+        <aside className={`overflow-y-auto border-r p-3 ${panel}`}>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+            Hizli islem
+          </p>
+          <div className="mb-5 grid gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedId('__product__')}
+              className={`rounded-xl border px-3 py-3 text-left transition ${
+                selectedId === '__product__'
+                  ? 'border-amber-800 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/40'
+                  : 'border-dashed border-stone-300 hover:border-amber-700 hover:bg-amber-50/70 dark:border-stone-700 dark:hover:bg-amber-950/20'
+              }`}
+            >
+              <span className="block text-sm font-semibold">+ Urun ekle</span>
+              <span className="text-xs text-stone-500">Vitrine yeni urun koy</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedId('__style__')}
+              className={`rounded-xl border px-3 py-3 text-left transition ${
+                selectedId === '__style__' || selectedId === '__header__'
+                  ? 'border-amber-800 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/40'
+                  : 'border-dashed border-stone-300 hover:border-amber-700 hover:bg-amber-50/70 dark:border-stone-700 dark:hover:bg-amber-950/20'
+              }`}
+            >
+              <span className="block text-sm font-semibold">Marka & yazi tipi</span>
+              <span className="text-xs text-stone-500">Font, renk, logo</span>
+            </button>
+          </div>
+
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
             Bolum ekle
           </p>
           <div className="grid gap-2">
@@ -254,17 +288,15 @@ export default function StoreVisualEditor() {
                 key={item.type}
                 type="button"
                 onClick={() => addSection(item.type)}
-                className="rounded-xl border border-dashed border-zinc-300 px-3 py-3 text-left hover:border-amber-500 hover:bg-amber-50 dark:border-zinc-700 dark:hover:bg-amber-950/30"
+                className="rounded-xl border border-dashed border-stone-300 px-3 py-3 text-left transition hover:border-amber-700 hover:bg-amber-50/70 dark:border-stone-700 dark:hover:bg-amber-950/20"
               >
-                <span className="block text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                  + {item.label}
-                </span>
-                <span className="text-xs text-zinc-500">{item.hint}</span>
+                <span className="block text-sm font-medium">+ {item.label}</span>
+                <span className="text-xs text-stone-500">{item.hint}</span>
               </button>
             ))}
           </div>
 
-          <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <p className="mb-2 mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
             Hazir temalar
           </p>
           <div className="space-y-2">
@@ -274,20 +306,20 @@ export default function StoreVisualEditor() {
                 type="button"
                 disabled={applyingTheme === theme.id}
                 onClick={() => void handleApplyTheme(theme.id)}
-                className={`w-full rounded-xl border p-2 text-left ${
+                className={`w-full rounded-xl border p-2.5 text-left transition ${
                   settings.themeId === theme.id
-                    ? 'border-zinc-900 dark:border-zinc-100'
-                    : 'border-zinc-200 dark:border-zinc-800'
+                    ? 'border-stone-900 ring-1 ring-stone-900 dark:border-stone-100 dark:ring-stone-100'
+                    : 'border-stone-200 hover:border-stone-400 dark:border-stone-800'
                 }`}
               >
                 <div
-                  className="mb-2 h-10 rounded-lg"
+                  className="mb-2 h-9 rounded-lg"
                   style={{
                     background: `linear-gradient(135deg, ${theme.previewAccent}, ${theme.previewAccent}99)`,
                   }}
                 />
                 <p className="text-sm font-medium">{theme.name}</p>
-                <p className="text-[11px] text-zinc-500">{theme.description}</p>
+                <p className="text-[11px] leading-snug text-stone-500">{theme.description}</p>
               </button>
             ))}
           </div>
@@ -304,13 +336,16 @@ export default function StoreVisualEditor() {
           onRemove={removeSection}
         />
 
-        <aside className="overflow-hidden border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <aside className={`overflow-hidden border-l ${panel}`}>
           <StoreEditorInspector
             settings={settings}
             selectedId={selectedId}
             serverLogoUrl={serverLogoUrl}
+            products={products}
+            categories={categories}
             onChange={updateSettings}
             onServerLogoUrl={setServerLogoUrl}
+            onProductCreated={handleProductCreated}
           />
         </aside>
       </div>

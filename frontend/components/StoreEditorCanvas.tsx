@@ -39,13 +39,17 @@ export default function StoreEditorCanvas({
 
   return (
     <div
-      className="min-h-full overflow-auto bg-zinc-200/70 p-4 dark:bg-zinc-900"
+      className="min-h-full overflow-auto bg-[linear-gradient(180deg,#e7e5e4_0%,#d6d3d1_100%)] p-4 dark:bg-[linear-gradient(180deg,#1c1917_0%,#0c0a09_100%)]"
       onClick={() => onSelect(null)}
     >
-      <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-zinc-300 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-950">
+      <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-stone-300 bg-white shadow-[0_24px_60px_rgba(28,25,23,0.18)] dark:border-stone-700 dark:bg-stone-950">
         <div className={`min-h-[70vh] ${getStoreShellClass(settings)}`}>
           <div
-            className={`border-b-2 ${selectedId === '__header__' ? 'border-amber-500' : 'border-transparent'}`}
+            className={`border-b-2 ${
+              selectedId === '__header__' || selectedId === '__style__'
+                ? 'border-amber-700'
+                : 'border-transparent'
+            }`}
             onClick={(e) => {
               e.stopPropagation();
               onSelect('__header__');
@@ -80,14 +84,14 @@ export default function StoreEditorCanvas({
                 }}
                 className={`group relative cursor-grab border-y-2 active:cursor-grabbing ${
                   selected
-                    ? 'border-amber-500 bg-amber-500/5'
-                    : 'border-transparent hover:border-amber-300/80'
+                    ? 'border-amber-700 bg-amber-700/[0.04]'
+                    : 'border-transparent hover:border-amber-600/50'
                 } ${section.enabled ? '' : 'opacity-45'}`}
               >
                 <div className="absolute right-3 top-3 z-20 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                   <button
                     type="button"
-                    className="rounded-md bg-white/95 px-2 py-1 text-xs shadow dark:bg-zinc-900"
+                    className="rounded-md bg-white/95 px-2 py-1 text-xs font-medium text-stone-700 shadow dark:bg-stone-900 dark:text-stone-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       onToggle(section.id);
@@ -98,7 +102,7 @@ export default function StoreEditorCanvas({
                   {section.type !== 'hero' && section.type !== 'products' ? (
                     <button
                       type="button"
-                      className="rounded-md bg-white/95 px-2 py-1 text-xs text-red-600 shadow dark:bg-zinc-900"
+                      className="rounded-md bg-white/95 px-2 py-1 text-xs font-medium text-red-600 shadow dark:bg-stone-900"
                       onClick={(e) => {
                         e.stopPropagation();
                         onRemove(section.id);
@@ -109,7 +113,7 @@ export default function StoreEditorCanvas({
                   ) : null}
                 </div>
 
-                <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-md bg-zinc-900/80 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-white">
+                <div className="pointer-events-none absolute left-3 top-3 z-20 rounded-md bg-stone-900/85 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
                   {sectionLabel(section.type)} · surukle
                 </div>
 
@@ -131,7 +135,7 @@ export default function StoreEditorCanvas({
           })}
 
           <div
-            className={`border-t-2 ${selectedId === '__footer__' ? 'border-amber-500' : 'border-transparent'}`}
+            className={`border-t-2 ${selectedId === '__footer__' ? 'border-amber-700' : 'border-transparent'}`}
             onClick={(e) => {
               e.stopPropagation();
               onSelect('__footer__');
@@ -147,8 +151,8 @@ export default function StoreEditorCanvas({
           </div>
         </div>
       </div>
-      <p className="mx-auto mt-3 max-w-5xl text-center text-xs text-zinc-600 dark:text-zinc-400">
-        Bolume tikla → sagdan duzenle · Surukle-birak → yerlestir · Kaydet ile yayinla
+      <p className="mx-auto mt-3 max-w-5xl text-center text-xs text-stone-600 dark:text-stone-400">
+        Tikla → duzenle · Surukle → yerlestir · Soldan urun ekle · Kaydet ile yayinla
       </p>
     </div>
   );

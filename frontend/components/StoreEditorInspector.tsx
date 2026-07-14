@@ -1,15 +1,20 @@
 'use client';
 
-import type { StoreFeatureCard, StoreSection, StoreSettings } from '@/lib/types';
+import type { Category, Product, StoreFeatureCard, StoreSection, StoreSettings } from '@/lib/types';
 import ProductImageField from '@/components/ProductImageField';
+import StoreEditorQuickProduct from '@/components/StoreEditorQuickProduct';
 import { sectionLabel } from '@/lib/store-sections';
+import { FONT_STYLE_LABELS } from '@/lib/store-theme';
 
 type Props = {
   settings: StoreSettings;
   selectedId: string | null;
   serverLogoUrl: string | null;
+  products: Product[];
+  categories: Category[];
   onChange: (next: StoreSettings) => void;
   onServerLogoUrl: (value: string | null) => void;
+  onProductCreated: (product: Product) => void;
 };
 
 function Field({
@@ -21,21 +26,84 @@ function Field({
 }) {
   return (
     <label className="block text-sm">
-      <span className="mb-1 block text-zinc-500">{label}</span>
+      <span className="mb-1 block text-stone-500">{label}</span>
       {children}
     </label>
   );
 }
 
 const inputClass =
-  'w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900';
+  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-amber-700/30 focus:ring-2 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-50';
+
+function AppearanceFields({
+  settings,
+  patch,
+}: {
+  settings: StoreSettings;
+  patch: <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <Field label="Yazi tipi">
+        <select
+          className={inputClass}
+          value={settings.fontStyle}
+          onChange={(e) => patch('fontStyle', e.target.value as StoreSettings['fontStyle'])}
+        >
+          {(Object.keys(FONT_STYLE_LABELS) as StoreSettings['fontStyle'][]).map((option) => (
+            <option key={option} value={option}>
+              {FONT_STYLE_LABELS[option]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {(
+        [
+          ['surfaceStyle', 'Zemin', [
+            ['warm', 'Sicak'],
+            ['cool', 'Soguk'],
+            ['soft', 'Yumusak'],
+            ['contrast', 'Kontrast'],
+          ]],
+          ['radiusStyle', 'Kose', [
+            ['soft', 'Cok yuvarlak'],
+            ['rounded', 'Yuvarlak'],
+            ['sharp', 'Keskin'],
+          ]],
+          ['buttonStyle', 'Buton', [
+            ['pill', 'Kapsul'],
+            ['rounded', 'Yuvarlak'],
+            ['square', 'Kose'],
+          ]],
+        ] as const
+      ).map(([key, label, options]) => (
+        <Field key={key} label={label}>
+          <select
+            className={inputClass}
+            value={settings[key]}
+            onChange={(e) => patch(key, e.target.value as never)}
+          >
+            {options.map(([value, optionLabel]) => (
+              <option key={value} value={value}>
+                {optionLabel}
+              </option>
+            ))}
+          </select>
+        </Field>
+      ))}
+    </div>
+  );
+}
 
 export default function StoreEditorInspector({
   settings,
   selectedId,
   serverLogoUrl,
+  products,
+  categories,
   onChange,
   onServerLogoUrl,
+  onProductCreated,
 }: Props) {
   function patch<K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) {
     onChange({ ...settings, [key]: value });
@@ -59,18 +127,35 @@ export default function StoreEditorInspector({
 
   if (!selectedId) {
     return (
-      <div className="space-y-3 p-4 text-sm text-zinc-600 dark:text-zinc-400">
-        <p className="font-medium text-zinc-900 dark:text-zinc-50">Ne yapmak istiyorsun?</p>
-        <p>Ortadaki sayfada bir bolume tikla. Ya da soldan yeni bolum ekle.</p>
-        <p>Degisiklikler aninda onizlemede gorunur. Bitince ustteki Kaydet&apos;e bas.</p>
+      <div className="space-y-4 overflow-y-auto p-4 text-sm text-stone-600 dark:text-stone-400">
+        <div>
+          <p className="text-base font-semibold text-stone-900 dark:text-stone-50">
+            Bolum sec veya urun ekle
+          </p>
+          <p className="mt-1 leading-relaxed">
+            Ortadaki onizlemede bir alana tikla. Urun eklemek icin soldan &quot;Urun ekle&quot;ye bas
+            veya Urunler bolumunu sec.
+          </p>
+        </div>
+        <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-900/50">
+          <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
+        </div>
       </div>
     );
   }
 
-  if (selectedId === '__header__') {
+  if (selectedId === '__header__' || selectedId === '__style__') {
     return (
-      <div className="space-y-4 overflow-y-auto p-4">
-        <h3 className="font-semibold">Ust bar / Marka</h3>
+      <div className="space-y-5 overflow-y-auto p-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+            Marka & stil
+          </p>
+          <h3 className="mt-1 text-base font-semibold text-stone-900 dark:text-stone-50">
+            Genel gorunum
+          </h3>
+        </div>
+
         <Field label="Marka adi">
           <input
             className={inputClass}
@@ -82,7 +167,7 @@ export default function StoreEditorInspector({
           <div className="flex gap-2">
             <input
               type="color"
-              className="h-10 w-12 rounded border"
+              className="h-10 w-12 rounded-lg border border-stone-300 dark:border-stone-700"
               value={settings.accentColor}
               onChange={(e) => patch('accentColor', e.target.value)}
             />
@@ -101,6 +186,11 @@ export default function StoreEditorInspector({
             if (!logoUrl) onServerLogoUrl(null);
           }}
         />
+
+        <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
+          <p className="mb-3 text-sm font-medium text-stone-900 dark:text-stone-50">Tipografi & stil</p>
+          <AppearanceFields settings={settings} patch={patch} />
+        </div>
       </div>
     );
   }
@@ -108,7 +198,7 @@ export default function StoreEditorInspector({
   if (selectedId === '__footer__') {
     return (
       <div className="space-y-4 overflow-y-auto p-4">
-        <h3 className="font-semibold">Footer</h3>
+        <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">Alt bilgi</h3>
         <Field label="Sol metin">
           <textarea
             className={`${inputClass} min-h-20`}
@@ -127,16 +217,43 @@ export default function StoreEditorInspector({
     );
   }
 
+  if (selectedId === '__product__') {
+    return (
+      <div className="space-y-4 overflow-y-auto p-4">
+        <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
+        <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Vitrindeki urunler ({products.length})
+          </p>
+          <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
+            {products.slice(0, 12).map((product) => (
+              <li
+                key={product.id}
+                className="truncate rounded-lg bg-stone-50 px-2 py-1.5 text-stone-700 dark:bg-stone-900 dark:text-stone-300"
+              >
+                {product.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
   const section = settings.sections.find((item) => item.id === selectedId);
   if (!section) {
-    return <div className="p-4 text-sm text-zinc-500">Bolum bulunamadi.</div>;
+    return <div className="p-4 text-sm text-stone-500">Bolum bulunamadi.</div>;
   }
 
   return (
     <div className="space-y-4 overflow-y-auto p-4">
       <div>
-        <p className="text-xs uppercase tracking-wide text-zinc-500">{sectionLabel(section.type)}</p>
-        <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">Bolum ayarlari</h3>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+          {sectionLabel(section.type)}
+        </p>
+        <h3 className="mt-1 text-base font-semibold text-stone-900 dark:text-stone-50">
+          Bolum ayarlari
+        </h3>
       </div>
 
       {section.type === 'hero' ? (
@@ -184,9 +301,12 @@ export default function StoreEditorInspector({
 
       {section.type === 'features' ? (
         <div className="space-y-3">
-          <p className="text-xs text-zinc-500">Kartlari burada duzenle (max 4).</p>
+          <p className="text-xs text-stone-500">Kartlari burada duzenle (max 4).</p>
           {settings.featureCards.slice(0, 4).map((card, index) => (
-            <div key={index} className="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <div
+              key={index}
+              className="space-y-2 rounded-xl border border-stone-200 p-3 dark:border-stone-800"
+            >
               <input
                 className={inputClass}
                 placeholder="Baslik"
@@ -205,7 +325,7 @@ export default function StoreEditorInspector({
       ) : null}
 
       {section.type === 'products' ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Field label="Ust baslik">
             <input
               className={inputClass}
@@ -227,6 +347,26 @@ export default function StoreEditorInspector({
               onChange={(e) => patch('productsSubtitle', e.target.value)}
             />
           </Field>
+
+          <div className="rounded-xl border border-dashed border-amber-700/40 bg-amber-50/60 p-3 dark:border-amber-600/40 dark:bg-amber-950/20">
+            <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Su an vitrinde ({products.length})
+            </p>
+            <ul className="max-h-40 space-y-1 overflow-y-auto text-sm">
+              {products.slice(0, 8).map((product) => (
+                <li
+                  key={product.id}
+                  className="truncate rounded-lg bg-stone-50 px-2 py-1.5 text-stone-700 dark:bg-stone-900 dark:text-stone-300"
+                >
+                  {product.name}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       ) : null}
 
@@ -310,32 +450,6 @@ export default function StoreEditorInspector({
           ) : null}
         </div>
       ) : null}
-
-      <div className="space-y-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-        <h4 className="text-sm font-medium">Genel gorunum</h4>
-        {(
-          [
-            ['surfaceStyle', 'Zemin', ['warm', 'cool', 'soft', 'contrast']],
-            ['radiusStyle', 'Kose', ['soft', 'rounded', 'sharp']],
-            ['buttonStyle', 'Buton', ['pill', 'rounded', 'square']],
-            ['fontStyle', 'Yazi', ['classic', 'modern', 'elegant']],
-          ] as const
-        ).map(([key, label, options]) => (
-          <Field key={key} label={label}>
-            <select
-              className={inputClass}
-              value={settings[key]}
-              onChange={(e) => patch(key, e.target.value as never)}
-            >
-              {options.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </Field>
-        ))}
-      </div>
     </div>
   );
 }

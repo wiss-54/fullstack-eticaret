@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Geist, Geist_Mono, Libre_Franklin, Source_Serif_4 } from "next/font/google";
 import { CartProvider } from "@/components/CartProvider";
 import DeployWatcher from "@/components/DeployWatcher";
 import "./globals.css";
@@ -12,6 +12,24 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const storeClassic = Libre_Franklin({
+  variable: "--font-store-classic",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const storeModern = DM_Sans({
+  variable: "--font-store-modern",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const storeElegant = Source_Serif_4({
+  variable: "--font-store-elegant",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,9 +45,9 @@ export default function RootLayout({
   return (
     <html
       lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${storeClassic.variable} ${storeModern.variable} ${storeElegant.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex min-h-full flex-col font-sans">
         <CartProvider>
           {children}
         </CartProvider>
