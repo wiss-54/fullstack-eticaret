@@ -25,6 +25,41 @@ const logoUrlSchema = z.preprocess(
     .optional(),
 );
 
+const baseSection = {
+  id: z.string().trim().min(1).max(80),
+  enabled: z.boolean(),
+};
+
+const sectionSchema = z.discriminatedUnion('type', [
+  z.object({ ...baseSection, type: z.literal('hero') }),
+  z.object({ ...baseSection, type: z.literal('features') }),
+  z.object({ ...baseSection, type: z.literal('products') }),
+  z.object({
+    ...baseSection,
+    type: z.literal('rich_text'),
+    title: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1).max(2000),
+    align: z.enum(['left', 'center']).optional(),
+  }),
+  z.object({
+    ...baseSection,
+    type: z.literal('banner'),
+    title: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1).max(1000),
+    ctaLabel: z.string().trim().max(100).optional(),
+    ctaHref: z.string().trim().max(300).optional(),
+    tone: z.enum(['accent', 'muted', 'dark']).optional(),
+  }),
+  z.object({
+    ...baseSection,
+    type: z.literal('cta'),
+    title: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1).max(1000),
+    ctaLabel: z.string().trim().min(1).max(100),
+    ctaHref: z.string().trim().min(1).max(300),
+  }),
+]);
+
 const storeSettingsUpdateSchema = z.object({
   brandName: z.string().trim().min(1).max(100),
   logoUrl: logoUrlSchema,
@@ -32,6 +67,12 @@ const storeSettingsUpdateSchema = z.object({
     .string()
     .trim()
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Renk #RRGGBB formatinda olmali'),
+  themeId: z.enum(['classic-amber', 'modern-slate', 'soft-blush', 'bold-ink']),
+  surfaceStyle: z.enum(['warm', 'cool', 'soft', 'contrast']),
+  radiusStyle: z.enum(['soft', 'rounded', 'sharp']),
+  buttonStyle: z.enum(['pill', 'rounded', 'square']),
+  heroLayout: z.enum(['split', 'centered', 'minimal']),
+  fontStyle: z.enum(['classic', 'modern', 'elegant']),
   heroEyebrow: z.string().trim().min(1).max(120),
   heroTitle: z.string().trim().min(1).max(200),
   heroSubtitle: z.string().trim().min(1).max(1000),
@@ -45,8 +86,14 @@ const storeSettingsUpdateSchema = z.object({
   productsSubtitle: z.string().trim().min(1).max(1000),
   footerLeft: z.string().trim().min(1).max(500),
   footerRight: z.string().trim().min(1).max(500),
+  sections: z.array(sectionSchema).min(1).max(20),
+});
+
+const applyThemeSchema = z.object({
+  themeId: z.enum(['classic-amber', 'modern-slate', 'soft-blush', 'bold-ink']),
 });
 
 module.exports = {
   storeSettingsUpdateSchema,
+  applyThemeSchema,
 };

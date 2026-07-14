@@ -152,10 +152,50 @@ export type StoreFeatureCard = {
   text: string;
 };
 
+export type StoreSection =
+  | { id: string; type: 'hero'; enabled: boolean }
+  | { id: string; type: 'features'; enabled: boolean }
+  | { id: string; type: 'products'; enabled: boolean }
+  | {
+      id: string;
+      type: 'rich_text';
+      enabled: boolean;
+      title: string;
+      body: string;
+      align?: 'left' | 'center';
+    }
+  | {
+      id: string;
+      type: 'banner';
+      enabled: boolean;
+      title: string;
+      body: string;
+      ctaLabel?: string;
+      ctaHref?: string;
+      tone?: 'accent' | 'muted' | 'dark';
+    }
+  | {
+      id: string;
+      type: 'cta';
+      enabled: boolean;
+      title: string;
+      body: string;
+      ctaLabel: string;
+      ctaHref: string;
+    };
+
+export type StoreThemeId = 'classic-amber' | 'modern-slate' | 'soft-blush' | 'bold-ink';
+
 export type StoreSettings = {
   brandName: string;
   logoUrl: string | null;
   accentColor: string;
+  themeId: StoreThemeId;
+  surfaceStyle: 'warm' | 'cool' | 'soft' | 'contrast';
+  radiusStyle: 'soft' | 'rounded' | 'sharp';
+  buttonStyle: 'pill' | 'rounded' | 'square';
+  heroLayout: 'split' | 'centered' | 'minimal';
+  fontStyle: 'classic' | 'modern' | 'elegant';
   heroEyebrow: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -169,7 +209,15 @@ export type StoreSettings = {
   productsSubtitle: string;
   footerLeft: string;
   footerRight: string;
+  sections: StoreSection[];
   updatedAt?: string;
+};
+
+export type StoreThemePreset = {
+  id: StoreThemeId;
+  name: string;
+  description: string;
+  previewAccent: string;
 };
 
 export type ServiceCheck = {
