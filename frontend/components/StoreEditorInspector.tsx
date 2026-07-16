@@ -232,13 +232,6 @@ function HeroPanel({
       ? settings.heroCtaButtonsOrder
       : (['primary', 'secondary'] as const);
 
-  const heroFeatureSide =
-    settings.heroFeatureSide === 'left' || settings.heroFeatureSide === 'right'
-      ? settings.heroFeatureSide
-      : 'right';
-
-  const split = settings.heroLayout === 'split';
-
   function moveOrder<T>(arr: readonly T[], fromIndex: number, toIndex: number): T[] {
     const next = [...arr];
     const [moved] = next.splice(fromIndex, 1);
@@ -248,6 +241,11 @@ function HeroPanel({
 
   return (
     <div className="space-y-3">
+      <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-100">
+        Ozellik kartlari artik Hero icinde degil. Onlari ayri <b>Ozellikler</b> bolumuyle ekle —
+        cakisma olmaz.
+      </p>
+
       <Accordion title="1. Icerik (yazi & buton)" open={openContent} onToggle={() => setOpenContent((v) => !v)}>
         <Field label="Kucuk baslik">
           <input
@@ -298,57 +296,28 @@ function HeroPanel({
             onChange={(e) => patch('heroSecondaryCtaHref', e.target.value)}
           />
         </Field>
+        <p className="text-[11px] text-stone-500">
+          Butonlar sadece canli sitede gider. Editorde tiklanmaz.
+        </p>
       </Accordion>
 
-      <Accordion title="2. Duzen (yan yana / orta)" open={openLayout} onToggle={() => setOpenLayout((v) => !v)}>
+      <Accordion title="2. Duzen" open={openLayout} onToggle={() => setOpenLayout((v) => !v)}>
         <Field label="Hero duzeni">
           <select
             className={inputClass}
             value={settings.heroLayout}
             onChange={(e) => patch('heroLayout', e.target.value as StoreSettings['heroLayout'])}
           >
-            <option value="split">Yan yana (metin + kartlar)</option>
-            <option value="centered">Ortali</option>
+            <option value="centered">Ortali (onerilen)</option>
+            <option value="split">Sol hizali genis</option>
             <option value="minimal">Minimal</option>
           </select>
         </Field>
-
-        <div>
-          <p className="mb-2 text-xs text-stone-500">
-            Ozellik kartlari (sadece yan yana duzende)
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={!split}
-              onClick={() => patch('heroFeatureSide', 'left')}
-              className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                heroFeatureSide === 'left'
-                  ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30'
-                  : 'border-stone-300 dark:border-stone-700'
-              } ${!split ? 'cursor-not-allowed opacity-40' : ''}`}
-            >
-              Kartlar solda
-            </button>
-            <button
-              type="button"
-              disabled={!split}
-              onClick={() => patch('heroFeatureSide', 'right')}
-              className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                heroFeatureSide === 'right'
-                  ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30'
-                  : 'border-stone-300 dark:border-stone-700'
-              } ${!split ? 'cursor-not-allowed opacity-40' : ''}`}
-            >
-              Kartlar sagda
-            </button>
-          </div>
-        </div>
       </Accordion>
 
-      <Accordion title="3. Sira (kutucuklari yer degistir)" open={openOrder} onToggle={() => setOpenOrder((v) => !v)}>
-        <p className="text-xs text-stone-500">↑ ↓ ile sirayi degistir. Canli onizleme aninda guncellenir.</p>
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Kutucuk sirasi</p>
+      <Accordion title="3. Sira (metin / buton)" open={openOrder} onToggle={() => setOpenOrder((v) => !v)}>
+        <p className="text-xs text-stone-500">↑ ↓ ile sirayi degistir.</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Metin sirasi</p>
         <ReorderList
           items={[...heroTextOrder]}
           labels={{
