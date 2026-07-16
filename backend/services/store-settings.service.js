@@ -30,6 +30,10 @@ function mapRow(row) {
     productsSubtitle: row.productsSubtitle,
     footerLeft: row.footerLeft,
     footerRight: row.footerRight,
+    textStyles:
+      row.textStyles && typeof row.textStyles === 'object' && !Array.isArray(row.textStyles)
+        ? row.textStyles
+        : {},
     sections: Array.isArray(row.sections) && row.sections.length > 0 ? row.sections : DEFAULT_SECTIONS,
     updatedAt: row.updatedAt,
   };
@@ -59,6 +63,7 @@ const SELECT_SQL = `
     products_subtitle AS "productsSubtitle",
     footer_left AS "footerLeft",
     footer_right AS "footerRight",
+    text_styles AS "textStyles",
     sections,
     updated_at AS "updatedAt"
   FROM store_settings
@@ -103,7 +108,8 @@ async function updateStoreSettings(input) {
         products_subtitle = $20,
         footer_left = $21,
         footer_right = $22,
-        sections = $23::jsonb,
+        text_styles = $23::jsonb,
+        sections = $24::jsonb,
         updated_at = NOW()
       WHERE id = 1
       RETURNING
@@ -129,6 +135,7 @@ async function updateStoreSettings(input) {
         products_subtitle AS "productsSubtitle",
         footer_left AS "footerLeft",
         footer_right AS "footerRight",
+        text_styles AS "textStyles",
         sections,
         updated_at AS "updatedAt"
     `,
@@ -155,6 +162,7 @@ async function updateStoreSettings(input) {
       input.productsSubtitle,
       input.footerLeft,
       input.footerRight,
+      JSON.stringify(input.textStyles ?? {}),
       JSON.stringify(input.sections ?? DEFAULT_SECTIONS),
     ],
   );

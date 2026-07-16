@@ -1,12 +1,60 @@
 import Link from 'next/link';
+import StoreEditableText from '@/components/StoreEditableText';
+import type { StoreEditorMode } from '@/lib/editor-selection';
 import type { StoreSettings } from '@/lib/types';
+import { getTextStyleClasses, getTextStyleInline } from '@/lib/store-text-styles';
 import { getButtonRadiusClass, getCardRadiusClass } from '@/lib/store-theme';
 
 type StoreHeroProps = {
   settings: StoreSettings;
+  editor?: StoreEditorMode;
 };
 
-export default function StoreHero({ settings }: StoreHeroProps) {
+function HeroText({
+  styleKey,
+  value,
+  settings,
+  editor,
+  className,
+  as = 'p',
+}: {
+  styleKey: string;
+  value: string;
+  settings: StoreSettings;
+  editor?: StoreEditorMode;
+  className?: string;
+  as?: 'p' | 'h2' | 'h3' | 'span';
+}) {
+  const accent = settings.accentColor || '#92400e';
+
+  if (editor) {
+    return (
+      <StoreEditableText
+        styleKey={styleKey}
+        value={value}
+        textStyles={settings.textStyles}
+        accentColor={accent}
+        selected={editor.selectedStyleKey === styleKey}
+        multiline={editor.isMultiline(styleKey)}
+        onSelect={editor.onSelectStyleKey}
+        onChange={(next) => editor.onTextChange(styleKey, next)}
+        className={className}
+        as={as}
+      />
+    );
+  }
+
+  const styleClasses = getTextStyleClasses(settings.textStyles, styleKey);
+  const inlineStyle = getTextStyleInline(settings.textStyles, styleKey, accent);
+  const Tag = as;
+  return (
+    <Tag className={`${styleClasses} ${className}`} style={inlineStyle}>
+      {value}
+    </Tag>
+  );
+}
+
+export default function StoreHero({ settings, editor }: StoreHeroProps) {
   const accent = settings.accentColor || '#92400e';
   const btn = getButtonRadiusClass(settings);
   const card = getCardRadiusClass(settings);
@@ -40,26 +88,34 @@ export default function StoreHero({ settings }: StoreHeroProps) {
         } ${showFeatureRail ? 'lg:grid-cols-[1.2fr_0.8fr] lg:items-center' : ''}`}
       >
         <div className={isCentered ? 'mx-auto max-w-3xl text-center' : ''}>
-          <p
+          <HeroText
+            styleKey="hero.eyebrow"
+            value={settings.heroEyebrow}
+            settings={settings}
+            editor={editor}
             className="text-sm font-semibold uppercase tracking-[0.2em]"
-            style={{ color: accent }}
-          >
-            {settings.heroEyebrow}
-          </p>
-          <h2
+            as="p"
+          />
+          <HeroText
+            styleKey="hero.title"
+            value={settings.heroTitle}
+            settings={settings}
+            editor={editor}
             className={`mt-3 font-bold tracking-tight text-zinc-900 dark:text-zinc-50 ${
               settings.heroLayout === 'minimal' ? 'text-3xl lg:text-4xl' : 'text-4xl lg:text-5xl'
             }`}
-          >
-            {settings.heroTitle}
-          </h2>
-          <p
+            as="h2"
+          />
+          <HeroText
+            styleKey="hero.subtitle"
+            value={settings.heroSubtitle}
+            settings={settings}
+            editor={editor}
             className={`mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300 ${
               isCentered ? 'mx-auto max-w-2xl' : 'max-w-xl'
             }`}
-          >
-            {settings.heroSubtitle}
-          </p>
+            as="p"
+          />
           <div
             className={`mt-8 flex flex-wrap gap-3 ${isCentered ? 'justify-center' : ''}`}
           >
@@ -82,13 +138,27 @@ export default function StoreHero({ settings }: StoreHeroProps) {
 
         {showFeatureRail ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            {features.slice(0, 4).map((item) => (
+            {features.slice(0, 4).map((item, index) => (
               <div
                 key={`${item.title}-${item.text}`}
                 className={`${card} border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70`}
               >
-                <p className="font-semibold text-zinc-900 dark:text-zinc-50">{item.title}</p>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{item.text}</p>
+                <HeroText
+                  styleKey={`feature.${index}.title`}
+                  value={item.title}
+                  settings={settings}
+                  editor={editor}
+                  className="font-semibold text-zinc-900 dark:text-zinc-50"
+                  as="p"
+                />
+                <HeroText
+                  styleKey={`feature.${index}.text`}
+                  value={item.text}
+                  settings={settings}
+                  editor={editor}
+                  className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+                  as="p"
+                />
               </div>
             ))}
           </div>

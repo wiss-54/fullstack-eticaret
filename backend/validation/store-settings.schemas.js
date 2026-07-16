@@ -1,5 +1,23 @@
 const { z } = require('zod');
 
+const textStyleSchema = z
+  .object({
+    size: z.enum(['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl']).optional(),
+    weight: z.enum(['normal', 'medium', 'semibold', 'bold']).optional(),
+    align: z.enum(['left', 'center', 'right']).optional(),
+    color: z.enum(['default', 'accent', 'muted', 'light', 'custom']).optional(),
+    customColor: z
+      .string()
+      .trim()
+      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .optional(),
+    lineHeight: z.enum(['tight', 'normal', 'relaxed', 'loose']).optional(),
+    letterSpacing: z.enum(['tight', 'normal', 'wide']).optional(),
+    uppercase: z.boolean().optional(),
+    italic: z.boolean().optional(),
+  })
+  .strict();
+
 const featureCardSchema = z.object({
   title: z.string().trim().min(1).max(80),
   text: z.string().trim().min(1).max(200),
@@ -86,6 +104,7 @@ const storeSettingsUpdateSchema = z.object({
   productsSubtitle: z.string().trim().min(1).max(1000),
   footerLeft: z.string().trim().min(1).max(500),
   footerRight: z.string().trim().min(1).max(500),
+  textStyles: z.record(z.string().max(80), textStyleSchema).optional(),
   sections: z.array(sectionSchema).min(1).max(20),
 });
 
