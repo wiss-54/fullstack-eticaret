@@ -96,7 +96,7 @@ export default function StoreEditorCanvas({
 
   return (
     <div
-      className="min-h-full overflow-auto bg-[linear-gradient(180deg,#e7e5e4_0%,#d6d3d1_100%)] p-4 dark:bg-[linear-gradient(180deg,#1c1917_0%,#0c0a09_100%)]"
+      className="min-h-0 overflow-auto bg-[linear-gradient(180deg,#e7e5e4_0%,#d6d3d1_100%)] p-4 dark:bg-[linear-gradient(180deg,#1c1917_0%,#0c0a09_100%)]"
       onClick={() => onSelect({ type: 'none' })}
     >
       <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-stone-300 bg-white shadow-[0_24px_60px_rgba(28,25,23,0.18)] dark:border-stone-700 dark:bg-stone-950">
@@ -188,7 +188,7 @@ export default function StoreEditorCanvas({
                     >
                       {section.enabled ? 'Gizle' : 'Goster'}
                     </button>
-                    {section.type !== 'hero' && section.type !== 'products' ? (
+                    {settings.sections.length > 1 ? (
                       <button
                         type="button"
                         className="rounded-md bg-white/95 px-2 py-1 text-xs font-medium text-red-600 shadow dark:bg-stone-900"
@@ -206,7 +206,7 @@ export default function StoreEditorCanvas({
                     {sectionLabel(section.type)}
                   </div>
 
-                  <div className={`pl-8 ${section.type === 'hero' ? '' : 'pointer-events-auto'}`}>
+                  <div className="pointer-events-auto pl-8">
                     {section.type === 'hero' ? (
                       <StoreHero settings={settings} editor={editorProps} />
                     ) : (
