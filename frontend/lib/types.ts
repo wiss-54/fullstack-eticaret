@@ -147,6 +147,20 @@ export type Order = {
   items?: OrderItem[];
 };
 
+export type StoreTextStyle = {
+  size?: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+  weight?: 'normal' | 'medium' | 'semibold' | 'bold';
+  align?: 'left' | 'center' | 'right';
+  color?: 'default' | 'accent' | 'muted' | 'light' | 'custom';
+  customColor?: string;
+  lineHeight?: 'tight' | 'normal' | 'relaxed' | 'loose';
+  letterSpacing?: 'tight' | 'normal' | 'wide';
+  uppercase?: boolean;
+  italic?: boolean;
+};
+
+export type StoreTextStyles = Record<string, StoreTextStyle>;
+
 export type StoreFeatureCard = {
   title: string;
   text: string;
@@ -209,6 +223,7 @@ export type StoreSettings = {
   productsSubtitle: string;
   footerLeft: string;
   footerRight: string;
+  textStyles?: StoreTextStyles;
   sections: StoreSection[];
   updatedAt?: string;
 };

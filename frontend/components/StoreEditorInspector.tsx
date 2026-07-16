@@ -1,14 +1,21 @@
 'use client';
 
 import type { Category, Product, StoreFeatureCard, StoreSection, StoreSettings } from '@/lib/types';
+import type { EditorSelection } from '@/lib/editor-selection';
+import {
+  getTextValue,
+  isMultilineTextKey,
+  setTextValue,
+} from '@/lib/editor-selection';
 import ProductImageField from '@/components/ProductImageField';
 import StoreEditorQuickProduct from '@/components/StoreEditorQuickProduct';
+import StoreTextStyleFields from '@/components/StoreTextStyleFields';
 import { sectionLabel } from '@/lib/store-sections';
 import { FONT_STYLE_LABELS } from '@/lib/store-theme';
 
 type Props = {
   settings: StoreSettings;
-  selectedId: string | null;
+  selection: EditorSelection | null;
   serverLogoUrl: string | null;
   products: Product[];
   categories: Category[];
@@ -95,9 +102,60 @@ function AppearanceFields({
   );
 }
 
+function TextEditorPanel({
+  settings,
+  selection,
+  onChange,
+}: {
+  settings: StoreSettings;
+  selection: Extract<EditorSelection, { type: 'text' }>;
+  onChange: (next: StoreSettings) => void;
+}) {
+  const value = getTextValue(settings, selection.styleKey);
+  const multiline = isMultilineTextKey(selection.styleKey);
+
+  return (
+    <div className="space-y-4 overflow-y-auto p-4">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+          Secili metin
+        </p>
+        <h3 className="mt-1 text-base font-semibold text-stone-900 dark:text-stone-50">
+          {selection.label}
+        </h3>
+        <p className="mt-1 text-xs text-stone-500">
+          Metni ve yazi ozelliklerini buradan degistir.
+        </p>
+      </div>
+
+      <Field label="Icerik">
+        {multiline ? (
+          <textarea
+            className={`${inputClass} min-h-24`}
+            value={value}
+            onChange={(e) => onChange(setTextValue(settings, selection.styleKey, e.target.value))}
+          />
+        ) : (
+          <input
+            className={inputClass}
+            value={value}
+            onChange={(e) => onChange(setTextValue(settings, selection.styleKey, e.target.value))}
+          />
+        )}
+      </Field>
+
+      <StoreTextStyleFields
+        settings={settings}
+        styleKey={selection.styleKey}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
+
 export default function StoreEditorInspector({
   settings,
-  selectedId,
+  selection,
   serverLogoUrl,
   products,
   categories,
@@ -125,16 +183,16 @@ export default function StoreEditorInspector({
     patch('featureCards', featureCards);
   }
 
-  if (!selectedId) {
+  if (!selection || selection.type === 'none') {
     return (
       <div className="space-y-4 overflow-y-auto p-4 text-sm text-stone-600 dark:text-stone-400">
         <div>
           <p className="text-base font-semibold text-stone-900 dark:text-stone-50">
-            Bolum sec veya urun ekle
+            Metne veya bolme sec
           </p>
           <p className="mt-1 leading-relaxed">
-            Ortadaki onizlemede bir alana tikla. Urun eklemek icin soldan &quot;Urun ekle&quot;ye bas
-            veya Urunler bolumunu sec.
+            Onizlemede bir metne tikla → icerik + yazi ozellikleri acilir. Bolum arasindaki
+            &quot;+ Bolum ekle&quot; ile yeni alan ekleyebilirsin.
           </p>
         </div>
         <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-900/50">
@@ -144,7 +202,13 @@ export default function StoreEditorInspector({
     );
   }
 
-  if (selectedId === '__header__' || selectedId === '__style__') {
+  if (selection.type === 'text') {
+    return (
+      <TextEditorPanel settings={settings} selection={selection} onChange={onChange} />
+    );
+  }
+
+  if (selection.type === 'header' || selection.type === 'style') {
     return (
       <div className="space-y-5 overflow-y-auto p-4">
         <div>
@@ -195,10 +259,13 @@ export default function StoreEditorInspector({
     );
   }
 
-  if (selectedId === '__footer__') {
+  if (selection.type === 'footer') {
     return (
       <div className="space-y-4 overflow-y-auto p-4">
         <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">Alt bilgi</h3>
+        <p className="text-xs text-stone-500">
+          Alt bilgi metinlerine tiklayarak da duzenleyebilirsin.
+        </p>
         <Field label="Sol metin">
           <textarea
             className={`${inputClass} min-h-20`}
@@ -206,6 +273,7 @@ export default function StoreEditorInspector({
             onChange={(e) => patch('footerLeft', e.target.value)}
           />
         </Field>
+        <StoreTextStyleFields settings={settings} styleKey="footer.left" onChange={onChange} />
         <Field label="Sag metin">
           <textarea
             className={`${inputClass} min-h-20`}
@@ -213,11 +281,12 @@ export default function StoreEditorInspector({
             onChange={(e) => patch('footerRight', e.target.value)}
           />
         </Field>
+        <StoreTextStyleFields settings={settings} styleKey="footer.right" onChange={onChange} />
       </div>
     );
   }
 
-  if (selectedId === '__product__') {
+  if (selection.type === 'product') {
     return (
       <div className="space-y-4 overflow-y-auto p-4">
         <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
@@ -240,7 +309,7 @@ export default function StoreEditorInspector({
     );
   }
 
-  const section = settings.sections.find((item) => item.id === selectedId);
+  const section = settings.sections.find((item) => item.id === selection.sectionId);
   if (!section) {
     return <div className="p-4 text-sm text-stone-500">Bolum bulunamadi.</div>;
   }
@@ -254,6 +323,9 @@ export default function StoreEditorInspector({
         <h3 className="mt-1 text-base font-semibold text-stone-900 dark:text-stone-50">
           Bolum ayarlari
         </h3>
+        <p className="mt-1 text-xs text-stone-500">
+          Metinlere tiklayarak tek tek duzenleyebilirsin.
+        </p>
       </div>
 
       {section.type === 'hero' ? (
@@ -269,39 +341,15 @@ export default function StoreEditorInspector({
               <option value="minimal">Minimal</option>
             </select>
           </Field>
-          {(
-            [
-              ['heroEyebrow', 'Kucuk baslik'],
-              ['heroTitle', 'Ana baslik'],
-              ['heroSubtitle', 'Aciklama'],
-              ['heroCtaLabel', 'Ana buton'],
-              ['heroCtaHref', 'Ana buton link'],
-              ['heroSecondaryCtaLabel', '2. buton'],
-              ['heroSecondaryCtaHref', '2. buton link'],
-            ] as const
-          ).map(([key, label]) => (
-            <Field key={key} label={label}>
-              {key === 'heroSubtitle' ? (
-                <textarea
-                  className={`${inputClass} min-h-24`}
-                  value={settings[key]}
-                  onChange={(e) => patch(key, e.target.value)}
-                />
-              ) : (
-                <input
-                  className={inputClass}
-                  value={settings[key]}
-                  onChange={(e) => patch(key, e.target.value)}
-                />
-              )}
-            </Field>
-          ))}
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            Hero baslik ve aciklamaya onizlemede tikla → metin + yazi ozellikleri acilir.
+          </p>
         </div>
       ) : null}
 
       {section.type === 'features' ? (
         <div className="space-y-3">
-          <p className="text-xs text-stone-500">Kartlari burada duzenle (max 4).</p>
+          <p className="text-xs text-stone-500">Kart metinlerine tikla veya buradan duzenle.</p>
           {settings.featureCards.slice(0, 4).map((card, index) => (
             <div
               key={index}
@@ -326,27 +374,9 @@ export default function StoreEditorInspector({
 
       {section.type === 'products' ? (
         <div className="space-y-4">
-          <Field label="Ust baslik">
-            <input
-              className={inputClass}
-              value={settings.productsEyebrow}
-              onChange={(e) => patch('productsEyebrow', e.target.value)}
-            />
-          </Field>
-          <Field label="Baslik">
-            <input
-              className={inputClass}
-              value={settings.productsTitle}
-              onChange={(e) => patch('productsTitle', e.target.value)}
-            />
-          </Field>
-          <Field label="Aciklama">
-            <textarea
-              className={`${inputClass} min-h-20`}
-              value={settings.productsSubtitle}
-              onChange={(e) => patch('productsSubtitle', e.target.value)}
-            />
-          </Field>
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            Urun basliklarina tikla veya asagidan hizli urun ekle.
+          </p>
 
           <div className="rounded-xl border border-dashed border-amber-700/40 bg-amber-50/60 p-3 dark:border-amber-600/40 dark:bg-amber-950/20">
             <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
@@ -372,20 +402,6 @@ export default function StoreEditorInspector({
 
       {section.type === 'rich_text' ? (
         <div className="space-y-3">
-          <Field label="Baslik">
-            <input
-              className={inputClass}
-              value={section.title}
-              onChange={(e) => patchSection(section.id, { title: e.target.value })}
-            />
-          </Field>
-          <Field label="Metin">
-            <textarea
-              className={`${inputClass} min-h-28`}
-              value={section.body}
-              onChange={(e) => patchSection(section.id, { body: e.target.value })}
-            />
-          </Field>
           <Field label="Hizalama">
             <select
               className={inputClass}
@@ -398,25 +414,12 @@ export default function StoreEditorInspector({
               <option value="center">Orta</option>
             </select>
           </Field>
+          <p className="text-xs text-stone-500">Baslik ve metne onizlemede tikla.</p>
         </div>
       ) : null}
 
       {section.type === 'banner' || section.type === 'cta' ? (
         <div className="space-y-3">
-          <Field label="Baslik">
-            <input
-              className={inputClass}
-              value={section.title}
-              onChange={(e) => patchSection(section.id, { title: e.target.value })}
-            />
-          </Field>
-          <Field label="Metin">
-            <textarea
-              className={`${inputClass} min-h-20`}
-              value={section.body}
-              onChange={(e) => patchSection(section.id, { body: e.target.value })}
-            />
-          </Field>
           <Field label="Buton yazisi">
             <input
               className={inputClass}
@@ -448,6 +451,7 @@ export default function StoreEditorInspector({
               </select>
             </Field>
           ) : null}
+          <p className="text-xs text-stone-500">Baslik ve metne onizlemede tikla.</p>
         </div>
       ) : null}
     </div>

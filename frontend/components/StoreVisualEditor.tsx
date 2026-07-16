@@ -16,6 +16,7 @@ import {
 } from '@/lib/admin-api';
 import { getAdminPaths } from '@/lib/admin-paths';
 import { createStoreSection, SECTION_PALETTE } from '@/lib/store-sections';
+import type { EditorSelection } from '@/lib/editor-selection';
 import StoreEditorCanvas from '@/components/StoreEditorCanvas';
 import StoreEditorInspector from '@/components/StoreEditorInspector';
 
@@ -42,7 +43,7 @@ export default function StoreVisualEditor() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [serverLogoUrl, setServerLogoUrl] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<EditorSelection | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export default function StoreVisualEditor() {
         setThemes(themeList);
         setProducts(productList);
         setCategories(categoryList);
-        setSelectedId(store.sections?.[0]?.id ?? 'hero');
+        setSelection({ type: 'section', sectionId: store.sections?.[0]?.id ?? 'hero' });
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Editor yuklenemedi');
@@ -105,11 +106,15 @@ export default function StoreVisualEditor() {
     setSaved(false);
   }
 
-  function addSection(type: (typeof SECTION_PALETTE)[number]['type']) {
+  function addSection(type: (typeof SECTION_PALETTE)[number]['type'], afterIndex?: number) {
     if (!settings) return;
     const section = createStoreSection(type);
-    updateSettings({ ...settings, sections: [...settings.sections, section] });
-    setSelectedId(section.id);
+    const list = [...settings.sections];
+    const insertAt =
+      afterIndex === undefined || afterIndex < 0 ? list.length : afterIndex + 1;
+    list.splice(insertAt, 0, section);
+    updateSettings({ ...settings, sections: list });
+    setSelection({ type: 'section', sectionId: section.id });
   }
 
   function reorder(fromId: string, toId: string) {
@@ -138,13 +143,15 @@ export default function StoreVisualEditor() {
     const next = settings.sections.filter((section) => section.id !== id);
     if (next.length === 0) return;
     updateSettings({ ...settings, sections: next });
-    if (selectedId === id) setSelectedId(next[0]?.id ?? null);
+    if (selection?.type === 'section' && selection.sectionId === id) {
+      setSelection(next[0] ? { type: 'section', sectionId: next[0].id } : { type: 'none' });
+    }
   }
 
   function handleProductCreated(product: Product) {
     setProducts((current) => [product, ...current]);
     const productsSection = settings?.sections.find((section) => section.type === 'products');
-    if (productsSection) setSelectedId(productsSection.id);
+    if (productsSection) setSelection({ type: 'section', sectionId: productsSection.id });
     setSaved(false);
   }
 
@@ -162,7 +169,11 @@ export default function StoreVisualEditor() {
       });
       setServerLogoUrl(updated.logoUrl);
       setSaved(true);
-      setSelectedId(updated.sections[0]?.id ?? null);
+      setSelection(
+        updated.sections[0]
+          ? { type: 'section', sectionId: updated.sections[0].id }
+          : { type: 'none' },
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Tema uygulanamadi');
     } finally {
@@ -255,9 +266,9 @@ export default function StoreVisualEditor() {
           <div className="mb-5 grid gap-2">
             <button
               type="button"
-              onClick={() => setSelectedId('__product__')}
+              onClick={() => setSelection({ type: 'product' })}
               className={`rounded-xl border px-3 py-3 text-left transition ${
-                selectedId === '__product__'
+                selection?.type === 'product'
                   ? 'border-amber-800 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/40'
                   : 'border-dashed border-stone-300 hover:border-amber-700 hover:bg-amber-50/70 dark:border-stone-700 dark:hover:bg-amber-950/20'
               }`}
@@ -267,9 +278,9 @@ export default function StoreVisualEditor() {
             </button>
             <button
               type="button"
-              onClick={() => setSelectedId('__style__')}
+              onClick={() => setSelection({ type: 'style' })}
               className={`rounded-xl border px-3 py-3 text-left transition ${
-                selectedId === '__style__' || selectedId === '__header__'
+                selection?.type === 'style' || selection?.type === 'header'
                   ? 'border-amber-800 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/40'
                   : 'border-dashed border-stone-300 hover:border-amber-700 hover:bg-amber-50/70 dark:border-stone-700 dark:hover:bg-amber-950/20'
               }`}
@@ -329,17 +340,19 @@ export default function StoreVisualEditor() {
           settings={settings}
           products={products}
           categories={categories}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
+          selection={selection}
+          onSelect={setSelection}
           onReorder={reorder}
           onToggle={toggleSection}
           onRemove={removeSection}
+          onInsertSection={addSection}
+          onTextChange={updateSettings}
         />
 
         <aside className={`overflow-hidden border-l ${panel}`}>
           <StoreEditorInspector
             settings={settings}
-            selectedId={selectedId}
+            selection={selection}
             serverLogoUrl={serverLogoUrl}
             products={products}
             categories={categories}
