@@ -70,6 +70,17 @@ export default function StoreVisualEditor() {
         if (cancelled) return;
         setSettings({
           ...store,
+          heroTextItemsOrder:
+            store.heroTextItemsOrder && store.heroTextItemsOrder.length > 0
+              ? store.heroTextItemsOrder
+              : ['eyebrow', 'title', 'subtitle', 'ctas'],
+          heroCtaButtonsOrder:
+            store.heroCtaButtonsOrder && store.heroCtaButtonsOrder.length > 0
+              ? store.heroCtaButtonsOrder
+              : ['primary', 'secondary'],
+          heroFeatureSide: store.heroFeatureSide === 'left' || store.heroFeatureSide === 'right'
+            ? store.heroFeatureSide
+            : 'right',
           featureCards:
             store.featureCards?.length > 0
               ? [...store.featureCards, ...emptyFeatures].slice(0, 4)
@@ -162,6 +173,18 @@ export default function StoreVisualEditor() {
       const updated = await adminApplyStoreTheme(themeId);
       setSettings({
         ...updated,
+          heroTextItemsOrder:
+            updated.heroTextItemsOrder && updated.heroTextItemsOrder.length > 0
+              ? updated.heroTextItemsOrder
+              : ['eyebrow', 'title', 'subtitle', 'ctas'],
+          heroCtaButtonsOrder:
+            updated.heroCtaButtonsOrder && updated.heroCtaButtonsOrder.length > 0
+              ? updated.heroCtaButtonsOrder
+              : ['primary', 'secondary'],
+          heroFeatureSide:
+            updated.heroFeatureSide === 'left' || updated.heroFeatureSide === 'right'
+              ? updated.heroFeatureSide
+              : 'right',
         featureCards:
           updated.featureCards.length > 0
             ? [...updated.featureCards, ...emptyFeatures].slice(0, 4)
@@ -197,6 +220,18 @@ export default function StoreVisualEditor() {
       });
       setSettings({
         ...updated,
+        heroTextItemsOrder:
+          updated.heroTextItemsOrder && updated.heroTextItemsOrder.length > 0
+            ? updated.heroTextItemsOrder
+            : ['eyebrow', 'title', 'subtitle', 'ctas'],
+        heroCtaButtonsOrder:
+          updated.heroCtaButtonsOrder && updated.heroCtaButtonsOrder.length > 0
+            ? updated.heroCtaButtonsOrder
+            : ['primary', 'secondary'],
+        heroFeatureSide:
+          updated.heroFeatureSide === 'left' || updated.heroFeatureSide === 'right'
+            ? updated.heroFeatureSide
+            : 'right',
         featureCards:
           updated.featureCards.length > 0
             ? [...updated.featureCards, ...emptyFeatures].slice(0, 4)
