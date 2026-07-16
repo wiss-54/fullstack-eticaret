@@ -329,7 +329,19 @@ export default function StoreEditorInspector({
       </div>
 
       {section.type === 'hero' ? (
-        <div className="space-y-3">
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Hero kutucuklari
+            </p>
+            <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">
+              Sirala ve duzenle
+            </h3>
+            <p className="text-xs text-stone-500">
+              Aşağıdaki listeleri sürükle-bırak yaparak kutucukların sırasını değiştir.
+            </p>
+          </div>
+
           <Field label="Hero duzeni">
             <select
               className={inputClass}
@@ -341,9 +353,215 @@ export default function StoreEditorInspector({
               <option value="minimal">Minimal</option>
             </select>
           </Field>
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-            Hero baslik ve aciklamaya onizlemede tikla → metin + yazi ozellikleri acilir.
-          </p>
+
+          {(() => {
+            const heroTextOrder =
+              settings.heroTextItemsOrder && settings.heroTextItemsOrder.length > 0
+                ? settings.heroTextItemsOrder
+                : ['eyebrow', 'title', 'subtitle', 'ctas'];
+            const heroCtaOrder =
+              settings.heroCtaButtonsOrder && settings.heroCtaButtonsOrder.length > 0
+                ? settings.heroCtaButtonsOrder
+                : ['primary', 'secondary'];
+            const heroFeatureSide =
+              settings.heroFeatureSide === 'left' || settings.heroFeatureSide === 'right'
+                ? settings.heroFeatureSide
+                : 'right';
+
+            const textItems = [
+              { key: 'eyebrow', label: 'Kucuk baslik' },
+              { key: 'title', label: 'Ana baslik' },
+              { key: 'subtitle', label: 'Aciklama' },
+              { key: 'ctas', label: 'CTA kutusu' },
+            ] as const;
+
+            const ctaButtons = [
+              { key: 'primary', label: 'Ana buton' },
+              { key: 'secondary', label: '2. buton' },
+            ] as const;
+
+            function moveOrder<T>(arr: T[], fromIndex: number, toIndex: number) {
+              const next = [...arr];
+              const [moved] = next.splice(fromIndex, 1);
+              next.splice(toIndex, 0, moved);
+              return next;
+            }
+
+            const split = settings.heroLayout === 'split';
+
+            return (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/30">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                    Kutucuk sirasi
+                  </p>
+                  <div className="space-y-2">
+                    {heroTextOrder.map((itemKey, index) => {
+                      const label = textItems.find((t) => t.key === itemKey)?.label ?? itemKey;
+                      return (
+                        <div
+                          key={itemKey}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('heroTextFromIndex', String(index));
+                          }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const from = Number(e.dataTransfer.getData('heroTextFromIndex'));
+                            if (Number.isNaN(from) || from === index) return;
+                            const next = moveOrder(heroTextOrder, from, index);
+                            patch('heroTextItemsOrder', next as StoreSettings['heroTextItemsOrder']);
+                          }}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 dark:border-stone-800 dark:bg-stone-950/40"
+                        >
+                          <div className="text-sm font-medium text-stone-700 dark:text-stone-200">
+                            {label}
+                          </div>
+                          <div className="text-xs text-stone-400" aria-hidden>
+                            ≡
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/30">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                    CTA buton sirasi
+                  </p>
+                  <div className="space-y-2">
+                    {heroCtaOrder.map((btnKey, index) => {
+                      const label = ctaButtons.find((b) => b.key === btnKey)?.label ?? btnKey;
+                      return (
+                        <div
+                          key={btnKey}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('heroCtaFromIndex', String(index));
+                          }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const from = Number(e.dataTransfer.getData('heroCtaFromIndex'));
+                            if (Number.isNaN(from) || from === index) return;
+                            const next = moveOrder(heroCtaOrder, from, index);
+                            patch('heroCtaButtonsOrder', next as StoreSettings['heroCtaButtonsOrder']);
+                          }}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 dark:border-stone-800 dark:bg-stone-950/40"
+                        >
+                          <div className="text-sm font-medium text-stone-700 dark:text-stone-200">
+                            {label}
+                          </div>
+                          <div className="text-xs text-stone-400" aria-hidden>
+                            ≡
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/30">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                    Feature kartlarinin yeri
+                  </p>
+                  <p className="mb-2 text-xs text-stone-500">
+                    Bu ayar sadece <b>Yan yana</b> (split) modunda geçerli.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={!split}
+                      onClick={() => patch('heroFeatureSide', 'left' as StoreSettings['heroFeatureSide'])}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                        heroFeatureSide === 'left'
+                          ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-100'
+                          : 'border-stone-300 bg-white text-stone-700 hover:border-amber-600 dark:border-stone-700 dark:bg-stone-950/40 dark:text-stone-200'
+                      } ${!split ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Sol
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!split}
+                      onClick={() => patch('heroFeatureSide', 'right' as StoreSettings['heroFeatureSide'])}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                        heroFeatureSide === 'right'
+                          ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-100'
+                          : 'border-stone-300 bg-white text-stone-700 hover:border-amber-600 dark:border-stone-700 dark:bg-stone-950/40 dark:text-stone-200'
+                      } ${!split ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      Sag
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-950/20">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-900/80 dark:text-amber-100">
+                    Metin ve buton içerikleri
+                  </p>
+                  <div className="space-y-3">
+                    <Field label="Kucuk baslik">
+                      <input
+                        className={inputClass}
+                        value={settings.heroEyebrow}
+                        onChange={(e) => patch('heroEyebrow', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Ana baslik">
+                      <input
+                        className={inputClass}
+                        value={settings.heroTitle}
+                        onChange={(e) => patch('heroTitle', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Aciklama">
+                      <textarea
+                        className={`${inputClass} min-h-24`}
+                        value={settings.heroSubtitle}
+                        onChange={(e) => patch('heroSubtitle', e.target.value)}
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field label="Ana buton metni">
+                        <input
+                          className={inputClass}
+                          value={settings.heroCtaLabel}
+                          onChange={(e) => patch('heroCtaLabel', e.target.value)}
+                        />
+                      </Field>
+                      <Field label="Ana buton linki">
+                        <input
+                          className={inputClass}
+                          value={settings.heroCtaHref}
+                          onChange={(e) => patch('heroCtaHref', e.target.value)}
+                        />
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field label="2. buton metni">
+                        <input
+                          className={inputClass}
+                          value={settings.heroSecondaryCtaLabel}
+                          onChange={(e) => patch('heroSecondaryCtaLabel', e.target.value)}
+                        />
+                      </Field>
+                      <Field label="2. buton linki">
+                        <input
+                          className={inputClass}
+                          value={settings.heroSecondaryCtaHref}
+                          onChange={(e) => patch('heroSecondaryCtaHref', e.target.value)}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       ) : null}
 

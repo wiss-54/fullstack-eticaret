@@ -209,6 +209,9 @@ export type StoreSettings = {
   radiusStyle: 'soft' | 'rounded' | 'sharp';
   buttonStyle: 'pill' | 'rounded' | 'square';
   heroLayout: 'split' | 'centered' | 'minimal';
+  heroTextItemsOrder?: Array<'eyebrow' | 'title' | 'subtitle' | 'ctas'>;
+  heroCtaButtonsOrder?: Array<'primary' | 'secondary'>;
+  heroFeatureSide?: 'left' | 'right';
   fontStyle: 'classic' | 'modern' | 'elegant';
   heroEyebrow: string;
   heroTitle: string;

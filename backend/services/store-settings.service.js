@@ -24,6 +24,16 @@ function mapRow(row) {
     heroCtaHref: row.heroCtaHref,
     heroSecondaryCtaLabel: row.heroSecondaryCtaLabel,
     heroSecondaryCtaHref: row.heroSecondaryCtaHref,
+    heroTextItemsOrder: Array.isArray(row.heroTextItemsOrder)
+      ? row.heroTextItemsOrder
+      : DEFAULT_HERO_TEXT_ITEMS_ORDER,
+    heroCtaButtonsOrder: Array.isArray(row.heroCtaButtonsOrder)
+      ? row.heroCtaButtonsOrder
+      : DEFAULT_HERO_CTA_BUTTONS_ORDER,
+    heroFeatureSide:
+      row.heroFeatureSide === 'left' || row.heroFeatureSide === 'right'
+        ? row.heroFeatureSide
+        : DEFAULT_HERO_FEATURE_SIDE,
     featureCards: Array.isArray(row.featureCards) ? row.featureCards : DEFAULT_FEATURES,
     productsEyebrow: row.productsEyebrow,
     productsTitle: row.productsTitle,
@@ -57,6 +67,9 @@ const SELECT_SQL = `
     hero_cta_href AS "heroCtaHref",
     hero_secondary_cta_label AS "heroSecondaryCtaLabel",
     hero_secondary_cta_href AS "heroSecondaryCtaHref",
+    hero_text_items_order AS "heroTextItemsOrder",
+    hero_cta_buttons_order AS "heroCtaButtonsOrder",
+    hero_feature_side AS "heroFeatureSide",
     feature_cards AS "featureCards",
     products_eyebrow AS "productsEyebrow",
     products_title AS "productsTitle",
@@ -71,6 +84,10 @@ const SELECT_SQL = `
   LIMIT 1
 `;
 
+const DEFAULT_HERO_TEXT_ITEMS_ORDER = ['eyebrow', 'title', 'subtitle', 'ctas'];
+const DEFAULT_HERO_CTA_BUTTONS_ORDER = ['primary', 'secondary'];
+const DEFAULT_HERO_FEATURE_SIDE = 'right';
+
 async function getStoreSettings() {
   const result = await pool.query(SELECT_SQL);
   if (result.rows.length === 0) {
@@ -82,6 +99,17 @@ async function getStoreSettings() {
 }
 
 async function updateStoreSettings(input) {
+  const heroTextItemsOrder = Array.isArray(input.heroTextItemsOrder)
+    ? input.heroTextItemsOrder
+    : DEFAULT_HERO_TEXT_ITEMS_ORDER;
+  const heroCtaButtonsOrder = Array.isArray(input.heroCtaButtonsOrder)
+    ? input.heroCtaButtonsOrder
+    : DEFAULT_HERO_CTA_BUTTONS_ORDER;
+  const heroFeatureSide =
+    input.heroFeatureSide === 'left' || input.heroFeatureSide === 'right'
+      ? input.heroFeatureSide
+      : DEFAULT_HERO_FEATURE_SIDE;
+
   const result = await pool.query(
     `
       UPDATE store_settings
@@ -103,13 +131,16 @@ async function updateStoreSettings(input) {
         hero_secondary_cta_label = $15,
         hero_secondary_cta_href = $16,
         feature_cards = $17::jsonb,
-        products_eyebrow = $18,
-        products_title = $19,
-        products_subtitle = $20,
-        footer_left = $21,
-        footer_right = $22,
-        text_styles = $23::jsonb,
-        sections = $24::jsonb,
+        hero_text_items_order = $18::jsonb,
+        hero_cta_buttons_order = $19::jsonb,
+        hero_feature_side = $20,
+        products_eyebrow = $21,
+        products_title = $22,
+        products_subtitle = $23,
+        footer_left = $24,
+        footer_right = $25,
+        text_styles = $26::jsonb,
+        sections = $27::jsonb,
         updated_at = NOW()
       WHERE id = 1
       RETURNING
@@ -129,6 +160,9 @@ async function updateStoreSettings(input) {
         hero_cta_href AS "heroCtaHref",
         hero_secondary_cta_label AS "heroSecondaryCtaLabel",
         hero_secondary_cta_href AS "heroSecondaryCtaHref",
+        hero_text_items_order AS "heroTextItemsOrder",
+        hero_cta_buttons_order AS "heroCtaButtonsOrder",
+        hero_feature_side AS "heroFeatureSide",
         feature_cards AS "featureCards",
         products_eyebrow AS "productsEyebrow",
         products_title AS "productsTitle",
@@ -157,6 +191,9 @@ async function updateStoreSettings(input) {
       input.heroSecondaryCtaLabel,
       input.heroSecondaryCtaHref,
       JSON.stringify(input.featureCards ?? DEFAULT_FEATURES),
+      JSON.stringify(heroTextItemsOrder),
+      JSON.stringify(heroCtaButtonsOrder),
+      heroFeatureSide,
       input.productsEyebrow,
       input.productsTitle,
       input.productsSubtitle,

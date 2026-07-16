@@ -98,6 +98,17 @@ const storeSettingsUpdateSchema = z.object({
   heroCtaHref: z.string().trim().min(1).max(300),
   heroSecondaryCtaLabel: z.string().trim().min(1).max(100),
   heroSecondaryCtaHref: z.string().trim().min(1).max(300),
+  heroTextItemsOrder: z
+    .array(z.enum(['eyebrow', 'title', 'subtitle', 'ctas']))
+    .min(1)
+    .max(4)
+    .optional(),
+  heroCtaButtonsOrder: z
+    .array(z.enum(['primary', 'secondary']))
+    .min(1)
+    .max(2)
+    .optional(),
+  heroFeatureSide: z.enum(['left', 'right']).optional(),
   featureCards: z.array(featureCardSchema).min(0).max(6),
   productsEyebrow: z.string().trim().min(1).max(120),
   productsTitle: z.string().trim().min(1).max(200),
