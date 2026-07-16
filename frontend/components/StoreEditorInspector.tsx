@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { Category, Product, StoreFeatureCard, StoreSection, StoreSettings } from '@/lib/types';
 import type { EditorSelection } from '@/lib/editor-selection';
 import {
@@ -22,6 +23,7 @@ type Props = {
   onChange: (next: StoreSettings) => void;
   onServerLogoUrl: (value: string | null) => void;
   onProductCreated: (product: Product) => void;
+  onRemoveSection?: (id: string) => void;
 };
 
 function Field({
@@ -41,6 +43,113 @@ function Field({
 
 const inputClass =
   'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-amber-700/30 focus:ring-2 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-50';
+
+function InspectorShell({
+  title,
+  subtitle,
+  hint,
+  actions,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  hint?: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 border-b border-stone-200 px-4 py-3 dark:border-stone-800">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            {subtitle ? (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+                {subtitle}
+              </p>
+            ) : null}
+            <h3 className="mt-0.5 truncate text-base font-semibold text-stone-900 dark:text-stone-50">
+              {title}
+            </h3>
+            {hint ? <p className="mt-1 text-xs leading-relaxed text-stone-500">{hint}</p> : null}
+          </div>
+          {actions}
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">{children}</div>
+    </div>
+  );
+}
+
+function Accordion({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between bg-stone-50 px-3 py-2.5 text-left text-sm font-semibold text-stone-800 dark:bg-stone-900/50 dark:text-stone-100"
+      >
+        <span>{title}</span>
+        <span className="text-stone-400">{open ? '−' : '+'}</span>
+      </button>
+      {open ? <div className="space-y-3 border-t border-stone-200 p-3 dark:border-stone-800">{children}</div> : null}
+    </div>
+  );
+}
+
+function ReorderList<T extends string>({
+  items,
+  labels,
+  onMove,
+}: {
+  items: T[];
+  labels: Record<T, string>;
+  onMove: (from: number, to: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {items.map((itemKey, index) => (
+        <div
+          key={itemKey}
+          className="flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-2 py-2 dark:border-stone-800 dark:bg-stone-950/40"
+        >
+          <span className="flex-1 text-sm font-medium text-stone-700 dark:text-stone-200">
+            {labels[itemKey] ?? itemKey}
+          </span>
+          <div className="flex shrink-0 gap-1">
+            <button
+              type="button"
+              disabled={index === 0}
+              onClick={() => onMove(index, index - 1)}
+              className="rounded-md border border-stone-300 px-2 py-1 text-xs disabled:opacity-30 dark:border-stone-700"
+              title="Yukari"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              disabled={index === items.length - 1}
+              onClick={() => onMove(index, index + 1)}
+              className="rounded-md border border-stone-300 px-2 py-1 text-xs disabled:opacity-30 dark:border-stone-700"
+              title="Asagi"
+            >
+              ↓
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function AppearanceFields({
   settings,
@@ -102,53 +211,176 @@ function AppearanceFields({
   );
 }
 
-function TextEditorPanel({
+function HeroPanel({
   settings,
-  selection,
-  onChange,
+  patch,
 }: {
   settings: StoreSettings;
-  selection: Extract<EditorSelection, { type: 'text' }>;
-  onChange: (next: StoreSettings) => void;
+  patch: <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) => void;
 }) {
-  const value = getTextValue(settings, selection.styleKey);
-  const multiline = isMultilineTextKey(selection.styleKey);
+  const [openContent, setOpenContent] = useState(true);
+  const [openLayout, setOpenLayout] = useState(true);
+  const [openOrder, setOpenOrder] = useState(false);
+
+  const heroTextOrder =
+    settings.heroTextItemsOrder && settings.heroTextItemsOrder.length > 0
+      ? settings.heroTextItemsOrder
+      : (['eyebrow', 'title', 'subtitle', 'ctas'] as const);
+
+  const heroCtaOrder =
+    settings.heroCtaButtonsOrder && settings.heroCtaButtonsOrder.length > 0
+      ? settings.heroCtaButtonsOrder
+      : (['primary', 'secondary'] as const);
+
+  const heroFeatureSide =
+    settings.heroFeatureSide === 'left' || settings.heroFeatureSide === 'right'
+      ? settings.heroFeatureSide
+      : 'right';
+
+  const split = settings.heroLayout === 'split';
+
+  function moveOrder<T>(arr: readonly T[], fromIndex: number, toIndex: number): T[] {
+    const next = [...arr];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    return next;
+  }
 
   return (
-    <div className="space-y-4 overflow-y-auto p-4">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-          Secili metin
-        </p>
-        <h3 className="mt-1 text-base font-semibold text-stone-900 dark:text-stone-50">
-          {selection.label}
-        </h3>
-        <p className="mt-1 text-xs text-stone-500">
-          Metni ve yazi ozelliklerini buradan degistir.
-        </p>
-      </div>
-
-      <Field label="Icerik">
-        {multiline ? (
-          <textarea
-            className={`${inputClass} min-h-24`}
-            value={value}
-            onChange={(e) => onChange(setTextValue(settings, selection.styleKey, e.target.value))}
-          />
-        ) : (
+    <div className="space-y-3">
+      <Accordion title="1. Icerik (yazi & buton)" open={openContent} onToggle={() => setOpenContent((v) => !v)}>
+        <Field label="Kucuk baslik">
           <input
             className={inputClass}
-            value={value}
-            onChange={(e) => onChange(setTextValue(settings, selection.styleKey, e.target.value))}
+            value={settings.heroEyebrow}
+            onChange={(e) => patch('heroEyebrow', e.target.value)}
           />
-        )}
-      </Field>
+        </Field>
+        <Field label="Ana baslik">
+          <input
+            className={inputClass}
+            value={settings.heroTitle}
+            onChange={(e) => patch('heroTitle', e.target.value)}
+          />
+        </Field>
+        <Field label="Aciklama">
+          <textarea
+            className={`${inputClass} min-h-24`}
+            value={settings.heroSubtitle}
+            onChange={(e) => patch('heroSubtitle', e.target.value)}
+          />
+        </Field>
+        <Field label="Ana buton metni">
+          <input
+            className={inputClass}
+            value={settings.heroCtaLabel}
+            onChange={(e) => patch('heroCtaLabel', e.target.value)}
+          />
+        </Field>
+        <Field label="Ana buton linki">
+          <input
+            className={inputClass}
+            value={settings.heroCtaHref}
+            onChange={(e) => patch('heroCtaHref', e.target.value)}
+          />
+        </Field>
+        <Field label="2. buton metni">
+          <input
+            className={inputClass}
+            value={settings.heroSecondaryCtaLabel}
+            onChange={(e) => patch('heroSecondaryCtaLabel', e.target.value)}
+          />
+        </Field>
+        <Field label="2. buton linki">
+          <input
+            className={inputClass}
+            value={settings.heroSecondaryCtaHref}
+            onChange={(e) => patch('heroSecondaryCtaHref', e.target.value)}
+          />
+        </Field>
+      </Accordion>
 
-      <StoreTextStyleFields
-        settings={settings}
-        styleKey={selection.styleKey}
-        onChange={onChange}
-      />
+      <Accordion title="2. Duzen (yan yana / orta)" open={openLayout} onToggle={() => setOpenLayout((v) => !v)}>
+        <Field label="Hero duzeni">
+          <select
+            className={inputClass}
+            value={settings.heroLayout}
+            onChange={(e) => patch('heroLayout', e.target.value as StoreSettings['heroLayout'])}
+          >
+            <option value="split">Yan yana (metin + kartlar)</option>
+            <option value="centered">Ortali</option>
+            <option value="minimal">Minimal</option>
+          </select>
+        </Field>
+
+        <div>
+          <p className="mb-2 text-xs text-stone-500">
+            Ozellik kartlari (sadece yan yana duzende)
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={!split}
+              onClick={() => patch('heroFeatureSide', 'left')}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                heroFeatureSide === 'left'
+                  ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30'
+                  : 'border-stone-300 dark:border-stone-700'
+              } ${!split ? 'cursor-not-allowed opacity-40' : ''}`}
+            >
+              Kartlar solda
+            </button>
+            <button
+              type="button"
+              disabled={!split}
+              onClick={() => patch('heroFeatureSide', 'right')}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                heroFeatureSide === 'right'
+                  ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30'
+                  : 'border-stone-300 dark:border-stone-700'
+              } ${!split ? 'cursor-not-allowed opacity-40' : ''}`}
+            >
+              Kartlar sagda
+            </button>
+          </div>
+        </div>
+      </Accordion>
+
+      <Accordion title="3. Sira (kutucuklari yer degistir)" open={openOrder} onToggle={() => setOpenOrder((v) => !v)}>
+        <p className="text-xs text-stone-500">↑ ↓ ile sirayi degistir. Canli onizleme aninda guncellenir.</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Kutucuk sirasi</p>
+        <ReorderList
+          items={[...heroTextOrder]}
+          labels={{
+            eyebrow: 'Kucuk baslik',
+            title: 'Ana baslik',
+            subtitle: 'Aciklama',
+            ctas: 'Butonlar',
+          }}
+          onMove={(from, to) =>
+            patch(
+              'heroTextItemsOrder',
+              moveOrder(heroTextOrder, from, to) as StoreSettings['heroTextItemsOrder'],
+            )
+          }
+        />
+        <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+          Buton sirasi
+        </p>
+        <ReorderList
+          items={[...heroCtaOrder]}
+          labels={{
+            primary: 'Ana buton',
+            secondary: '2. buton',
+          }}
+          onMove={(from, to) =>
+            patch(
+              'heroCtaButtonsOrder',
+              moveOrder(heroCtaOrder, from, to) as StoreSettings['heroCtaButtonsOrder'],
+            )
+          }
+        />
+      </Accordion>
     </div>
   );
 }
@@ -162,6 +394,7 @@ export default function StoreEditorInspector({
   onChange,
   onServerLogoUrl,
   onProductCreated,
+  onRemoveSection,
 }: Props) {
   function patch<K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) {
     onChange({ ...settings, [key]: value });
@@ -183,391 +416,183 @@ export default function StoreEditorInspector({
     patch('featureCards', featureCards);
   }
 
+  const canRemoveSection = settings.sections.length > 1;
+
   if (!selection || selection.type === 'none') {
     return (
-      <div className="space-y-4 overflow-y-auto p-4 text-sm text-stone-600 dark:text-stone-400">
-        <div>
-          <p className="text-base font-semibold text-stone-900 dark:text-stone-50">
-            Metne veya bolme sec
-          </p>
-          <p className="mt-1 leading-relaxed">
-            Onizlemede bir metne tikla → icerik + yazi ozellikleri acilir. Bolum arasindaki
-            &quot;+ Bolum ekle&quot; ile yeni alan ekleyebilirsin.
-          </p>
-        </div>
+      <InspectorShell
+        title="Bir sey sec"
+        hint="Ortadaki onizlemede bir bolume veya metne tikla. Soldan bolum ekleyebilirsin."
+      >
         <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-900/50">
           <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
         </div>
-      </div>
+      </InspectorShell>
     );
   }
 
   if (selection.type === 'text') {
+    const value = getTextValue(settings, selection.styleKey);
+    const multiline = isMultilineTextKey(selection.styleKey);
     return (
-      <TextEditorPanel settings={settings} selection={selection} onChange={onChange} />
+      <InspectorShell
+        title={selection.label}
+        subtitle="Secili metin"
+        hint="Icerigi ve yazi ozelliklerini buradan degistir. Cift tikla → sayfada da yazabilirsin."
+      >
+        <div className="space-y-4">
+          <Field label="Icerik">
+            {multiline ? (
+              <textarea
+                className={`${inputClass} min-h-24`}
+                value={value}
+                onChange={(e) => onChange(setTextValue(settings, selection.styleKey, e.target.value))}
+              />
+            ) : (
+              <input
+                className={inputClass}
+                value={value}
+                onChange={(e) => onChange(setTextValue(settings, selection.styleKey, e.target.value))}
+              />
+            )}
+          </Field>
+          <StoreTextStyleFields
+            settings={settings}
+            styleKey={selection.styleKey}
+            onChange={onChange}
+          />
+        </div>
+      </InspectorShell>
     );
   }
 
   if (selection.type === 'header' || selection.type === 'style') {
     return (
-      <div className="space-y-5 overflow-y-auto p-4">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-            Marka & stil
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-stone-900 dark:text-stone-50">
-            Genel gorunum
-          </h3>
-        </div>
-
-        <Field label="Marka adi">
-          <input
-            className={inputClass}
-            value={settings.brandName}
-            onChange={(e) => patch('brandName', e.target.value)}
-          />
-        </Field>
-        <Field label="Vurgu rengi">
-          <div className="flex gap-2">
-            <input
-              type="color"
-              className="h-10 w-12 rounded-lg border border-stone-300 dark:border-stone-700"
-              value={settings.accentColor}
-              onChange={(e) => patch('accentColor', e.target.value)}
-            />
+      <InspectorShell title="Genel gorunum" subtitle="Marka & stil">
+        <div className="space-y-4">
+          <Field label="Marka adi">
             <input
               className={inputClass}
-              value={settings.accentColor}
-              onChange={(e) => patch('accentColor', e.target.value)}
+              value={settings.brandName}
+              onChange={(e) => patch('brandName', e.target.value)}
             />
+          </Field>
+          <Field label="Vurgu rengi">
+            <div className="flex gap-2">
+              <input
+                type="color"
+                className="h-10 w-12 rounded-lg border border-stone-300 dark:border-stone-700"
+                value={settings.accentColor}
+                onChange={(e) => patch('accentColor', e.target.value)}
+              />
+              <input
+                className={inputClass}
+                value={settings.accentColor}
+                onChange={(e) => patch('accentColor', e.target.value)}
+              />
+            </div>
+          </Field>
+          <ProductImageField
+            value={settings.logoUrl ?? ''}
+            serverImageUrl={serverLogoUrl}
+            onChange={(logoUrl) => {
+              patch('logoUrl', logoUrl || null);
+              if (!logoUrl) onServerLogoUrl(null);
+            }}
+          />
+          <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
+            <p className="mb-3 text-sm font-medium text-stone-900 dark:text-stone-50">
+              Tipografi & stil
+            </p>
+            <AppearanceFields settings={settings} patch={patch} />
           </div>
-        </Field>
-        <ProductImageField
-          value={settings.logoUrl ?? ''}
-          serverImageUrl={serverLogoUrl}
-          onChange={(logoUrl) => {
-            patch('logoUrl', logoUrl || null);
-            if (!logoUrl) onServerLogoUrl(null);
-          }}
-        />
-
-        <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
-          <p className="mb-3 text-sm font-medium text-stone-900 dark:text-stone-50">Tipografi & stil</p>
-          <AppearanceFields settings={settings} patch={patch} />
         </div>
-      </div>
+      </InspectorShell>
     );
   }
 
   if (selection.type === 'footer') {
     return (
-      <div className="space-y-4 overflow-y-auto p-4">
-        <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">Alt bilgi</h3>
-        <p className="text-xs text-stone-500">
-          Alt bilgi metinlerine tiklayarak da duzenleyebilirsin.
-        </p>
-        <Field label="Sol metin">
-          <textarea
-            className={`${inputClass} min-h-20`}
-            value={settings.footerLeft}
-            onChange={(e) => patch('footerLeft', e.target.value)}
-          />
-        </Field>
-        <StoreTextStyleFields settings={settings} styleKey="footer.left" onChange={onChange} />
-        <Field label="Sag metin">
-          <textarea
-            className={`${inputClass} min-h-20`}
-            value={settings.footerRight}
-            onChange={(e) => patch('footerRight', e.target.value)}
-          />
-        </Field>
-        <StoreTextStyleFields settings={settings} styleKey="footer.right" onChange={onChange} />
-      </div>
+      <InspectorShell title="Alt bilgi" hint="Sol ve sag metinleri buradan duzenle.">
+        <div className="space-y-4">
+          <Field label="Sol metin">
+            <textarea
+              className={`${inputClass} min-h-20`}
+              value={settings.footerLeft}
+              onChange={(e) => patch('footerLeft', e.target.value)}
+            />
+          </Field>
+          <StoreTextStyleFields settings={settings} styleKey="footer.left" onChange={onChange} />
+          <Field label="Sag metin">
+            <textarea
+              className={`${inputClass} min-h-20`}
+              value={settings.footerRight}
+              onChange={(e) => patch('footerRight', e.target.value)}
+            />
+          </Field>
+          <StoreTextStyleFields settings={settings} styleKey="footer.right" onChange={onChange} />
+        </div>
+      </InspectorShell>
     );
   }
 
   if (selection.type === 'product') {
     return (
-      <div className="space-y-4 overflow-y-auto p-4">
-        <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
-        <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-            Vitrindeki urunler ({products.length})
-          </p>
-          <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
-            {products.slice(0, 12).map((product) => (
-              <li
-                key={product.id}
-                className="truncate rounded-lg bg-stone-50 px-2 py-1.5 text-stone-700 dark:bg-stone-900 dark:text-stone-300"
-              >
-                {product.name}
-              </li>
-            ))}
-          </ul>
+      <InspectorShell title="Urun ekle" subtitle="Hizli islem">
+        <div className="space-y-4">
+          <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
+          <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Vitrindeki urunler ({products.length})
+            </p>
+            <ul className="space-y-1 text-sm">
+              {products.slice(0, 12).map((product) => (
+                <li
+                  key={product.id}
+                  className="truncate rounded-lg bg-stone-50 px-2 py-1.5 text-stone-700 dark:bg-stone-900 dark:text-stone-300"
+                >
+                  {product.name}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
+      </InspectorShell>
     );
   }
 
   const section = settings.sections.find((item) => item.id === selection.sectionId);
   if (!section) {
-    return <div className="p-4 text-sm text-stone-500">Bolum bulunamadi.</div>;
+    return (
+      <InspectorShell title="Bolum bulunamadi">
+        <p className="text-sm text-stone-500">Baska bir bolum sec.</p>
+      </InspectorShell>
+    );
   }
 
+  const removeAction =
+    canRemoveSection && onRemoveSection ? (
+      <button
+        type="button"
+        onClick={() => onRemoveSection(section.id)}
+        className="shrink-0 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+      >
+        Sil
+      </button>
+    ) : null;
+
   return (
-    <div className="space-y-4 overflow-y-auto p-4">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-          {sectionLabel(section.type)}
-        </p>
-        <h3 className="mt-1 text-base font-semibold text-stone-900 dark:text-stone-50">
-          Bolum ayarlari
-        </h3>
-        <p className="mt-1 text-xs text-stone-500">
-          Metinlere tiklayarak tek tek duzenleyebilirsin.
-        </p>
-      </div>
-
-      {section.type === 'hero' ? (
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
-              Hero kutucuklari
-            </p>
-            <h3 className="text-base font-semibold text-stone-900 dark:text-stone-50">
-              Sirala ve duzenle
-            </h3>
-            <p className="text-xs text-stone-500">
-              Aşağıdaki listeleri sürükle-bırak yaparak kutucukların sırasını değiştir.
-            </p>
-          </div>
-
-          <Field label="Hero duzeni">
-            <select
-              className={inputClass}
-              value={settings.heroLayout}
-              onChange={(e) => patch('heroLayout', e.target.value as StoreSettings['heroLayout'])}
-            >
-              <option value="split">Yan yana</option>
-              <option value="centered">Ortali</option>
-              <option value="minimal">Minimal</option>
-            </select>
-          </Field>
-
-          {(() => {
-            const heroTextOrder =
-              settings.heroTextItemsOrder && settings.heroTextItemsOrder.length > 0
-                ? settings.heroTextItemsOrder
-                : ['eyebrow', 'title', 'subtitle', 'ctas'];
-            const heroCtaOrder =
-              settings.heroCtaButtonsOrder && settings.heroCtaButtonsOrder.length > 0
-                ? settings.heroCtaButtonsOrder
-                : ['primary', 'secondary'];
-            const heroFeatureSide =
-              settings.heroFeatureSide === 'left' || settings.heroFeatureSide === 'right'
-                ? settings.heroFeatureSide
-                : 'right';
-
-            const textItems = [
-              { key: 'eyebrow', label: 'Kucuk baslik' },
-              { key: 'title', label: 'Ana baslik' },
-              { key: 'subtitle', label: 'Aciklama' },
-              { key: 'ctas', label: 'CTA kutusu' },
-            ] as const;
-
-            const ctaButtons = [
-              { key: 'primary', label: 'Ana buton' },
-              { key: 'secondary', label: '2. buton' },
-            ] as const;
-
-            function moveOrder<T>(arr: T[], fromIndex: number, toIndex: number) {
-              const next = [...arr];
-              const [moved] = next.splice(fromIndex, 1);
-              next.splice(toIndex, 0, moved);
-              return next;
-            }
-
-            const split = settings.heroLayout === 'split';
-
-            return (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/30">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                    Kutucuk sirasi
-                  </p>
-                  <div className="space-y-2">
-                    {heroTextOrder.map((itemKey, index) => {
-                      const label = textItems.find((t) => t.key === itemKey)?.label ?? itemKey;
-                      return (
-                        <div
-                          key={itemKey}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('heroTextFromIndex', String(index));
-                          }}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const from = Number(e.dataTransfer.getData('heroTextFromIndex'));
-                            if (Number.isNaN(from) || from === index) return;
-                            const next = moveOrder(heroTextOrder, from, index);
-                            patch('heroTextItemsOrder', next as StoreSettings['heroTextItemsOrder']);
-                          }}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 dark:border-stone-800 dark:bg-stone-950/40"
-                        >
-                          <div className="text-sm font-medium text-stone-700 dark:text-stone-200">
-                            {label}
-                          </div>
-                          <div className="text-xs text-stone-400" aria-hidden>
-                            ≡
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/30">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                    CTA buton sirasi
-                  </p>
-                  <div className="space-y-2">
-                    {heroCtaOrder.map((btnKey, index) => {
-                      const label = ctaButtons.find((b) => b.key === btnKey)?.label ?? btnKey;
-                      return (
-                        <div
-                          key={btnKey}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('heroCtaFromIndex', String(index));
-                          }}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const from = Number(e.dataTransfer.getData('heroCtaFromIndex'));
-                            if (Number.isNaN(from) || from === index) return;
-                            const next = moveOrder(heroCtaOrder, from, index);
-                            patch('heroCtaButtonsOrder', next as StoreSettings['heroCtaButtonsOrder']);
-                          }}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 dark:border-stone-800 dark:bg-stone-950/40"
-                        >
-                          <div className="text-sm font-medium text-stone-700 dark:text-stone-200">
-                            {label}
-                          </div>
-                          <div className="text-xs text-stone-400" aria-hidden>
-                            ≡
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/30">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                    Feature kartlarinin yeri
-                  </p>
-                  <p className="mb-2 text-xs text-stone-500">
-                    Bu ayar sadece <b>Yan yana</b> (split) modunda geçerli.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={!split}
-                      onClick={() => patch('heroFeatureSide', 'left' as StoreSettings['heroFeatureSide'])}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                        heroFeatureSide === 'left'
-                          ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-100'
-                          : 'border-stone-300 bg-white text-stone-700 hover:border-amber-600 dark:border-stone-700 dark:bg-stone-950/40 dark:text-stone-200'
-                      } ${!split ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      Sol
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!split}
-                      onClick={() => patch('heroFeatureSide', 'right' as StoreSettings['heroFeatureSide'])}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                        heroFeatureSide === 'right'
-                          ? 'border-amber-700 bg-amber-50 text-amber-900 dark:border-amber-600 dark:bg-amber-950/30 dark:text-amber-100'
-                          : 'border-stone-300 bg-white text-stone-700 hover:border-amber-600 dark:border-stone-700 dark:bg-stone-950/40 dark:text-stone-200'
-                      } ${!split ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      Sag
-                    </button>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-950/20">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-900/80 dark:text-amber-100">
-                    Metin ve buton içerikleri
-                  </p>
-                  <div className="space-y-3">
-                    <Field label="Kucuk baslik">
-                      <input
-                        className={inputClass}
-                        value={settings.heroEyebrow}
-                        onChange={(e) => patch('heroEyebrow', e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Ana baslik">
-                      <input
-                        className={inputClass}
-                        value={settings.heroTitle}
-                        onChange={(e) => patch('heroTitle', e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Aciklama">
-                      <textarea
-                        className={`${inputClass} min-h-24`}
-                        value={settings.heroSubtitle}
-                        onChange={(e) => patch('heroSubtitle', e.target.value)}
-                      />
-                    </Field>
-
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field label="Ana buton metni">
-                        <input
-                          className={inputClass}
-                          value={settings.heroCtaLabel}
-                          onChange={(e) => patch('heroCtaLabel', e.target.value)}
-                        />
-                      </Field>
-                      <Field label="Ana buton linki">
-                        <input
-                          className={inputClass}
-                          value={settings.heroCtaHref}
-                          onChange={(e) => patch('heroCtaHref', e.target.value)}
-                        />
-                      </Field>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field label="2. buton metni">
-                        <input
-                          className={inputClass}
-                          value={settings.heroSecondaryCtaLabel}
-                          onChange={(e) => patch('heroSecondaryCtaLabel', e.target.value)}
-                        />
-                      </Field>
-                      <Field label="2. buton linki">
-                        <input
-                          className={inputClass}
-                          value={settings.heroSecondaryCtaHref}
-                          onChange={(e) => patch('heroSecondaryCtaHref', e.target.value)}
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      ) : null}
+    <InspectorShell
+      title={sectionLabel(section.type)}
+      subtitle="Bolum ayarlari"
+      hint="Icerik, duzen ve sirayi asagidan ayarla. Kaydet ile yayinla."
+      actions={removeAction}
+    >
+      {section.type === 'hero' ? <HeroPanel settings={settings} patch={patch} /> : null}
 
       {section.type === 'features' ? (
         <div className="space-y-3">
-          <p className="text-xs text-stone-500">Kart metinlerine tikla veya buradan duzenle.</p>
+          <p className="text-xs text-stone-500">Kart metinlerini buradan duzenle (max 4).</p>
           {settings.featureCards.slice(0, 4).map((card, index) => (
             <div
               key={index}
@@ -592,34 +617,49 @@ export default function StoreEditorInspector({
 
       {section.type === 'products' ? (
         <div className="space-y-4">
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-            Urun basliklarina tikla veya asagidan hizli urun ekle.
-          </p>
-
           <div className="rounded-xl border border-dashed border-amber-700/40 bg-amber-50/60 p-3 dark:border-amber-600/40 dark:bg-amber-950/20">
             <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
           </div>
-
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
-              Su an vitrinde ({products.length})
-            </p>
-            <ul className="max-h-40 space-y-1 overflow-y-auto text-sm">
-              {products.slice(0, 8).map((product) => (
-                <li
-                  key={product.id}
-                  className="truncate rounded-lg bg-stone-50 px-2 py-1.5 text-stone-700 dark:bg-stone-900 dark:text-stone-300"
-                >
-                  {product.name}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <Field label="Ust baslik">
+            <input
+              className={inputClass}
+              value={settings.productsEyebrow}
+              onChange={(e) => patch('productsEyebrow', e.target.value)}
+            />
+          </Field>
+          <Field label="Baslik">
+            <input
+              className={inputClass}
+              value={settings.productsTitle}
+              onChange={(e) => patch('productsTitle', e.target.value)}
+            />
+          </Field>
+          <Field label="Aciklama">
+            <textarea
+              className={`${inputClass} min-h-20`}
+              value={settings.productsSubtitle}
+              onChange={(e) => patch('productsSubtitle', e.target.value)}
+            />
+          </Field>
         </div>
       ) : null}
 
       {section.type === 'rich_text' ? (
         <div className="space-y-3">
+          <Field label="Baslik">
+            <input
+              className={inputClass}
+              value={section.title}
+              onChange={(e) => patchSection(section.id, { title: e.target.value })}
+            />
+          </Field>
+          <Field label="Metin">
+            <textarea
+              className={`${inputClass} min-h-28`}
+              value={section.body}
+              onChange={(e) => patchSection(section.id, { body: e.target.value })}
+            />
+          </Field>
           <Field label="Hizalama">
             <select
               className={inputClass}
@@ -632,12 +672,25 @@ export default function StoreEditorInspector({
               <option value="center">Orta</option>
             </select>
           </Field>
-          <p className="text-xs text-stone-500">Baslik ve metne onizlemede tikla.</p>
         </div>
       ) : null}
 
       {section.type === 'banner' || section.type === 'cta' ? (
         <div className="space-y-3">
+          <Field label="Baslik">
+            <input
+              className={inputClass}
+              value={section.title}
+              onChange={(e) => patchSection(section.id, { title: e.target.value })}
+            />
+          </Field>
+          <Field label="Metin">
+            <textarea
+              className={`${inputClass} min-h-20`}
+              value={section.body}
+              onChange={(e) => patchSection(section.id, { body: e.target.value })}
+            />
+          </Field>
           <Field label="Buton yazisi">
             <input
               className={inputClass}
@@ -669,9 +722,8 @@ export default function StoreEditorInspector({
               </select>
             </Field>
           ) : null}
-          <p className="text-xs text-stone-500">Baslik ve metne onizlemede tikla.</p>
         </div>
       ) : null}
-    </div>
+    </InspectorShell>
   );
 }

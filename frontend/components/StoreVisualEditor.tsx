@@ -293,8 +293,8 @@ export default function StoreVisualEditor() {
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
-        <aside className={`overflow-y-auto border-r p-3 ${panel}`}>
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[240px_minmax(0,1fr)_minmax(300px,340px)]">
+        <aside className={`min-h-0 overflow-y-auto border-r p-3 ${panel}`}>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
             Hizli islem
           </p>
@@ -384,7 +384,7 @@ export default function StoreVisualEditor() {
           onTextChange={updateSettings}
         />
 
-        <aside className={`overflow-hidden border-l ${panel}`}>
+        <aside className={`flex min-h-0 flex-col overflow-hidden border-l ${panel}`}>
           <StoreEditorInspector
             settings={settings}
             selection={selection}
@@ -394,6 +394,7 @@ export default function StoreVisualEditor() {
             onChange={updateSettings}
             onServerLogoUrl={setServerLogoUrl}
             onProductCreated={handleProductCreated}
+            onRemoveSection={removeSection}
           />
         </aside>
       </div>
