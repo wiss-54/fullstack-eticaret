@@ -6,7 +6,7 @@ function isMailerSendConfigured() {
 
 function getFromAddress() {
   return {
-    email: process.env.MAIL_FROM_EMAIL || 'iletisim@destek.hatiraniyarat.com',
+    email: process.env.MAIL_FROM_EMAIL || 'noreply@test.hatiraniyarat.com',
     name: process.env.MAIL_FROM_NAME || 'Hatıranı Yarat',
   };
 }
