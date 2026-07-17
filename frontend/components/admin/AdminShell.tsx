@@ -5,57 +5,99 @@ import { usePathname, useRouter } from 'next/navigation';
 import { clearAdminToken } from '@/lib/admin-api';
 import { getAdminPaths } from '@/lib/admin-paths';
 import { useAdminGuard } from '@/lib/use-admin-guard';
+import { AdminThemeProvider, useAdminTheme } from '@/components/admin/AdminThemeProvider';
 
 const NAV = [
-  { key: 'dashboard', label: 'Urunler', match: (p: string, paths: ReturnType<typeof getAdminPaths>) =>
-      p === paths.dashboard || p === '/admin' || p === '/' },
-  { key: 'orders', label: 'Siparisler', match: (p: string) =>
-      p.includes('/orders') || p.includes('/siparisler') },
-  { key: 'settings', label: 'Magaza', match: (p: string) =>
-      p.includes('/settings') || p.includes('/ayarlar') },
-  { key: 'monitoring', label: 'Monitoring', match: (p: string) =>
-      p.includes('/monitoring') },
-] as const;
+  {
+    key: 'dashboard' as const,
+    label: 'Urunler',
+    short: 'U',
+    match: (p: string, paths: ReturnType<typeof getAdminPaths>) =>
+      p === paths.dashboard || p === '/admin' || p === '/',
+  },
+  {
+    key: 'orders' as const,
+    label: 'Siparisler',
+    short: 'S',
+    match: (p: string) => p.includes('/orders') || p.includes('/siparisler'),
+  },
+  {
+    key: 'settings' as const,
+    label: 'Magaza',
+    short: 'M',
+    match: (p: string) => p.includes('/settings') || p.includes('/ayarlar'),
+  },
+  {
+    key: 'monitoring' as const,
+    label: 'Monitoring',
+    short: 'I',
+    match: (p: string) => p.includes('/monitoring'),
+  },
+];
+
+const SIDEBAR_EXPANDED = 'w-56';
+const SIDEBAR_COLLAPSED = 'w-16';
 
 type AdminShellProps = {
   children: React.ReactNode;
 };
 
-export default function AdminShell({ children }: AdminShellProps) {
+function AdminShellInner({ children }: AdminShellProps) {
   const ready = useAdminGuard();
   const pathname = usePathname() || '';
   const router = useRouter();
   const paths = getAdminPaths();
   const isEditor = pathname.includes('/settings') || pathname.includes('/ayarlar');
+  const { theme, toggleTheme, sidebarCollapsed, toggleSidebar } = useAdminTheme();
+  const dark = theme === 'dark';
 
   function handleLogout() {
     clearAdminToken();
     router.push(paths.login);
   }
 
+  const shellBg = dark ? 'bg-zinc-950 text-zinc-50' : 'bg-stone-100 text-stone-900';
+  const asideBg = dark
+    ? 'border-zinc-800 bg-zinc-900'
+    : 'border-stone-200 bg-white';
+  const muted = dark ? 'text-zinc-400' : 'text-stone-500';
+  const navIdle = dark
+    ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+    : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900';
+  const navActive = dark
+    ? 'bg-amber-950/60 text-amber-100'
+    : 'bg-amber-50 text-amber-950';
+  const borderSoft = dark ? 'border-zinc-800' : 'border-stone-200';
+
   if (!ready) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-stone-100 dark:bg-stone-950">
-        <p className="text-sm text-stone-500">Yonetim paneli yukleniyor...</p>
+      <div className={`flex h-dvh items-center justify-center ${shellBg}`}>
+        <p className={`text-sm ${muted}`}>Yonetim paneli yukleniyor...</p>
       </div>
     );
   }
 
   return (
-    <div
-      className={`flex bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-50 ${
-        isEditor ? 'h-[100dvh] overflow-hidden' : 'min-h-full'
-      }`}
-    >
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900 md:flex">
-        <div className="border-b border-stone-200 px-4 py-5 dark:border-stone-800">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-800 dark:text-amber-400">
-            Yonetim
-          </p>
-          <p className="mt-1 text-base font-semibold tracking-tight">Hatirani Yarat</p>
+    <div className={`flex h-dvh overflow-hidden ${shellBg}`} data-admin-theme={theme}>
+      <aside
+        className={`hidden h-full shrink-0 flex-col border-r transition-[width] duration-200 md:flex ${asideBg} ${
+          sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED
+        }`}
+      >
+        <div className={`shrink-0 border-b px-3 py-4 ${borderSoft}`}>
+          {sidebarCollapsed ? (
+            <p className="text-center text-sm font-bold text-amber-500">HY</p>
+          ) : (
+            <>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-500">
+                Yonetim
+              </p>
+              <p className="mt-1 truncate text-base font-semibold tracking-tight">Hatirani Yarat</p>
+            </>
+          )}
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 p-3">
+        <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2">
           {NAV.map((item) => {
             const href = paths[item.key];
             const active = item.match(pathname, paths);
@@ -63,54 +105,92 @@ export default function AdminShell({ children }: AdminShellProps) {
               <Link
                 key={item.key}
                 href={href}
-                className={`rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  active
-                    ? 'bg-amber-50 text-amber-950 dark:bg-amber-950/50 dark:text-amber-100'
-                    : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100'
-                }`}
+                title={item.label}
+                className={`rounded-lg text-sm font-medium transition ${
+                  sidebarCollapsed ? 'px-0 py-2.5 text-center' : 'px-3 py-2.5'
+                } ${active ? navActive : navIdle}`}
               >
-                {item.label}
+                {sidebarCollapsed ? item.short : item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="space-y-1 border-t border-stone-200 p-3 dark:border-stone-800">
+        <div className={`shrink-0 space-y-1 border-t p-2 ${borderSoft}`}>
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={sidebarCollapsed ? 'Menuyu genislet' : 'Menuyu daralt'}
+            className={`w-full rounded-lg py-2 text-sm ${navIdle} ${
+              sidebarCollapsed ? 'px-0 text-center' : 'px-3 text-left'
+            }`}
+          >
+            {sidebarCollapsed ? '»' : '« Daralt'}
+          </button>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={dark ? 'Gunduz modu' : 'Gece modu'}
+            className={`w-full rounded-lg py-2 text-sm ${navIdle} ${
+              sidebarCollapsed ? 'px-0 text-center' : 'px-3 text-left'
+            }`}
+          >
+            {sidebarCollapsed ? (dark ? '☀' : '☾') : dark ? 'Gunduz modu' : 'Gece modu'}
+          </button>
           <Link
             href={paths.site}
             target={paths.site.startsWith('http') ? '_blank' : undefined}
-            className="block rounded-lg px-3 py-2.5 text-sm text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+            title="Siteye git"
+            className={`block rounded-lg py-2 text-sm ${navIdle} ${
+              sidebarCollapsed ? 'px-0 text-center' : 'px-3'
+            }`}
           >
-            Siteye git
+            {sidebarCollapsed ? '↗' : 'Siteye git'}
           </Link>
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+            title="Cikis"
+            className={`w-full rounded-lg py-2 text-sm ${navIdle} ${
+              sidebarCollapsed ? 'px-0 text-center' : 'px-3 text-left'
+            }`}
           >
-            Cikis
+            {sidebarCollapsed ? '×' : 'Cikis'}
           </button>
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-900 md:hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header
+          className={`flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 md:hidden ${asideBg} ${borderSoft}`}
+        >
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-800 dark:text-amber-400">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-500">
               Yonetim
             </p>
             <p className="text-sm font-semibold">Hatirani Yarat</p>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs dark:border-stone-700"
-          >
-            Cikis
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className={`rounded-lg border px-3 py-1.5 text-xs ${borderSoft}`}
+            >
+              {dark ? 'Gunduz' : 'Gece'}
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={`rounded-lg border px-3 py-1.5 text-xs ${borderSoft}`}
+            >
+              Cikis
+            </button>
+          </div>
         </header>
 
-        <nav className="flex gap-1 overflow-x-auto border-b border-stone-200 bg-white px-2 py-2 dark:border-stone-800 dark:bg-stone-900 md:hidden">
+        <nav
+          className={`flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 md:hidden ${asideBg} ${borderSoft}`}
+        >
           {NAV.map((item) => {
             const href = paths[item.key];
             const active = item.match(pathname, paths);
@@ -119,9 +199,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                 key={item.key}
                 href={href}
                 className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium ${
-                  active
-                    ? 'bg-amber-50 text-amber-950 dark:bg-amber-950/50 dark:text-amber-100'
-                    : 'text-stone-600 dark:text-stone-400'
+                  active ? navActive : navIdle
                 }`}
               >
                 {item.label}
@@ -130,11 +208,23 @@ export default function AdminShell({ children }: AdminShellProps) {
           })}
         </nav>
 
-        <div className={`min-h-0 min-w-0 flex-1 ${isEditor ? 'overflow-hidden' : ''}`}>
+        <div
+          className={`min-h-0 min-w-0 flex-1 ${
+            isEditor ? 'overflow-hidden' : 'overflow-y-auto'
+          }`}
+        >
           {children}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminShell({ children }: AdminShellProps) {
+  return (
+    <AdminThemeProvider>
+      <AdminShellInner>{children}</AdminShellInner>
+    </AdminThemeProvider>
   );
 }
 
@@ -147,14 +237,23 @@ export function AdminPageHeader({
   description?: string;
   actions?: React.ReactNode;
 }) {
+  const { theme } = useAdminTheme();
+  const dark = theme === 'dark';
+
   return (
     <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
+        <h1
+          className={`text-2xl font-semibold tracking-tight ${
+            dark ? 'text-zinc-50' : 'text-stone-900'
+          }`}
+        >
           {title}
         </h1>
         {description ? (
-          <p className="mt-1 max-w-2xl text-sm text-stone-500">{description}</p>
+          <p className={`mt-1 max-w-2xl text-sm ${dark ? 'text-zinc-400' : 'text-stone-500'}`}>
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

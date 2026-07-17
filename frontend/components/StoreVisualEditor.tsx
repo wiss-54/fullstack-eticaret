@@ -18,6 +18,7 @@ import { createStoreSection, SECTION_PALETTE } from '@/lib/store-sections';
 import type { EditorSelection } from '@/lib/editor-selection';
 import StoreEditorCanvas from '@/components/StoreEditorCanvas';
 import StoreEditorInspector from '@/components/StoreEditorInspector';
+import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
 
 const emptyFeatures = [
   { title: '', text: '' },
@@ -26,15 +27,26 @@ const emptyFeatures = [
   { title: '', text: '' },
 ];
 
-const chrome = 'bg-zinc-100 text-zinc-900';
-const panel = 'border-zinc-200 bg-white';
-const btnGhost =
-  'rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50';
-const btnPrimary =
-  'rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-60';
-
 export default function StoreVisualEditor() {
   const router = useRouter();
+  const { theme } = useAdminTheme();
+  const dark = theme === 'dark';
+  const chrome = dark ? 'bg-zinc-950 text-zinc-50' : 'bg-zinc-100 text-zinc-900';
+  const panel = dark
+    ? 'border-zinc-800 bg-zinc-900'
+    : 'border-zinc-200 bg-white';
+  const btnGhost = dark
+    ? 'rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800'
+    : 'rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50';
+  const btnPrimary =
+    'rounded-md bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-60';
+  const muted = dark ? 'text-zinc-400' : 'text-zinc-500';
+  const selectActive = dark
+    ? 'border-amber-600 bg-amber-950/40'
+    : 'border-zinc-900 bg-zinc-50';
+  const selectIdle = dark
+    ? 'border-dashed border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/60'
+    : 'border-dashed border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50';
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [themes, setThemes] = useState<StoreThemePreset[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -246,7 +258,7 @@ export default function StoreVisualEditor() {
   if (loading || !settings) {
     return (
       <div className={`flex h-full items-center justify-center ${chrome}`}>
-        <p className="text-sm text-stone-500">{error ?? 'Gorsel editor yukleniyor...'}</p>
+        <p className={`text-sm ${muted}`}>{error ?? 'Gorsel editor yukleniyor...'}</p>
       </div>
     );
   }
@@ -255,8 +267,10 @@ export default function StoreVisualEditor() {
     <div className={`flex h-full flex-col ${chrome}`}>
       <header className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 ${panel}`}>
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-zinc-900">Magaza tasarimi</h1>
-          <p className="text-xs text-zinc-500">Sayfayi gorerek yerlestir ve kaydet</p>
+          <h1 className={`text-lg font-semibold tracking-tight ${dark ? 'text-zinc-50' : 'text-zinc-900'}`}>
+            Magaza tasarimi
+          </h1>
+          <p className={`text-xs ${muted}`}>Sayfayi gorerek yerlestir ve kaydet</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href={getAdminPaths().site} target="_blank" className={btnGhost}>
@@ -270,14 +284,14 @@ export default function StoreVisualEditor() {
 
       {(error || saved) && (
         <div className={`border-b px-4 py-2 text-sm ${panel}`}>
-          {error ? <p className="text-red-600">{error}</p> : null}
-          {saved ? <p className="text-emerald-700">Kaydedildi. Canli sitede gorunur.</p> : null}
+          {error ? <p className="text-red-500">{error}</p> : null}
+          {saved ? <p className="text-emerald-500">Kaydedildi. Canli sitede gorunur.</p> : null}
         </div>
       )}
 
       <div className="grid min-h-0 flex-1 lg:grid-cols-[240px_minmax(0,1fr)_minmax(300px,340px)]">
         <aside className={`min-h-0 overflow-y-auto border-r p-3 ${panel}`}>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>
             Hizli islem
           </p>
           <div className="mb-5 grid gap-2">
@@ -285,29 +299,27 @@ export default function StoreVisualEditor() {
               type="button"
               onClick={() => setSelection({ type: 'product' })}
               className={`rounded-lg border px-3 py-3 text-left transition ${
-                selection?.type === 'product'
-                  ? 'border-zinc-900 bg-zinc-50'
-                  : 'border-dashed border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50'
+                selection?.type === 'product' ? selectActive : selectIdle
               }`}
             >
               <span className="block text-sm font-semibold">+ Urun ekle</span>
-              <span className="text-xs text-zinc-500">Vitrine yeni urun koy</span>
+              <span className={`text-xs ${muted}`}>Vitrine yeni urun koy</span>
             </button>
             <button
               type="button"
               onClick={() => setSelection({ type: 'style' })}
               className={`rounded-lg border px-3 py-3 text-left transition ${
                 selection?.type === 'style' || selection?.type === 'header'
-                  ? 'border-zinc-900 bg-zinc-50'
-                  : 'border-dashed border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50'
+                  ? selectActive
+                  : selectIdle
               }`}
             >
               <span className="block text-sm font-semibold">Marka & yazi tipi</span>
-              <span className="text-xs text-zinc-500">Font, renk, logo</span>
+              <span className={`text-xs ${muted}`}>Font, renk, logo</span>
             </button>
           </div>
 
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>
             Bolum ekle
           </p>
           <div className="grid gap-2">
@@ -316,38 +328,42 @@ export default function StoreVisualEditor() {
                 key={item.type}
                 type="button"
                 onClick={() => addSection(item.type)}
-                className="rounded-lg border border-dashed border-zinc-300 px-3 py-3 text-left transition hover:border-zinc-500 hover:bg-zinc-50"
+                className={`rounded-lg border px-3 py-3 text-left transition ${selectIdle}`}
               >
                 <span className="block text-sm font-medium">+ {item.label}</span>
-                <span className="text-xs text-zinc-500">{item.hint}</span>
+                <span className={`text-xs ${muted}`}>{item.hint}</span>
               </button>
             ))}
           </div>
 
-          <p className="mb-2 mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+          <p className={`mb-2 mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>
             Hazir temalar
           </p>
           <div className="space-y-2">
-            {themes.map((theme) => (
+            {themes.map((preset) => (
               <button
-                key={theme.id}
+                key={preset.id}
                 type="button"
-                disabled={applyingTheme === theme.id}
-                onClick={() => void handleApplyTheme(theme.id)}
+                disabled={applyingTheme === preset.id}
+                onClick={() => void handleApplyTheme(preset.id)}
                 className={`w-full rounded-lg border p-2.5 text-left transition ${
-                  settings.themeId === theme.id
-                    ? 'border-zinc-900 ring-1 ring-zinc-900'
-                    : 'border-zinc-200 hover:border-zinc-400'
+                  settings.themeId === preset.id
+                    ? dark
+                      ? 'border-amber-500 ring-1 ring-amber-500'
+                      : 'border-zinc-900 ring-1 ring-zinc-900'
+                    : dark
+                      ? 'border-zinc-700 hover:border-zinc-500'
+                      : 'border-zinc-200 hover:border-zinc-400'
                 }`}
               >
                 <div
                   className="mb-2 h-9 rounded-md"
                   style={{
-                    background: `linear-gradient(135deg, ${theme.previewAccent}, ${theme.previewAccent}99)`,
+                    background: `linear-gradient(135deg, ${preset.previewAccent}, ${preset.previewAccent}99)`,
                   }}
                 />
-                <p className="text-sm font-medium">{theme.name}</p>
-                <p className="text-[11px] leading-snug text-zinc-500">{theme.description}</p>
+                <p className="text-sm font-medium">{preset.name}</p>
+                <p className={`text-[11px] leading-snug ${muted}`}>{preset.description}</p>
               </button>
             ))}
           </div>
