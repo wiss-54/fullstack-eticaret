@@ -130,15 +130,25 @@ export type OrderItem = {
   sortOrder: number;
 };
 
+export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed' | 'cancelled';
+
 export type Order = {
   id: number;
   userId: number;
   status: OrderStatus;
   paymentMethod: string;
+  paymentStatus?: PaymentStatus | string;
+  paymentProvider?: string | null;
+  providerPaymentId?: string | null;
+  paidAt?: string | null;
+  stockReserved?: boolean;
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
   shippingAddress: string;
+  shippingCity?: string | null;
+  shippingDistrict?: string | null;
+  shippingAddressLine?: string | null;
   orderNote: string | null;
   subtotal: number;
   total: number;

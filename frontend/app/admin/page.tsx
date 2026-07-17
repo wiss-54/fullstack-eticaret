@@ -1,7 +1,6 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Category, Product, ProductOption, ProductVariant, VariantAxis } from '@/lib/types';
 import {
@@ -11,9 +10,9 @@ import {
   adminGetProduct,
   adminGetProducts,
   adminUpdateProduct,
-  clearAdminToken,
   getAdminToken,
 } from '@/lib/admin-api';
+import { AdminPageHeader } from '@/components/admin/AdminShell';
 import CategoryManager from '@/components/CategoryManager';
 import ProductImageField from '@/components/ProductImageField';
 import ProductOptionsEditor from '@/components/ProductOptionsEditor';
@@ -192,82 +191,36 @@ export default function AdminPage() {
     }
   }
 
-  function handleLogout() {
-    clearAdminToken();
-    router.push(getAdminPaths().login);
-  }
-
   return (
-    <div className="min-h-full bg-zinc-50 dark:bg-black">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <div>
-            <p className="text-sm font-medium text-zinc-500">Admin Panel</p>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Urun Yonetimi</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Referans: iKas varyant matrisi + Shopify SKU/stok modeli
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href={getAdminPaths().orders}
-              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Siparisler
-            </Link>
-            <Link
-              href={getAdminPaths().settings}
-              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Magaza
-            </Link>
-            <Link
-              href={getAdminPaths().monitoring}
-              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Monitoring
-            </Link>
-            <Link
-              href={getAdminPaths().site}
-              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Siteye Git
-            </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              Cikis
-            </button>
-          </div>
-        </div>
-      </header>
+    <main className="mx-auto max-w-6xl space-y-8 px-6 py-8">
+      <AdminPageHeader
+        title="Urunler"
+        description="Urun, varyant, stok ve kategori yonetimi"
+      />
 
-      <main className="mx-auto max-w-6xl space-y-8 px-6 py-10">
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+      <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
+          <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-900">
+            <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-50">
               {editingId ? 'Urunu Duzenle' : 'Yeni Urun Ekle'}
             </h2>
 
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <input
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                className="w-full rounded-xl border border-stone-300 px-4 py-3 dark:border-stone-700 dark:bg-stone-900"
                 placeholder="Urun adi"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
               />
               <textarea
-                className="min-h-24 w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                className="min-h-24 w-full rounded-xl border border-stone-300 px-4 py-3 dark:border-stone-700 dark:bg-stone-900"
                 placeholder="Aciklama"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 required
               />
               <select
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                className="w-full rounded-xl border border-stone-300 px-4 py-3 dark:border-stone-700 dark:bg-stone-900"
                 value={form.categoryId}
                 onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
               >
@@ -280,7 +233,7 @@ export default function AdminPage() {
               </select>
               <div className="grid gap-4 sm:grid-cols-2">
                 <input
-                  className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                  className="w-full rounded-xl border border-stone-300 px-4 py-3 dark:border-stone-700 dark:bg-stone-900"
                   placeholder="Temel fiyat"
                   type="number"
                   min="0"
@@ -290,7 +243,7 @@ export default function AdminPage() {
                   required
                 />
                 <input
-                  className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                  className="w-full rounded-xl border border-stone-300 px-4 py-3 dark:border-stone-700 dark:bg-stone-900"
                   placeholder="Stok"
                   type="number"
                   min="0"
@@ -318,7 +271,7 @@ export default function AdminPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-zinc-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+                  className="rounded-xl bg-stone-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900"
                 >
                   {saving ? 'Kaydediliyor...' : editingId ? 'Guncelle' : 'Ekle'}
                 </button>
@@ -326,7 +279,7 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700"
+                    className="rounded-xl border border-stone-300 px-4 py-3 text-sm dark:border-stone-700"
                   >
                     Iptal
                   </button>
@@ -359,8 +312,8 @@ export default function AdminPage() {
             ) : null}
           </section>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Urun Listesi</h2>
+          <section className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-800 dark:bg-stone-950">
+            <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-50">Urun Listesi</h2>
 
             {error ? (
               <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -369,19 +322,19 @@ export default function AdminPage() {
             ) : null}
 
             {loading ? (
-              <p className="mt-4 text-zinc-500">Yukleniyor...</p>
+              <p className="mt-4 text-stone-500">Yukleniyor...</p>
             ) : products.length === 0 ? (
-              <p className="mt-4 text-zinc-500">Henuz urun yok.</p>
+              <p className="mt-4 text-stone-500">Henuz urun yok.</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {products.map((product) => (
                   <div
                     key={product.id}
-                    className="flex items-start justify-between gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+                    className="flex items-start justify-between gap-4 rounded-xl border border-stone-200 p-4 dark:border-stone-800"
                   >
                     <div>
-                      <p className="font-medium text-zinc-900 dark:text-zinc-50">{product.name}</p>
-                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                      <p className="font-medium text-stone-900 dark:text-stone-50">{product.name}</p>
+                      <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
                         {formatPrice(product.price)} · Stok: {product.stock}
                         {product.categoryName ? ` · ${product.categoryName}` : ''}
                       </p>
@@ -393,7 +346,7 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => void startEdit(product)}
-                        className="rounded-lg border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
+                        className="rounded-lg border border-stone-300 px-3 py-1 text-sm dark:border-stone-700"
                       >
                         Duzenle
                       </button>
@@ -413,7 +366,6 @@ export default function AdminPage() {
         </div>
 
         <CategoryManager />
-      </main>
-    </div>
+    </main>
   );
 }

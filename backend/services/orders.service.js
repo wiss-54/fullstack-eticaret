@@ -2,6 +2,31 @@ const { pool } = require('../db');
 const { getProductById } = require('./products.service');
 const { syncProductStockFromVariants } = require('./product-variants.service');
 
+const ORDER_COLUMNS = `
+  id,
+  user_id AS "userId",
+  status,
+  payment_method AS "paymentMethod",
+  payment_status AS "paymentStatus",
+  payment_provider AS "paymentProvider",
+  provider_payment_id AS "providerPaymentId",
+  provider_conversation_id AS "providerConversationId",
+  paid_at AS "paidAt",
+  stock_reserved AS "stockReserved",
+  customer_name AS "customerName",
+  customer_email AS "customerEmail",
+  customer_phone AS "customerPhone",
+  shipping_address AS "shippingAddress",
+  shipping_city AS "shippingCity",
+  shipping_district AS "shippingDistrict",
+  shipping_address_line AS "shippingAddressLine",
+  order_note AS "orderNote",
+  subtotal,
+  total,
+  created_at AS "createdAt",
+  updated_at AS "updatedAt"
+`;
+
 class OrderError extends Error {
   constructor(message, statusCode = 400) {
     super(message);
@@ -16,10 +41,19 @@ function mapOrderRow(row) {
     userId: row.userId,
     status: row.status,
     paymentMethod: row.paymentMethod,
+    paymentStatus: row.paymentStatus ?? 'unpaid',
+    paymentProvider: row.paymentProvider ?? null,
+    providerPaymentId: row.providerPaymentId ?? null,
+    providerConversationId: row.providerConversationId ?? null,
+    paidAt: row.paidAt ?? null,
+    stockReserved: Boolean(row.stockReserved),
     customerName: row.customerName,
     customerEmail: row.customerEmail,
     customerPhone: row.customerPhone,
     shippingAddress: row.shippingAddress,
+    shippingCity: row.shippingCity ?? null,
+    shippingDistrict: row.shippingDistrict ?? null,
+    shippingAddressLine: row.shippingAddressLine ?? null,
     orderNote: row.orderNote,
     subtotal: Number(row.subtotal),
     total: Number(row.total),
@@ -43,6 +77,14 @@ function mapOrderItemRow(row) {
     customerNote: row.customerNote,
     sortOrder: row.sortOrder,
   };
+}
+
+function isOnlinePaymentMethod(method) {
+  return method === 'paytr';
+}
+
+function composeShippingAddress({ shippingCity, shippingDistrict, shippingAddressLine }) {
+  return `${shippingAddressLine.trim()}, ${shippingDistrict.trim()} / ${shippingCity.trim()}`;
 }
 
 async function getVariantSnapshot(client, variantId, productId) {
@@ -165,16 +207,29 @@ async function createOrder(user, payload) {
       builtLines.push(await buildOrderLine(client, item));
     }
 
-    for (const line of builtLines) {
-      await reserveStock(client, {
-        productId: line.productId,
-        variantId: line.variantId,
-        quantity: line.quantity,
-      });
+    const paymentMethod = payload.paymentMethod ?? 'manual';
+    const online = isOnlinePaymentMethod(paymentMethod);
+    const reserveNow = !online;
+
+    if (reserveNow) {
+      for (const line of builtLines) {
+        await reserveStock(client, {
+          productId: line.productId,
+          variantId: line.variantId,
+          quantity: line.quantity,
+        });
+      }
     }
 
     const subtotal = builtLines.reduce((sum, line) => sum + line.lineTotal, 0);
-    const paymentMethod = payload.paymentMethod ?? 'manual';
+    const shippingCity = payload.shippingCity.trim();
+    const shippingDistrict = payload.shippingDistrict.trim();
+    const shippingAddressLine = payload.shippingAddressLine.trim();
+    const shippingAddress = composeShippingAddress({
+      shippingCity,
+      shippingDistrict,
+      shippingAddressLine,
+    });
 
     const orderResult = await client.query(
       `
@@ -182,37 +237,33 @@ async function createOrder(user, payload) {
           user_id,
           status,
           payment_method,
+          payment_status,
+          stock_reserved,
           customer_name,
           customer_email,
           customer_phone,
           shipping_address,
+          shipping_city,
+          shipping_district,
+          shipping_address_line,
           order_note,
           subtotal,
           total
         )
-        VALUES ($1, 'pending', $2, $3, $4, $5, $6, $7, $8, $9)
-        RETURNING
-          id,
-          user_id AS "userId",
-          status,
-          payment_method AS "paymentMethod",
-          customer_name AS "customerName",
-          customer_email AS "customerEmail",
-          customer_phone AS "customerPhone",
-          shipping_address AS "shippingAddress",
-          order_note AS "orderNote",
-          subtotal,
-          total,
-          created_at AS "createdAt",
-          updated_at AS "updatedAt"
+        VALUES ($1, 'pending', $2, 'unpaid', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING ${ORDER_COLUMNS}
       `,
       [
         user.id,
         paymentMethod,
+        reserveNow,
         user.fullName,
         user.email,
         payload.customerPhone.trim(),
-        payload.shippingAddress.trim(),
+        shippingAddress,
+        shippingCity,
+        shippingDistrict,
+        shippingAddressLine,
         payload.orderNote?.trim() || null,
         subtotal,
         subtotal,
@@ -283,20 +334,7 @@ async function createOrder(user, payload) {
 async function listOrdersByUserId(userId) {
   const result = await pool.query(
     `
-      SELECT
-        id,
-        user_id AS "userId",
-        status,
-        payment_method AS "paymentMethod",
-        customer_name AS "customerName",
-        customer_email AS "customerEmail",
-        customer_phone AS "customerPhone",
-        shipping_address AS "shippingAddress",
-        order_note AS "orderNote",
-        subtotal,
-        total,
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
+      SELECT ${ORDER_COLUMNS}
       FROM orders
       WHERE user_id = $1
       ORDER BY created_at DESC
@@ -310,20 +348,7 @@ async function listOrdersByUserId(userId) {
 async function listAllOrders() {
   const result = await pool.query(
     `
-      SELECT
-        id,
-        user_id AS "userId",
-        status,
-        payment_method AS "paymentMethod",
-        customer_name AS "customerName",
-        customer_email AS "customerEmail",
-        customer_phone AS "customerPhone",
-        shipping_address AS "shippingAddress",
-        order_note AS "orderNote",
-        subtotal,
-        total,
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
+      SELECT ${ORDER_COLUMNS}
       FROM orders
       ORDER BY created_at DESC
     `,
@@ -338,8 +363,8 @@ async function listAllOrders() {
   );
 }
 
-async function getOrderItems(orderId) {
-  const result = await pool.query(
+async function getOrderItems(orderId, client = pool) {
+  const result = await client.query(
     `
       SELECT
         id,
@@ -367,20 +392,7 @@ async function getOrderItems(orderId) {
 async function getOrderById(orderId) {
   const result = await pool.query(
     `
-      SELECT
-        id,
-        user_id AS "userId",
-        status,
-        payment_method AS "paymentMethod",
-        customer_name AS "customerName",
-        customer_email AS "customerEmail",
-        customer_phone AS "customerPhone",
-        shipping_address AS "shippingAddress",
-        order_note AS "orderNote",
-        subtotal,
-        total,
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
+      SELECT ${ORDER_COLUMNS}
       FROM orders
       WHERE id = $1
       LIMIT 1
@@ -400,20 +412,7 @@ async function updateOrderStatus(orderId, status) {
       UPDATE orders
       SET status = $1, updated_at = NOW()
       WHERE id = $2
-      RETURNING
-        id,
-        user_id AS "userId",
-        status,
-        payment_method AS "paymentMethod",
-        customer_name AS "customerName",
-        customer_email AS "customerEmail",
-        customer_phone AS "customerPhone",
-        shipping_address AS "shippingAddress",
-        order_note AS "orderNote",
-        subtotal,
-        total,
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
+      RETURNING ${ORDER_COLUMNS}
     `,
     [status, orderId],
   );
@@ -424,6 +423,158 @@ async function updateOrderStatus(orderId, status) {
   return { ...order, items };
 }
 
+async function attachPaymentSession(orderId, session) {
+  const result = await pool.query(
+    `
+      UPDATE orders
+      SET
+        payment_status = 'pending',
+        payment_provider = $2,
+        provider_payment_id = $3,
+        provider_conversation_id = $4,
+        updated_at = NOW()
+      WHERE id = $1
+        AND payment_method = 'paytr'
+        AND payment_status IN ('unpaid', 'pending', 'failed')
+      RETURNING ${ORDER_COLUMNS}
+    `,
+    [orderId, session.provider, session.token, session.conversationId ?? null],
+  );
+
+  if (result.rows.length === 0) return null;
+  return mapOrderRow(result.rows[0]);
+}
+
+async function markOrderPaid(orderId, meta = {}) {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const locked = await client.query(
+      `
+        SELECT ${ORDER_COLUMNS}
+        FROM orders
+        WHERE id = $1
+        FOR UPDATE
+      `,
+      [orderId],
+    );
+
+    if (locked.rows.length === 0) {
+      throw new OrderError('Siparis bulunamadi', 404);
+    }
+
+    const current = mapOrderRow(locked.rows[0]);
+    if (current.paymentStatus === 'paid') {
+      await client.query('COMMIT');
+      const items = await getOrderItems(orderId, client);
+      return { ...current, items };
+    }
+
+    if (!isOnlinePaymentMethod(current.paymentMethod)) {
+      throw new OrderError('Bu siparis online odeme icin degil', 400);
+    }
+
+    let stockReserved = current.stockReserved;
+    if (!stockReserved) {
+      const items = await getOrderItems(orderId, client);
+      for (const item of items) {
+        await reserveStock(client, {
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        });
+      }
+      stockReserved = true;
+    }
+
+    const result = await client.query(
+      `
+        UPDATE orders
+        SET
+          payment_status = 'paid',
+          status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END,
+          stock_reserved = $2,
+          provider_payment_id = COALESCE($3, provider_payment_id),
+          provider_conversation_id = COALESCE($4, provider_conversation_id),
+          paid_at = NOW(),
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING ${ORDER_COLUMNS}
+      `,
+      [
+        orderId,
+        stockReserved,
+        meta.providerPaymentId ?? null,
+        meta.providerConversationId ?? null,
+      ],
+    );
+
+    await client.query('COMMIT');
+    const order = mapOrderRow(result.rows[0]);
+    const items = await getOrderItems(order.id);
+    return { ...order, items };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+async function markOrderPaymentFailed(orderId, meta = {}) {
+  const result = await pool.query(
+    `
+      UPDATE orders
+      SET
+        payment_status = 'failed',
+        provider_payment_id = COALESCE($2, provider_payment_id),
+        provider_conversation_id = COALESCE($3, provider_conversation_id),
+        updated_at = NOW()
+      WHERE id = $1
+        AND payment_status <> 'paid'
+      RETURNING ${ORDER_COLUMNS}
+    `,
+    [orderId, meta.providerPaymentId ?? null, meta.providerConversationId ?? null],
+  );
+
+  if (result.rows.length === 0) return null;
+  const order = mapOrderRow(result.rows[0]);
+  const items = await getOrderItems(order.id);
+  return { ...order, items };
+}
+
+async function findOrderByProviderPaymentId(token) {
+  const result = await pool.query(
+    `
+      SELECT ${ORDER_COLUMNS}
+      FROM orders
+      WHERE provider_payment_id = $1
+      LIMIT 1
+    `,
+    [token],
+  );
+
+  if (result.rows.length === 0) return null;
+  return mapOrderRow(result.rows[0]);
+}
+
+async function findOrderByProviderConversationId(conversationId) {
+  const result = await pool.query(
+    `
+      SELECT ${ORDER_COLUMNS}
+      FROM orders
+      WHERE provider_conversation_id = $1
+      LIMIT 1
+    `,
+    [conversationId],
+  );
+
+  if (result.rows.length === 0) return null;
+  return mapOrderRow(result.rows[0]);
+}
+
 module.exports = {
   OrderError,
   createOrder,
@@ -431,4 +582,11 @@ module.exports = {
   listAllOrders,
   getOrderById,
   updateOrderStatus,
+  attachPaymentSession,
+  markOrderPaid,
+  markOrderPaymentFailed,
+  findOrderByProviderPaymentId,
+  findOrderByProviderConversationId,
+  isOnlinePaymentMethod,
+  composeShippingAddress,
 };

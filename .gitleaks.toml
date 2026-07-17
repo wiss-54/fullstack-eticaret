@@ -1,0 +1,13 @@
+title = "gitleaks"
+
+[allowlist]
+description = "Test fixtures and mock payment sessions are not real secrets"
+paths = [
+  '''(^|/)backend/tests/.*''',
+  '''(^|/)frontend/.*\.test\.(ts|tsx|js)$''',
+]
+regexes = [
+  '''mock-payment-session''',
+  '''tok-12345678''',
+  '''test-secret''',
+]

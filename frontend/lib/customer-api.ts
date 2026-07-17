@@ -115,10 +115,12 @@ export async function customerGetMe() {
 }
 
 export type CreateOrderInput = {
-  shippingAddress: string;
+  shippingCity: string;
+  shippingDistrict: string;
+  shippingAddressLine: string;
   customerPhone: string;
   orderNote?: string;
-  paymentMethod?: 'manual' | 'cod';
+  paymentMethod?: 'manual' | 'cod' | 'paytr';
   items: {
     productId: number;
     variantId?: number | null;
@@ -128,8 +130,34 @@ export type CreateOrderInput = {
   }[];
 };
 
+export type PaymentInitResult = {
+  orderId: number;
+  provider: string;
+  token: string;
+  paymentPageUrl: string;
+  iframeToken: string | null;
+};
+
 export async function customerCreateOrder(input: CreateOrderInput) {
   return customerFetch<Order>('/api/orders', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function customerInitPayment(orderId: number) {
+  return customerFetch<PaymentInitResult>('/api/payments/init', {
+    method: 'POST',
+    body: JSON.stringify({ orderId }),
+  });
+}
+
+export async function customerCompleteMockPayment(input: {
+  orderId: number;
+  token: string;
+  success: boolean;
+}) {
+  return customerFetch<Order>('/api/payments/mock/complete', {
     method: 'POST',
     body: JSON.stringify(input),
   });
