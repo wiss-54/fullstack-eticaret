@@ -15,6 +15,8 @@ type ApiResponse<T> = {
   data?: T;
   error?: string;
   token?: string;
+  message?: string;
+  code?: string;
 };
 
 export function getCustomerToken(): string | null {
@@ -85,13 +87,59 @@ export async function customerRegister(input: {
     body: JSON.stringify(input),
   });
 
-  const json: ApiResponse<User> & { token?: string } = await response.json();
-  if (!response.ok || !json.success || !json.token) {
+  const json: ApiResponse<User> = await response.json();
+  if (!response.ok || !json.success) {
     throw new Error(json.error ?? 'Kayit basarisiz');
   }
 
+  return {
+    user: json.data as User,
+    message: json.message ?? 'Kayit olusturuldu',
+  };
+}
+
+export async function customerVerifyEmail(token: string) {
+  const response = await fetch(`${getApiBaseUrl()}/api/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  const json: ApiResponse<User> & { token?: string; message?: string } = await response.json();
+  if (!response.ok || !json.success || !json.token) {
+    throw new Error(json.error ?? 'E-posta dogrulanamadi');
+  }
+
   setCustomerToken(json.token);
-  return json.data as User;
+  return {
+    user: json.data as User,
+    message: json.message ?? 'E-posta dogrulandi',
+  };
+}
+
+export async function customerResendVerificationEmail(email: string) {
+  const response = await fetch(`${getApiBaseUrl()}/api/auth/resend-verification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  const json: ApiResponse<null> = await response.json();
+  if (!response.ok || !json.success) {
+    throw new Error(json.error ?? 'E-posta gonderilemedi');
+  }
+
+  return json.message ?? 'Dogrulama e-postasi gonderildi';
+}
+
+export class EmailNotVerifiedError extends Error {
+  email: string;
+
+  constructor(message: string, email: string) {
+    super(message);
+    this.name = 'EmailNotVerifiedError';
+    this.email = email;
+  }
 }
 
 export async function customerLogin(email: string, password: string) {
@@ -101,7 +149,14 @@ export async function customerLogin(email: string, password: string) {
     body: JSON.stringify({ email, password }),
   });
 
-  const json: ApiResponse<User> & { token?: string } = await response.json();
+  const json: ApiResponse<User> & { token?: string; code?: string } = await response.json();
+  if (response.status === 403 && json.code === 'EMAIL_NOT_VERIFIED') {
+    throw new EmailNotVerifiedError(
+      json.error ?? 'E-posta adresiniz dogrulanmamis',
+      json.data?.email ?? email,
+    );
+  }
+
   if (!response.ok || !json.success || !json.token) {
     throw new Error(json.error ?? 'Giris basarisiz');
   }

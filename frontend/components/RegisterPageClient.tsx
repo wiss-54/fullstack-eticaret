@@ -3,7 +3,11 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { customerRegister, validateCustomerSession } from '@/lib/customer-api';
+import {
+  customerRegister,
+  customerResendVerificationEmail,
+  validateCustomerSession,
+} from '@/lib/customer-api';
 
 export default function RegisterPageClient() {
   const router = useRouter();
@@ -15,7 +19,10 @@ export default function RegisterPageClient() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [successEmail, setSuccessEmail] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   useEffect(() => {
     void validateCustomerSession().then((valid) => {
@@ -29,18 +36,73 @@ export default function RegisterPageClient() {
     setError(null);
 
     try {
-      await customerRegister({
+      const result = await customerRegister({
         fullName,
         email,
         password,
         phone: phone.trim() || undefined,
       });
-      router.push(returnTo);
+      setSuccessEmail(result.user.email);
+      setSuccessMessage(result.message);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kayit basarisiz');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    if (!successEmail) return;
+    setResendLoading(true);
+    setError(null);
+
+    try {
+      const message = await customerResendVerificationEmail(successEmail);
+      setSuccessMessage(message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'E-posta gonderilemedi');
+    } finally {
+      setResendLoading(false);
+    }
+  }
+
+  if (successEmail) {
+    return (
+      <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-12">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Hatira Niyarat</p>
+          <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">E-postani kontrol et</h1>
+          <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+            {successMessage ?? 'Kayit olusturuldu.'}
+          </p>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <strong>{successEmail}</strong> adresine dogrulama linki gonderdik. Linke tikladiktan sonra giris yapabilirsin.
+          </p>
+
+          {error ? (
+            <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => void handleResend()}
+            disabled={resendLoading}
+            className="mt-6 w-full rounded-xl border border-amber-800 px-4 py-3 font-medium text-amber-800 disabled:opacity-60 dark:border-amber-400 dark:text-amber-300"
+          >
+            {resendLoading ? 'Gonderiliyor...' : 'Dogrulama mailini tekrar gonder'}
+          </button>
+
+          <Link
+            href={`/giris?return=${encodeURIComponent(returnTo)}`}
+            className="mt-4 block w-full rounded-xl bg-amber-800 px-4 py-3 text-center font-medium text-white dark:bg-amber-500 dark:text-zinc-950"
+          >
+            Giris sayfasina git
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   return (

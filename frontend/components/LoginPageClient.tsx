@@ -3,7 +3,12 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { customerLogin, validateCustomerSession } from '@/lib/customer-api';
+import {
+  customerLogin,
+  customerResendVerificationEmail,
+  EmailNotVerifiedError,
+  validateCustomerSession,
+} from '@/lib/customer-api';
 
 export default function LoginPageClient() {
   const router = useRouter();
@@ -13,7 +18,10 @@ export default function LoginPageClient() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   useEffect(() => {
     void validateCustomerSession().then((valid) => {
@@ -25,14 +33,36 @@ export default function LoginPageClient() {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    setInfo(null);
+    setNeedsVerification(false);
 
     try {
       await customerLogin(email, password);
       router.push(returnTo);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Giris basarisiz');
+      if (err instanceof EmailNotVerifiedError) {
+        setNeedsVerification(true);
+        setError(err.message);
+        if (err.email) setEmail(err.email);
+      } else {
+        setError(err instanceof Error ? err.message : 'Giris basarisiz');
+      }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    setResendLoading(true);
+    setInfo(null);
+
+    try {
+      const message = await customerResendVerificationEmail(email.trim());
+      setInfo(message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'E-posta gonderilemedi');
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -75,6 +105,23 @@ export default function LoginPageClient() {
           <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
             {error}
           </p>
+        ) : null}
+
+        {info ? (
+          <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+            {info}
+          </p>
+        ) : null}
+
+        {needsVerification ? (
+          <button
+            type="button"
+            onClick={() => void handleResend()}
+            disabled={resendLoading || !email.trim()}
+            className="mt-4 w-full rounded-xl border border-amber-800 px-4 py-3 font-medium text-amber-800 disabled:opacity-60 dark:border-amber-400 dark:text-amber-300"
+          >
+            {resendLoading ? 'Gonderiliyor...' : 'Dogrulama mailini tekrar gonder'}
+          </button>
         ) : null}
 
         <button
