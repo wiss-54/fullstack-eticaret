@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 
@@ -23,67 +22,68 @@ type AdminThemeContextValue = {
 
 const THEME_KEY = 'admin_theme';
 const SIDEBAR_KEY = 'admin_sidebar_collapsed';
+const PREFS_EVENT = 'admin-prefs-change';
 
 const AdminThemeContext = createContext<AdminThemeContextValue | null>(null);
 
 function readStoredTheme(): AdminTheme {
-  if (typeof window === 'undefined') return 'dark';
   const value = window.localStorage.getItem(THEME_KEY);
   return value === 'light' ? 'light' : 'dark';
 }
 
 function readStoredSidebar(): boolean {
-  if (typeof window === 'undefined') return false;
   return window.localStorage.getItem(SIDEBAR_KEY) === '1';
 }
 
-export function AdminThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<AdminTheme>('dark');
-  const [sidebarCollapsed, setSidebarCollapsedState] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+function notifyPrefsChange() {
+  window.dispatchEvent(new Event(PREFS_EVENT));
+}
 
-  useEffect(() => {
-    setThemeState(readStoredTheme());
-    setSidebarCollapsedState(readStoredSidebar());
-    setHydrated(true);
-  }, []);
+function subscribePrefs(onStoreChange: () => void) {
+  window.addEventListener('storage', onStoreChange);
+  window.addEventListener(PREFS_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener('storage', onStoreChange);
+    window.removeEventListener(PREFS_EVENT, onStoreChange);
+  };
+}
+
+export function AdminThemeProvider({ children }: { children: ReactNode }) {
+  const theme = useSyncExternalStore(subscribePrefs, readStoredTheme, () => 'dark');
+  const sidebarCollapsed = useSyncExternalStore(subscribePrefs, readStoredSidebar, () => false);
 
   const setTheme = useCallback((next: AdminTheme) => {
-    setThemeState(next);
     window.localStorage.setItem(THEME_KEY, next);
+    notifyPrefsChange();
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((current) => {
-      const next = current === 'dark' ? 'light' : 'dark';
-      window.localStorage.setItem(THEME_KEY, next);
-      return next;
-    });
+    const next = readStoredTheme() === 'dark' ? 'light' : 'dark';
+    window.localStorage.setItem(THEME_KEY, next);
+    notifyPrefsChange();
   }, []);
 
   const setSidebarCollapsed = useCallback((value: boolean) => {
-    setSidebarCollapsedState(value);
     window.localStorage.setItem(SIDEBAR_KEY, value ? '1' : '0');
+    notifyPrefsChange();
   }, []);
 
   const toggleSidebar = useCallback(() => {
-    setSidebarCollapsedState((current) => {
-      const next = !current;
-      window.localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0');
-      return next;
-    });
+    const next = !readStoredSidebar();
+    window.localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0');
+    notifyPrefsChange();
   }, []);
 
   const value = useMemo(
     () => ({
-      theme: hydrated ? theme : 'dark',
+      theme,
       setTheme,
       toggleTheme,
-      sidebarCollapsed: hydrated ? sidebarCollapsed : false,
+      sidebarCollapsed,
       toggleSidebar,
       setSidebarCollapsed,
     }),
-    [hydrated, theme, sidebarCollapsed, setTheme, toggleTheme, toggleSidebar, setSidebarCollapsed],
+    [theme, sidebarCollapsed, setTheme, toggleTheme, toggleSidebar, setSidebarCollapsed],
   );
 
   return <AdminThemeContext.Provider value={value}>{children}</AdminThemeContext.Provider>;
