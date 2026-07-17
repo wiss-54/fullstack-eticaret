@@ -185,7 +185,7 @@ async function sendViaBrevo({ to, subject, text, html }) {
   const from = getFromAddress();
   const transporter = nodemailer.createTransport({
     host: process.env.BREVO_SMTP_HOST?.trim() || 'smtp-relay.brevo.com',
-    port: Number(process.env.BREVO_SMTP_PORT || 587),
+    port: Number(process.env.BREVO_SMTP_PORT || 2525),
     secure: false,
     auth: { user, pass },
   });
