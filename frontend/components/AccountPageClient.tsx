@@ -72,7 +72,8 @@ export default function AccountPageClient() {
 
   function handleLogout() {
     clearCustomerToken();
-    router.push('/');
+    router.replace('/');
+    router.refresh();
   }
 
   if (!ready || loading) {

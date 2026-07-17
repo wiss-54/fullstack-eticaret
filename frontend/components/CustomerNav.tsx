@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { getCustomerToken, validateCustomerSession } from '@/lib/customer-api';
 
 export default function CustomerNav() {
+  const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export default function CustomerNav() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pathname]);
 
   if (loggedIn) {
     return (
