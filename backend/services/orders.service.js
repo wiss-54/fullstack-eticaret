@@ -1,6 +1,7 @@
 const { pool } = require('../db');
 const { getProductById } = require('./products.service');
 const { syncProductStockFromVariants } = require('./product-variants.service');
+const { scheduleOrderConfirmationEmail } = require('./email.service');
 
 const ORDER_COLUMNS = `
   id,
@@ -322,7 +323,11 @@ async function createOrder(user, payload) {
     }
 
     await client.query('COMMIT');
-    return { ...order, items };
+    const fullOrder = { ...order, items };
+    if (!online) {
+      scheduleOrderConfirmationEmail(fullOrder);
+    }
+    return fullOrder;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -514,7 +519,9 @@ async function markOrderPaid(orderId, meta = {}) {
     await client.query('COMMIT');
     const order = mapOrderRow(result.rows[0]);
     const items = await getOrderItems(order.id);
-    return { ...order, items };
+    const fullOrder = { ...order, items };
+    scheduleOrderConfirmationEmail(fullOrder);
+    return fullOrder;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

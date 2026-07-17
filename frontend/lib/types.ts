@@ -109,6 +109,7 @@ export type User = {
   email: string;
   fullName: string;
   phone: string | null;
+  emailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 };
