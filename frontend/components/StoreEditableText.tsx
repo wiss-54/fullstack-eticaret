@@ -111,15 +111,15 @@ export default function StoreEditableText({
       }}
       className={`relative cursor-pointer rounded-md outline-none transition ${
         selected
-          ? 'ring-2 ring-amber-600 ring-offset-2 ring-offset-white dark:ring-offset-stone-950'
-          : 'hover:ring-2 hover:ring-amber-500/60 hover:ring-offset-1 hover:ring-offset-white dark:hover:ring-offset-stone-950'
+          ? 'ring-2 ring-sky-500 ring-offset-2 ring-offset-white'
+          : 'hover:ring-2 hover:ring-sky-400/70 hover:ring-offset-1 hover:ring-offset-white'
       } ${styleClasses} ${className}`}
       style={inlineStyle}
       title="Cift tikla → sayfada duzenle"
     >
       {display}
       {selected ? (
-        <span className="pointer-events-none absolute -top-5 left-0 rounded bg-amber-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+        <span className="pointer-events-none absolute -top-5 left-0 rounded bg-sky-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
           Metin
         </span>
       ) : null}
