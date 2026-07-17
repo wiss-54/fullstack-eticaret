@@ -157,7 +157,11 @@ export default function StoreSectionBlock({
           </div>
         ) : null}
 
-        <CategoryFilter categories={categories} activeCategoryId={activeCategoryId} />
+        <CategoryFilter
+          categories={categories}
+          activeCategoryId={activeCategoryId}
+          interactive={!editor}
+        />
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
@@ -182,7 +186,7 @@ export default function StoreSectionBlock({
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} interactive={!editor} />
             ))}
           </div>
         )}
@@ -254,17 +258,31 @@ export default function StoreSectionBlock({
             />
           </div>
           {section.ctaLabel && section.ctaHref ? (
-            <Link
-              href={section.ctaHref}
-              className={`${btn} px-5 py-2 text-sm font-semibold`}
-              style={
-                tone === 'dark'
-                  ? { backgroundColor: '#fff', color: '#111827' }
-                  : { backgroundColor: accent, color: '#fff' }
-              }
-            >
-              {section.ctaLabel}
-            </Link>
+            editor ? (
+              <span
+                className={`${btn} cursor-default px-5 py-2 text-sm font-semibold`}
+                style={
+                  tone === 'dark'
+                    ? { backgroundColor: '#fff', color: '#111827' }
+                    : { backgroundColor: accent, color: '#fff' }
+                }
+                title="Canli sitede calisir"
+              >
+                {section.ctaLabel}
+              </span>
+            ) : (
+              <Link
+                href={section.ctaHref}
+                className={`${btn} px-5 py-2 text-sm font-semibold`}
+                style={
+                  tone === 'dark'
+                    ? { backgroundColor: '#fff', color: '#111827' }
+                    : { backgroundColor: accent, color: '#fff' }
+                }
+              >
+                {section.ctaLabel}
+              </Link>
+            )
           ) : null}
         </div>
       </section>
@@ -295,13 +313,23 @@ export default function StoreSectionBlock({
             className="mx-auto mt-3 max-w-2xl text-zinc-600 dark:text-zinc-400"
             as="p"
           />
-          <Link
-            href={section.ctaHref}
-            className={`${btn} mt-6 inline-block px-6 py-3 text-sm font-semibold text-white`}
-            style={{ backgroundColor: accent }}
-          >
-            {section.ctaLabel}
-          </Link>
+          {editor ? (
+            <span
+              className={`${btn} mt-6 inline-block cursor-default px-6 py-3 text-sm font-semibold text-white`}
+              style={{ backgroundColor: accent }}
+              title="Canli sitede calisir"
+            >
+              {section.ctaLabel}
+            </span>
+          ) : (
+            <Link
+              href={section.ctaHref}
+              className={`${btn} mt-6 inline-block px-6 py-3 text-sm font-semibold text-white`}
+              style={{ backgroundColor: accent }}
+            >
+              {section.ctaLabel}
+            </Link>
+          )}
         </div>
       </section>
     );
