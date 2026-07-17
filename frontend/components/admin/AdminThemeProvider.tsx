@@ -49,7 +49,7 @@ function subscribePrefs(onStoreChange: () => void) {
 }
 
 export function AdminThemeProvider({ children }: { children: ReactNode }) {
-  const theme = useSyncExternalStore(subscribePrefs, readStoredTheme, () => 'dark');
+  const theme = useSyncExternalStore<AdminTheme>(subscribePrefs, readStoredTheme, () => 'dark');
   const sidebarCollapsed = useSyncExternalStore(subscribePrefs, readStoredSidebar, () => false);
 
   const setTheme = useCallback((next: AdminTheme) => {
@@ -74,7 +74,7 @@ export function AdminThemeProvider({ children }: { children: ReactNode }) {
     notifyPrefsChange();
   }, []);
 
-  const value = useMemo(
+  const value = useMemo<AdminThemeContextValue>(
     () => ({
       theme,
       setTheme,
