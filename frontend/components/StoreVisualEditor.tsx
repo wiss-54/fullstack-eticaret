@@ -11,7 +11,6 @@ import {
   adminGetStoreSettings,
   adminGetStoreThemes,
   adminUpdateStoreSettings,
-  clearAdminToken,
   getAdminToken,
 } from '@/lib/admin-api';
 import { getAdminPaths } from '@/lib/admin-paths';
@@ -248,40 +247,25 @@ export default function StoreVisualEditor() {
 
   if (loading || !settings) {
     return (
-      <div className={`flex min-h-full items-center justify-center ${chrome}`}>
+      <div className={`flex h-full items-center justify-center ${chrome}`}>
         <p className="text-sm text-stone-500">{error ?? 'Gorsel editor yukleniyor...'}</p>
       </div>
     );
   }
 
   return (
-    <div className={`flex h-[100dvh] flex-col ${chrome}`}>
+    <div className={`flex h-full flex-col ${chrome}`}>
       <header className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 ${panel}`}>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-500">
-            Magaza tasarimi
-          </p>
-          <h1 className="text-lg font-semibold tracking-tight">Sayfayi gorerek yerlestir</h1>
+          <h1 className="text-lg font-semibold tracking-tight">Magaza tasarimi</h1>
+          <p className="text-xs text-stone-500">Sayfayi gorerek yerlestir ve kaydet</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={getAdminPaths().dashboard} className={btnGhost}>
-            Urunler
-          </Link>
           <Link href={getAdminPaths().site} target="_blank" className={btnGhost}>
             Canli site
           </Link>
           <button type="button" onClick={() => void handleSave()} disabled={saving} className={btnPrimary}>
             {saving ? 'Kaydediliyor...' : 'Kaydet'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              clearAdminToken();
-              router.push(getAdminPaths().login);
-            }}
-            className="rounded-lg px-3 py-2 text-sm text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
-          >
-            Cikis
           </button>
         </div>
       </header>

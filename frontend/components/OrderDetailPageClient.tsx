@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import type { Order } from '@/lib/types';
 import { customerGetOrder } from '@/lib/customer-api';
+import { paymentMethodLabel, paymentStatusLabel } from '@/lib/payment-labels';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -97,13 +98,18 @@ export default function OrderDetailPageClient() {
         <div className="mt-6 grid gap-4 text-sm text-zinc-700 dark:text-zinc-300 sm:grid-cols-2">
           <div>
             <p className="font-medium text-zinc-900 dark:text-zinc-50">Teslimat</p>
-            <p className="mt-1 whitespace-pre-wrap">{order.shippingAddress}</p>
+            <p className="mt-1 whitespace-pre-wrap">
+              {order.shippingCity
+                ? `${order.shippingAddressLine ?? ''}\n${order.shippingDistrict} / ${order.shippingCity}`
+                : order.shippingAddress}
+            </p>
             {order.customerPhone ? <p className="mt-1">{order.customerPhone}</p> : null}
           </div>
           <div>
             <p className="font-medium text-zinc-900 dark:text-zinc-50">Odeme</p>
             <p className="mt-1">
-              {order.paymentMethod === 'cod' ? 'Kapida odeme' : 'Havale / EFT'}
+              {paymentMethodLabel(order.paymentMethod)}
+              {order.paymentStatus ? ` · ${paymentStatusLabel(order.paymentStatus)}` : ''}
             </p>
             {order.orderNote ? <p className="mt-2">Not: {order.orderNote}</p> : null}
           </div>

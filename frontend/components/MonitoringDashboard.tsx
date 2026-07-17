@@ -26,7 +26,7 @@ function formatAgo(date: Date) {
 }
 
 function latencyTone(ms?: number) {
-  if (ms === undefined) return 'bg-zinc-400';
+  if (ms === undefined) return 'bg-stone-400';
   if (ms < 200) return 'bg-emerald-500';
   if (ms < 500) return 'bg-amber-500';
   return 'bg-red-500';
@@ -66,7 +66,7 @@ function ServiceIcon({ title }: { title: string }) {
             : '🖥️';
 
   return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900/5 text-2xl dark:bg-white/10">
+    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-900/5 text-2xl dark:bg-white/10">
       {icon}
     </div>
   );
@@ -85,16 +85,16 @@ function ServiceCard({
     <article
       className={`relative overflow-hidden rounded-3xl border p-5 shadow-sm transition ${
         up
-          ? 'border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:to-zinc-950'
-          : 'border-red-200/80 bg-gradient-to-br from-red-50 to-white dark:border-red-900/40 dark:from-red-950/30 dark:to-zinc-950'
+          ? 'border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:to-stone-950'
+          : 'border-red-200/80 bg-gradient-to-br from-red-50 to-white dark:border-red-900/40 dark:from-red-950/30 dark:to-stone-950'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <ServiceIcon title={title} />
           <div>
-            <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">{title}</h3>
-            <p className="text-sm text-zinc-500">{up ? 'Erisilebilir' : 'Sorun tespit edildi'}</p>
+            <h3 className="font-semibold text-stone-900 dark:text-stone-50">{title}</h3>
+            <p className="text-sm text-stone-500">{up ? 'Erisilebilir' : 'Sorun tespit edildi'}</p>
           </div>
         </div>
         <span
@@ -110,11 +110,11 @@ function ServiceCard({
 
       <div className="mt-5 space-y-3">
         <div>
-          <div className="mb-1 flex justify-between text-xs text-zinc-500">
+          <div className="mb-1 flex justify-between text-xs text-stone-500">
             <span>Gecikme</span>
             <span>{check.latencyMs !== undefined ? `${check.latencyMs} ms` : '-'}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+          <div className="h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
             <div
               className={`h-full rounded-full transition-all duration-500 ${latencyTone(check.latencyMs)}`}
               style={{ width: `${latencyPercent(check.latencyMs)}%` }}
@@ -122,7 +122,7 @@ function ServiceCard({
           </div>
         </div>
         {check.statusCode !== undefined ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">HTTP {check.statusCode}</p>
+          <p className="text-sm text-stone-600 dark:text-stone-400">HTTP {check.statusCode}</p>
         ) : null}
         {check.error ? <p className="text-sm text-red-600 dark:text-red-300">{check.error}</p> : null}
       </div>
@@ -144,10 +144,10 @@ function MetricBar({
   return (
     <div>
       <div className="mb-1 flex justify-between text-sm">
-        <span className="text-zinc-600 dark:text-zinc-400">{label}</span>
-        <span className="font-medium text-zinc-900 dark:text-zinc-50">{value}</span>
+        <span className="text-stone-600 dark:text-stone-400">{label}</span>
+        <span className="font-medium text-stone-900 dark:text-stone-50">{value}</span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+      <div className="h-2.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
         <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.min(100, percent)}%` }} />
       </div>
     </div>
@@ -253,64 +253,42 @@ export default function MonitoringDashboard() {
     : 0;
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.12),_transparent_35%),linear-gradient(180deg,#fafafa_0%,#f4f4f5_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.08),_transparent_35%),linear-gradient(180deg,#09090b_0%,#000_100%)]">
-      <header className="border-b border-zinc-200/80 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-          <div>
-            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Admin Panel</p>
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Canli Monitoring
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Servisler her {REFRESH_MS / 1000} saniyede otomatik yenilenir
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900">
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(event) => setAutoRefresh(event.target.checked)}
-              />
-              Otomatik yenile
-            </label>
-            <Link
-              href={paths.dashboard}
-              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Urunler
-            </Link>
-            <Link
-              href={paths.orders}
-              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Siparisler
-            </Link>
-            <Link
-              href={paths.settings}
-              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-            >
-              Magaza
-            </Link>
-            <button
-              type="button"
-              onClick={() => void handleManualRefresh()}
-              disabled={refreshing}
-              className="rounded-xl bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {refreshing ? 'Yenileniyor...' : 'Simdi Yenile'}
-            </button>
-          </div>
+    <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
+            Monitoring
+          </h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Servisler her {REFRESH_MS / 1000} saniyede otomatik yenilenir
+          </p>
         </div>
-      </header>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm dark:border-stone-700 dark:bg-stone-900">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(event) => setAutoRefresh(event.target.checked)}
+            />
+            Otomatik yenile
+          </label>
+          <button
+            type="button"
+            onClick={() => void handleManualRefresh()}
+            disabled={refreshing}
+            className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900"
+          >
+            {refreshing ? 'Yenileniyor...' : 'Simdi Yenile'}
+          </button>
+        </div>
+      </div>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        {!ready || loading ? (
+      {!ready || loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="h-44 animate-pulse rounded-3xl border border-zinc-200 bg-white/70 dark:border-zinc-800 dark:bg-zinc-950/70"
+                className="h-44 animate-pulse rounded-2xl border border-stone-200 bg-white/70 dark:border-stone-800 dark:bg-stone-950/70"
               />
             ))}
           </div>
@@ -336,54 +314,54 @@ export default function MonitoringDashboard() {
             <section
               className={`rounded-3xl border p-6 shadow-sm ${
                 health.tone === 'emerald'
-                  ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-white dark:border-emerald-900/40 dark:from-emerald-950/20 dark:to-zinc-950'
+                  ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-white dark:border-emerald-900/40 dark:from-emerald-950/20 dark:to-stone-950'
                   : health.tone === 'amber'
-                    ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-white dark:border-amber-900/40 dark:from-amber-950/20 dark:to-zinc-950'
-                    : 'border-red-200 bg-gradient-to-r from-red-50 to-white dark:border-red-900/40 dark:from-red-950/20 dark:to-zinc-950'
+                    ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-white dark:border-amber-900/40 dark:from-amber-950/20 dark:to-stone-950'
+                    : 'border-red-200 bg-gradient-to-r from-red-50 to-white dark:border-red-900/40 dark:from-red-950/20 dark:to-stone-950'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm dark:bg-zinc-900">
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm dark:bg-stone-900">
                     <span
                       className={`absolute inline-flex h-4 w-4 animate-ping rounded-full opacity-40 ${
-                        autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'
+                        autoRefresh ? 'bg-emerald-500' : 'bg-stone-400'
                       }`}
                     />
                     <span
                       className={`relative inline-flex h-4 w-4 rounded-full ${
-                        autoRefresh ? 'bg-emerald-500' : 'bg-zinc-400'
+                        autoRefresh ? 'bg-emerald-500' : 'bg-stone-400'
                       }`}
                     />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
                       Genel Durum
                     </p>
-                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{health.label}</h2>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50">{health.label}</h2>
+                    <p className="text-sm text-stone-600 dark:text-stone-400">
                       {countHealthy(status)}/5 servis saglikli
                       {lastUpdated ? ` · Son guncelleme ${formatAgo(lastUpdated)}` : ''}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-zinc-900/80">
-                    <p className="text-xs text-zinc-500">Urun</p>
+                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
+                    <p className="text-xs text-stone-500">Urun</p>
                     <p className="text-xl font-bold">{status.stats.productCount ?? '-'}</p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-zinc-900/80">
-                    <p className="text-xs text-zinc-500">Uptime</p>
+                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
+                    <p className="text-xs text-stone-500">Uptime</p>
                     <p className="text-sm font-bold">
                       {formatUptime(status.services.backend.uptimeSeconds)}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-zinc-900/80">
-                    <p className="text-xs text-zinc-500">RAM</p>
+                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
+                    <p className="text-xs text-stone-500">RAM</p>
                     <p className="text-sm font-bold">{ramUsedPercent}% kullanim</p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-zinc-900/80">
-                    <p className="text-xs text-zinc-500">Commit</p>
+                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
+                    <p className="text-xs text-stone-500">Commit</p>
                     <p className="text-sm font-bold">{status.deploy?.commit?.slice(0, 7) ?? '-'}</p>
                   </div>
                 </div>
@@ -398,8 +376,8 @@ export default function MonitoringDashboard() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 lg:col-span-2">
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Sunucu Metrikleri</h3>
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-950 lg:col-span-2">
+                <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-50">Sunucu Metrikleri</h3>
                 <div className="mt-5 space-y-5">
                   <MetricBar
                     label="RAM kullanimi"
@@ -413,15 +391,15 @@ export default function MonitoringDashboard() {
                     percent={Math.min(100, Math.round((status.services.backend.memoryMb / 512) * 100))}
                   />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
-                      <p className="text-sm text-zinc-500">Hostname</p>
-                      <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-50">
+                    <div className="rounded-2xl border border-stone-200 p-4 dark:border-stone-800">
+                      <p className="text-sm text-stone-500">Hostname</p>
+                      <p className="mt-1 font-medium text-stone-900 dark:text-stone-50">
                         {status.server.hostname}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
-                      <p className="text-sm text-zinc-500">Load average</p>
-                      <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-50">
+                    <div className="rounded-2xl border border-stone-200 p-4 dark:border-stone-800">
+                      <p className="text-sm text-stone-500">Load average</p>
+                      <p className="mt-1 font-medium text-stone-900 dark:text-stone-50">
                         {status.server.loadAverage.join(' · ')}
                       </p>
                     </div>
@@ -429,26 +407,26 @@ export default function MonitoringDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Deploy & CI</h3>
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-950">
+                <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-50">Deploy & CI</h3>
                 <dl className="mt-5 space-y-4 text-sm">
                   <div>
-                    <dt className="text-zinc-500">Son commit</dt>
-                    <dd className="mt-1 font-mono text-zinc-900 dark:text-zinc-50">
+                    <dt className="text-stone-500">Son commit</dt>
+                    <dd className="mt-1 font-mono text-stone-900 dark:text-stone-50">
                       {status.deploy?.commit ?? 'Bilinmiyor'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Deploy zamani</dt>
-                    <dd className="mt-1 text-zinc-900 dark:text-zinc-50">
+                    <dt className="text-stone-500">Deploy zamani</dt>
+                    <dd className="mt-1 text-stone-900 dark:text-stone-50">
                       {status.deploy?.deployedAt
                         ? new Date(status.deploy.deployedAt).toLocaleString('tr-TR')
                         : 'Bilinmiyor'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Son kontrol</dt>
-                    <dd className="mt-1 text-zinc-900 dark:text-zinc-50">
+                    <dt className="text-stone-500">Son kontrol</dt>
+                    <dd className="mt-1 text-stone-900 dark:text-stone-50">
                       {new Date(status.checkedAt).toLocaleString('tr-TR')}
                     </dd>
                   </div>
@@ -457,7 +435,7 @@ export default function MonitoringDashboard() {
                   href={status.links.githubActions}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-zinc-300 px-4 py-3 text-sm font-medium text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-stone-300 px-4 py-3 text-sm font-medium text-stone-700 dark:border-stone-700 dark:text-stone-300"
                 >
                   GitHub Actions
                 </a>
@@ -465,10 +443,9 @@ export default function MonitoringDashboard() {
             </section>
           </>
         ) : null}
-      </main>
       <span className="sr-only" aria-hidden>
         {tick}
       </span>
-    </div>
+    </main>
   );
 }

@@ -1,10 +1,11 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
-import { customerCreateOrder } from '@/lib/customer-api';
+import { customerCreateOrder, customerInitPayment } from '@/lib/customer-api';
+import { TR_CITIES, getDistrictsForCity } from '@/lib/tr-locations';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
 
 function formatPrice(price: number) {
@@ -14,17 +15,26 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
+type PaymentMethod = 'cod' | 'manual' | 'paytr';
+
 export default function CheckoutPageClient() {
   const ready = useCustomerGuard('/giris?return=/odeme');
   const router = useRouter();
   const { items, total, clearCart } = useCart();
 
-  const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingCity, setShippingCity] = useState('');
+  const [shippingDistrict, setShippingDistrict] = useState('');
+  const [shippingAddressLine, setShippingAddressLine] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [orderNote, setOrderNote] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'manual'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paytr');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const districts = useMemo(
+    () => (shippingCity ? getDistrictsForCity(shippingCity) : []),
+    [shippingCity],
+  );
 
   if (!ready) {
     return (
@@ -57,7 +67,9 @@ export default function CheckoutPageClient() {
 
     try {
       const order = await customerCreateOrder({
-        shippingAddress,
+        shippingCity,
+        shippingDistrict,
+        shippingAddressLine,
         customerPhone,
         orderNote: orderNote.trim() || undefined,
         paymentMethod,
@@ -69,6 +81,13 @@ export default function CheckoutPageClient() {
           customerNote: item.customerNote || undefined,
         })),
       });
+
+      if (paymentMethod === 'paytr') {
+        const payment = await customerInitPayment(order.id);
+        clearCart();
+        window.location.href = payment.paymentPageUrl;
+        return;
+      }
 
       clearCart();
       router.push(`/hesabim/siparis/${order.id}`);
@@ -82,15 +101,66 @@ export default function CheckoutPageClient() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-        <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Teslimat Bilgileri</h2>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950"
+        >
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Teslimat Bilgileri</h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Adres PayTR odemesine iletilir; kargo icin il / ilce ayri saklanir.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Il</span>
+              <select
+                className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                value={shippingCity}
+                onChange={(e) => {
+                  setShippingCity(e.target.value);
+                  setShippingDistrict('');
+                }}
+                required
+              >
+                <option value="">Seciniz</option>
+                {TR_CITIES.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Ilce</span>
+              <select
+                className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900 disabled:opacity-50"
+                value={shippingDistrict}
+                onChange={(e) => setShippingDistrict(e.target.value)}
+                disabled={!shippingCity}
+                required
+              >
+                <option value="">{shippingCity ? 'Seciniz' : 'Once il secin'}</option>
+                {districts.map((district) => (
+                  <option key={district} value={district}>
+                    {district}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Adres</span>
+            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">
+              Acik adres (mahalle, cadde, no, daire)
+            </span>
             <textarea
-              className="min-h-28 w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-              value={shippingAddress}
-              onChange={(e) => setShippingAddress(e.target.value)}
+              className="min-h-24 w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+              value={shippingAddressLine}
+              onChange={(e) => setShippingAddressLine(e.target.value)}
+              placeholder="Ornek: Caferaga Mah. Moda Cad. No:12 D:3"
               required
             />
           </label>
@@ -101,12 +171,15 @@ export default function CheckoutPageClient() {
               className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="05xx xxx xx xx"
               required
             />
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Siparis notu (opsiyonel)</span>
+            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">
+              Siparis notu (opsiyonel)
+            </span>
             <textarea
               className="min-h-20 w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
               value={orderNote}
@@ -117,6 +190,15 @@ export default function CheckoutPageClient() {
           <fieldset>
             <legend className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">Odeme yontemi</legend>
             <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="payment"
+                  checked={paymentMethod === 'paytr'}
+                  onChange={() => setPaymentMethod('paytr')}
+                />
+                Kredi / banka karti (PayTR)
+              </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="radio"
@@ -136,6 +218,11 @@ export default function CheckoutPageClient() {
                 Havale / EFT (manuel onay)
               </label>
             </div>
+            {paymentMethod === 'paytr' ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                Su an on gosterim: PayTR anahtari yokken mock odeme ekrani acilir.
+              </p>
+            ) : null}
           </fieldset>
 
           {error ? (
@@ -149,7 +236,13 @@ export default function CheckoutPageClient() {
             disabled={loading}
             className="w-full rounded-xl bg-amber-800 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
           >
-            {loading ? 'Siparis olusturuluyor...' : 'Siparisi Onayla'}
+            {loading
+              ? paymentMethod === 'paytr'
+                ? 'Odemeye yonlendiriliyor...'
+                : 'Siparis olusturuluyor...'
+              : paymentMethod === 'paytr'
+                ? 'Kart ile Ode'
+                : 'Siparisi Onayla'}
           </button>
         </form>
 
