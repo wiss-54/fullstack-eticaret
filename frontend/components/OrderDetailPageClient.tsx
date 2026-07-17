@@ -1,20 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import type { Order } from '@/lib/types';
 import { customerGetOrder } from '@/lib/customer-api';
+import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/order-status';
 import { paymentMethodLabel, paymentStatusLabel } from '@/lib/payment-labels';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Beklemede',
-  confirmed: 'Onaylandi',
-  preparing: 'Hazirlaniyor',
-  shipped: 'Kargoda',
-  cancelled: 'Iptal',
-};
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('tr-TR', {
@@ -30,6 +23,8 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+const POLL_MS = 12_000;
+
 export default function OrderDetailPageClient() {
   const ready = useCustomerGuard();
   const params = useParams();
@@ -38,6 +33,22 @@ export default function OrderDetailPageClient() {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const loadOrder = useCallback(
+    async (silent = false) => {
+      if (!Number.isInteger(orderId)) return;
+      try {
+        const data = await customerGetOrder(orderId);
+        setOrder(data);
+        setError(null);
+      } catch (err) {
+        if (!silent) {
+          setError(err instanceof Error ? err.message : 'Siparis yuklenemedi');
+        }
+      }
+    },
+    [orderId],
+  );
 
   useEffect(() => {
     if (!ready || !Number.isInteger(orderId)) return;
@@ -62,6 +73,35 @@ export default function OrderDetailPageClient() {
     };
   }, [ready, orderId]);
 
+  useEffect(() => {
+    if (!ready || !Number.isInteger(orderId)) return;
+
+    const onFocus = () => {
+      void loadOrder(true);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadOrder(true);
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadOrder(true);
+      }
+    }, POLL_MS);
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [ready, orderId, loadOrder]);
+
   if (!ready || loading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-10">
@@ -85,15 +125,31 @@ export default function OrderDetailPageClient() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
-      <Link href="/hesabim" className="text-sm text-amber-800 hover:underline dark:text-amber-300">
-        ← Hesabima don
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/hesabim" className="text-sm text-amber-800 hover:underline dark:text-amber-300">
+          ← Hesabima don
+        </Link>
+        <button
+          type="button"
+          onClick={() => void loadOrder()}
+          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+        >
+          Durumu yenile
+        </button>
+      </div>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Siparis #{order.id}</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          {formatDate(order.createdAt)} · {STATUS_LABELS[order.status] ?? order.status}
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Siparis #{order.id}</h1>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{formatDate(order.createdAt)}</p>
+          </div>
+          <span
+            className={`inline-flex rounded-full px-3 py-1.5 text-sm font-semibold ${orderStatusBadgeClass(order.status)}`}
+          >
+            {orderStatusLabel(order.status)}
+          </span>
+        </div>
 
         <div className="mt-6 grid gap-4 text-sm text-zinc-700 dark:text-zinc-300 sm:grid-cols-2">
           <div>

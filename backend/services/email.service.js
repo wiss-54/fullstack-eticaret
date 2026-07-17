@@ -6,7 +6,7 @@ function isMailerSendConfigured() {
 
 function getFromAddress() {
   return {
-    email: process.env.MAIL_FROM_EMAIL || 'iletisim@destek.hatiraniyarat.com',
+    email: process.env.MAIL_FROM_EMAIL || 'noreply@test.hatiraniyarat.com',
     name: process.env.MAIL_FROM_NAME || 'Hatıranı Yarat',
   };
 }
@@ -146,7 +146,10 @@ async function sendViaMailerSend({ to, subject, text, html }) {
     } catch {
       details = await response.text();
     }
-    const error = new Error('MailerSend e-posta gonderilemedi');
+    console.error('MailerSend API hatasi:', response.status, details);
+    const error = new Error(
+      `MailerSend e-posta gonderilemedi (${response.status})`,
+    );
     error.statusCode = response.status;
     error.details = details;
     throw error;

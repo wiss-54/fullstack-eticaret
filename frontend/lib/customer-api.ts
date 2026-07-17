@@ -45,6 +45,7 @@ async function customerFetch<T>(path: string, options: RequestInit = {}): Promis
   }
 
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    cache: 'no-store',
     ...options,
     headers,
   });
@@ -91,6 +92,9 @@ export async function customerRegister(input: {
   if (!response.ok || !json.success) {
     throw new Error(json.error ?? 'Kayit basarisiz');
   }
+
+  // Yeni kayit dogrulama bekler; eski oturum tokenini temizle
+  clearCustomerToken();
 
   return {
     user: json.data as User,

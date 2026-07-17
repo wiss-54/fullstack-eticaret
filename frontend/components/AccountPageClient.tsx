@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Order, User } from '@/lib/types';
@@ -9,15 +9,8 @@ import {
   customerGetMe,
   customerGetOrders,
 } from '@/lib/customer-api';
+import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/order-status';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Beklemede',
-  confirmed: 'Onaylandi',
-  preparing: 'Hazirlaniyor',
-  shipped: 'Kargoda',
-  cancelled: 'Iptal',
-};
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('tr-TR', {
@@ -33,6 +26,8 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+const POLL_MS = 12_000;
+
 export default function AccountPageClient() {
   const ready = useCustomerGuard();
   const router = useRouter();
@@ -40,6 +35,18 @@ export default function AccountPageClient() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const loadOrders = useCallback(async (silent = false) => {
+    try {
+      const orderList = await customerGetOrders();
+      setOrders(orderList);
+      setError(null);
+    } catch (err) {
+      if (!silent) {
+        setError(err instanceof Error ? err.message : 'Siparisler yuklenemedi');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -70,9 +77,39 @@ export default function AccountPageClient() {
     };
   }, [ready]);
 
+  useEffect(() => {
+    if (!ready) return;
+
+    const onFocus = () => {
+      void loadOrders(true);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadOrders(true);
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadOrders(true);
+      }
+    }, POLL_MS);
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [ready, loadOrders]);
+
   function handleLogout() {
     clearCustomerToken();
-    router.push('/');
+    router.replace('/');
+    router.refresh();
   }
 
   if (!ready || loading) {
@@ -108,7 +145,16 @@ export default function AccountPageClient() {
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Siparislerim</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Siparislerim</h2>
+          <button
+            type="button"
+            onClick={() => void loadOrders()}
+            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+          >
+            Yenile
+          </button>
+        </div>
 
         {error ? (
           <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -128,9 +174,12 @@ export default function AccountPageClient() {
               >
                 <div>
                   <p className="font-medium text-zinc-900 dark:text-zinc-50">Siparis #{order.id}</p>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                    {formatDate(order.createdAt)} · {STATUS_LABELS[order.status] ?? order.status}
-                  </p>
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{formatDate(order.createdAt)}</p>
+                  <span
+                    className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}
+                  >
+                    {orderStatusLabel(order.status)}
+                  </span>
                 </div>
                 <p className="font-semibold text-zinc-900 dark:text-zinc-50">{formatPrice(order.total)}</p>
               </Link>
