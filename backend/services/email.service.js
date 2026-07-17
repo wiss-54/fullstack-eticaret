@@ -1,4 +1,22 @@
+const nodemailer = require('nodemailer');
 const { getFrontendUrl } = require('./payments.service');
+
+function getEmailProvider() {
+  const explicit = (process.env.EMAIL_PROVIDER || '').trim().toLowerCase();
+  if (explicit === 'brevo' || explicit === 'mailersend' || explicit === 'mock') {
+    return explicit;
+  }
+
+  if (isBrevoConfigured()) return 'brevo';
+  if (isMailerSendConfigured()) return 'mailersend';
+  return 'mock';
+}
+
+function isBrevoConfigured() {
+  return Boolean(
+    process.env.BREVO_SMTP_USER?.trim() && process.env.BREVO_SMTP_PASS?.trim(),
+  );
+}
 
 function isMailerSendConfigured() {
   return Boolean(process.env.MAILERSEND_API_TOKEN?.trim());
@@ -6,7 +24,7 @@ function isMailerSendConfigured() {
 
 function getFromAddress() {
   return {
-    email: process.env.MAIL_FROM_EMAIL || 'noreply@test.hatiraniyarat.com',
+    email: process.env.MAIL_FROM_EMAIL || 'noreply@support.hatiraniyarat.com',
     name: process.env.MAIL_FROM_NAME || 'Hatıranı Yarat',
   };
 }
@@ -115,62 +133,6 @@ function buildOrderConfirmationContent(order) {
   };
 }
 
-async function sendViaMailerSend({ to, subject, text, html }) {
-  const token = process.env.MAILERSEND_API_TOKEN?.trim();
-  if (!token) {
-    const error = new Error('MailerSend API token tanimli degil');
-    error.statusCode = 503;
-    throw error;
-  }
-
-  const from = getFromAddress();
-  const response = await fetch('https://api.mailersend.com/v1/email', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: { email: from.email, name: from.name },
-      to: [{ email: to }],
-      subject,
-      text,
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    let details = null;
-    try {
-      details = await response.json();
-    } catch {
-      details = await response.text();
-    }
-    console.error('MailerSend API hatasi:', response.status, details);
-    const error = new Error(
-      `MailerSend e-posta gonderilemedi (${response.status})`,
-    );
-    error.statusCode = response.status;
-    error.details = details;
-    throw error;
-  }
-
-  return { provider: 'mailersend', accepted: true };
-}
-
-async function sendEmail({ to, subject, text, html }) {
-  if (!to) {
-    throw new Error('Alici e-posta adresi gerekli');
-  }
-
-  if (!isMailerSendConfigured()) {
-    console.info('[email:mock]', { to, subject });
-    return { provider: 'mock', accepted: true };
-  }
-
-  return sendViaMailerSend({ to, subject, text, html });
-}
-
 function buildEmailVerificationContent(user) {
   const verifyUrl = `${getFrontendUrl()}/eposta-dogrula?token=${encodeURIComponent(user.verificationToken)}`;
 
@@ -211,6 +173,102 @@ function buildEmailVerificationContent(user) {
   };
 }
 
+async function sendViaBrevo({ to, subject, text, html }) {
+  const user = process.env.BREVO_SMTP_USER?.trim();
+  const pass = process.env.BREVO_SMTP_PASS?.trim();
+  if (!user || !pass) {
+    const error = new Error('Brevo SMTP bilgileri tanimli degil');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const from = getFromAddress();
+  const transporter = nodemailer.createTransport({
+    host: process.env.BREVO_SMTP_HOST?.trim() || 'smtp-relay.brevo.com',
+    port: Number(process.env.BREVO_SMTP_PORT || 587),
+    secure: false,
+    auth: { user, pass },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: `"${from.name}" <${from.email}>`,
+      to,
+      subject,
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error('Brevo SMTP hatasi:', err.message);
+    const error = new Error(`Brevo e-posta gonderilemedi: ${err.message}`);
+    error.statusCode = 502;
+    error.details = err;
+    throw error;
+  }
+
+  return { provider: 'brevo', accepted: true };
+}
+
+async function sendViaMailerSend({ to, subject, text, html }) {
+  const token = process.env.MAILERSEND_API_TOKEN?.trim();
+  if (!token) {
+    const error = new Error('MailerSend API token tanimli degil');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const from = getFromAddress();
+  const response = await fetch('https://api.mailersend.com/v1/email', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: { email: from.email, name: from.name },
+      to: [{ email: to }],
+      subject,
+      text,
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    let details = null;
+    try {
+      details = await response.json();
+    } catch {
+      details = await response.text();
+    }
+    console.error('MailerSend API hatasi:', response.status, details);
+    const error = new Error(`MailerSend e-posta gonderilemedi (${response.status})`);
+    error.statusCode = response.status;
+    error.details = details;
+    throw error;
+  }
+
+  return { provider: 'mailersend', accepted: true };
+}
+
+async function sendEmail({ to, subject, text, html }) {
+  if (!to) {
+    throw new Error('Alici e-posta adresi gerekli');
+  }
+
+  const provider = getEmailProvider();
+
+  if (provider === 'mock') {
+    console.info('[email:mock]', { to, subject });
+    return { provider: 'mock', accepted: true };
+  }
+
+  if (provider === 'brevo') {
+    return sendViaBrevo({ to, subject, text, html });
+  }
+
+  return sendViaMailerSend({ to, subject, text, html });
+}
+
 async function sendEmailVerificationEmail(user) {
   if (!user?.email || !user?.verificationToken) return { skipped: true };
 
@@ -244,6 +302,8 @@ function scheduleOrderConfirmationEmail(order) {
 }
 
 module.exports = {
+  getEmailProvider,
+  isBrevoConfigured,
   isMailerSendConfigured,
   buildOrderConfirmationContent,
   buildEmailVerificationContent,
