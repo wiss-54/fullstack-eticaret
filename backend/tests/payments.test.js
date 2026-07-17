@@ -48,6 +48,8 @@ const {
 const { getProvider, initCheckout, verifyPaytrNotification } = require('../services/payments.service');
 const app = require('../app');
 
+const MOCK_SESSION = 'mock-payment-session';
+
 const unpaidOrder = {
   id: 10,
   userId: 1,
@@ -81,15 +83,15 @@ describe('payments routes', () => {
     getOrderById.mockResolvedValueOnce(unpaidOrder);
     initCheckout.mockResolvedValueOnce({
       provider: 'mock',
-      token: 'tok-12345678',
-      paymentPageUrl: 'http://localhost:3000/odeme/kart?orderId=10&token=tok-12345678',
+      token: MOCK_SESSION,
+      paymentPageUrl: `http://localhost:3000/odeme/kart?orderId=10&token=${MOCK_SESSION}`,
       conversationId: 'ORD10',
       iframeToken: null,
     });
     attachPaymentSession.mockResolvedValueOnce({
       ...unpaidOrder,
       paymentStatus: 'pending',
-      providerPaymentId: 'tok-12345678',
+      providerPaymentId: MOCK_SESSION,
     });
 
     const response = await request(app).post('/api/payments/init').send({ orderId: 10 });
@@ -104,7 +106,7 @@ describe('payments routes', () => {
     getOrderById.mockResolvedValueOnce({
       ...unpaidOrder,
       paymentStatus: 'pending',
-      providerPaymentId: 'tok-12345678',
+      providerPaymentId: MOCK_SESSION,
     });
     markOrderPaid.mockResolvedValueOnce({
       ...unpaidOrder,
@@ -114,18 +116,18 @@ describe('payments routes', () => {
 
     const response = await request(app)
       .post('/api/payments/mock/complete')
-      .send({ orderId: 10, token: 'tok-12345678', success: true });
+      .send({ orderId: 10, token: MOCK_SESSION, success: true });
 
     expect(response.status).toBe(200);
     expect(response.body.data.paymentStatus).toBe('paid');
-    expect(markOrderPaid).toHaveBeenCalledWith(10, { providerPaymentId: 'tok-12345678' });
+    expect(markOrderPaid).toHaveBeenCalledWith(10, { providerPaymentId: MOCK_SESSION });
   });
 
   it('POST /api/payments/mock/complete basarisiz odemeyi isler', async () => {
     getOrderById.mockResolvedValueOnce({
       ...unpaidOrder,
       paymentStatus: 'pending',
-      providerPaymentId: 'tok-12345678',
+      providerPaymentId: MOCK_SESSION,
     });
     markOrderPaymentFailed.mockResolvedValueOnce({
       ...unpaidOrder,
@@ -134,7 +136,7 @@ describe('payments routes', () => {
 
     const response = await request(app)
       .post('/api/payments/mock/complete')
-      .send({ orderId: 10, token: 'tok-12345678', success: false });
+      .send({ orderId: 10, token: MOCK_SESSION, success: false });
 
     expect(response.status).toBe(200);
     expect(response.body.data.paymentStatus).toBe('failed');
@@ -157,7 +159,7 @@ describe('payments routes', () => {
     findOrderByProviderConversationId.mockResolvedValueOnce({
       ...unpaidOrder,
       providerConversationId: 'ORD10T1',
-      providerPaymentId: 'iframe-token',
+      providerPaymentId: 'iframe-session',
     });
     markOrderPaid.mockResolvedValueOnce({
       ...unpaidOrder,
@@ -168,7 +170,7 @@ describe('payments routes', () => {
       merchant_oid: 'ORD10T1',
       status: 'success',
       total_amount: '15000',
-      hash: 'x',
+      hash: 'demo-hash',
     });
 
     expect(response.status).toBe(200);

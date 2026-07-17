@@ -21,6 +21,7 @@ export default function MockCardPaymentClient() {
   const orderId = Number(searchParams.get('orderId'));
   const token = searchParams.get('token') ?? '';
   const provider = searchParams.get('provider');
+  const linkValid = Number.isInteger(orderId) && orderId > 0 && token.length > 0;
 
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,14 +29,10 @@ export default function MockCardPaymentClient() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!ready) return;
-    if (!Number.isInteger(orderId) || orderId <= 0 || !token) {
-      setError('Gecersiz odeme baglantisi');
-      setLoading(false);
-      return;
-    }
+    if (!ready || !linkValid) return;
 
     let cancelled = false;
+
     void (async () => {
       try {
         const data = await customerGetOrder(orderId);
@@ -57,7 +54,7 @@ export default function MockCardPaymentClient() {
     return () => {
       cancelled = true;
     };
-  }, [ready, orderId, token, router]);
+  }, [ready, linkValid, orderId, token, router]);
 
   async function complete(success: boolean) {
     setSubmitting(true);
@@ -75,7 +72,28 @@ export default function MockCardPaymentClient() {
     }
   }
 
-  if (!ready || loading) {
+  if (!ready) {
+    return (
+      <main className="mx-auto max-w-lg px-6 py-16">
+        <p className="text-zinc-500">Odeme sayfasi yukleniyor...</p>
+      </main>
+    );
+  }
+
+  if (!linkValid) {
+    return (
+      <main className="mx-auto max-w-lg px-6 py-16">
+        <div className="rounded-2xl border border-red-200 bg-white p-8 dark:border-red-900/40 dark:bg-zinc-950">
+          <p className="text-red-700 dark:text-red-300">Gecersiz odeme baglantisi</p>
+          <Link href="/odeme" className="mt-4 inline-block text-sm text-amber-800 dark:text-amber-300">
+            Odemeye don
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (loading) {
     return (
       <main className="mx-auto max-w-lg px-6 py-16">
         <p className="text-zinc-500">Odeme sayfasi yukleniyor...</p>
