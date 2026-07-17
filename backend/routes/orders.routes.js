@@ -41,6 +41,7 @@ router.post('/', requireCustomer, async (req, res) => {
 router.get('/', requireCustomer, async (req, res) => {
   try {
     const orders = await listOrdersByUserId(req.user.id);
+    res.set('Cache-Control', 'no-store');
     return res.json({ success: true, data: orders });
   } catch (err) {
     console.error(err);
@@ -59,6 +60,7 @@ router.get('/:id', requireCustomer, async (req, res) => {
     if (!order || order.userId !== req.user.id) {
       return res.status(404).json({ success: false, error: 'Siparis bulunamadi' });
     }
+    res.set('Cache-Control', 'no-store');
     return res.json({ success: true, data: order });
   } catch (err) {
     console.error(err);

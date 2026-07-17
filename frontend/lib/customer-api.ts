@@ -45,6 +45,7 @@ async function customerFetch<T>(path: string, options: RequestInit = {}): Promis
   }
 
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    cache: 'no-store',
     ...options,
     headers,
   });

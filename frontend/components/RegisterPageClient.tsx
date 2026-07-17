@@ -18,6 +18,7 @@ export default function RegisterPageClient() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -34,6 +35,18 @@ export default function RegisterPageClient() {
     event.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (password !== passwordConfirm) {
+      setError('Sifreler eslesmiyor. Lutfen kontrol et.');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Sifre en az 8 karakter olmali.');
+      setLoading(false);
+      return;
+    }
 
     try {
       const result = await customerRegister({
@@ -154,6 +167,19 @@ export default function RegisterPageClient() {
               className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Sifre tekrar</span>
+            <input
+              type="password"
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
               autoComplete="new-password"
               minLength={8}
               required
