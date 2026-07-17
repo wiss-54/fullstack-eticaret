@@ -15,8 +15,14 @@ export default function VerifyEmailPageClient() {
   const token = searchParams.get('token') ?? '';
   const returnTo = searchParams.get('return') ?? '/hesabim';
 
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState<string | null>(null);
+  const hasToken = token.length > 0;
+
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>(
+    hasToken ? 'loading' : 'error',
+  );
+  const [message, setMessage] = useState<string | null>(
+    hasToken ? null : 'Dogrulama linki bulunamadi.',
+  );
   const [resendEmail, setResendEmail] = useState('');
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
@@ -28,22 +34,26 @@ export default function VerifyEmailPageClient() {
   }, [router, returnTo]);
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setMessage('Dogrulama linki bulunamadi.');
-      return;
-    }
+    if (!token) return;
+
+    let cancelled = false;
 
     void customerVerifyEmail(token)
       .then((result) => {
+        if (cancelled) return;
         setStatus('success');
         setMessage(result.message);
         window.setTimeout(() => router.replace(returnTo), 2000);
       })
       .catch((err) => {
+        if (cancelled) return;
         setStatus('error');
         setMessage(err instanceof Error ? err.message : 'E-posta dogrulanamadi');
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [token, router, returnTo]);
 
   async function handleResend(event: FormEvent<HTMLFormElement>) {
