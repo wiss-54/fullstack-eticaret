@@ -10,6 +10,9 @@ import {
   validateCustomerSession,
 } from '@/lib/customer-api';
 
+const fieldClass =
+  'w-full rounded-lg border border-store-border bg-store-surface px-4 py-3 text-store-text outline-none transition focus:border-store-primary-container focus:ring-2 focus:ring-store-primary-container/20';
+
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,20 +70,20 @@ export default function LoginPageClient() {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-12">
+    <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-4 py-12 md:px-6">
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+        className="rounded-xl bg-store-surface p-8 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]"
       >
-        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">EticaretShop</p>
-        <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">Giris Yap</h1>
+        <p className="text-sm font-semibold text-store-primary">EticaretShop</p>
+        <h1 className="mt-1 text-2xl font-bold text-store-text">Giris Yap</h1>
 
         <div className="mt-6 space-y-4">
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">E-posta</span>
+            <span className="mb-2 block text-sm font-semibold text-store-text">E-posta</span>
             <input
               type="email"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none ring-amber-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+              className={fieldClass}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
@@ -89,10 +92,10 @@ export default function LoginPageClient() {
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Sifre</span>
+            <span className="mb-2 block text-sm font-semibold text-store-text">Sifre</span>
             <input
               type="password"
-              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none ring-amber-400 focus:ring-2 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+              className={fieldClass}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -102,15 +105,11 @@ export default function LoginPageClient() {
         </div>
 
         {error ? (
-          <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-            {error}
-          </p>
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
         ) : null}
 
         {info ? (
-          <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-            {info}
-          </p>
+          <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{info}</p>
         ) : null}
 
         {needsVerification ? (
@@ -118,7 +117,7 @@ export default function LoginPageClient() {
             type="button"
             onClick={() => void handleResend()}
             disabled={resendLoading || !email.trim()}
-            className="mt-4 w-full rounded-xl border border-amber-800 px-4 py-3 font-medium text-amber-800 disabled:opacity-60 dark:border-amber-400 dark:text-amber-300"
+            className="mt-4 w-full rounded-lg border border-store-primary px-4 py-3 font-semibold text-store-primary disabled:opacity-60"
           >
             {resendLoading ? 'Gonderiliyor...' : 'Dogrulama mailini tekrar gonder'}
           </button>
@@ -127,14 +126,17 @@ export default function LoginPageClient() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-6 w-full rounded-xl bg-amber-800 px-4 py-3 font-medium text-white transition hover:bg-amber-900 disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
+          className="mt-6 w-full rounded-lg bg-store-primary-container px-4 py-3 font-semibold text-store-on-primary transition hover:bg-store-primary disabled:opacity-60"
         >
           {loading ? 'Giris yapiliyor...' : 'Giris Yap'}
         </button>
 
-        <p className="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-4 text-center text-sm text-store-muted">
           Hesabin yok mu?{' '}
-          <Link href={`/kayit?return=${encodeURIComponent(returnTo)}`} className="text-amber-800 hover:underline dark:text-amber-300">
+          <Link
+            href={`/kayit?return=${encodeURIComponent(returnTo)}`}
+            className="font-semibold text-store-primary hover:underline"
+          >
             Kayit ol
           </Link>
         </p>

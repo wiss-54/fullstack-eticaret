@@ -104,19 +104,22 @@ export default function OrderDetailPageClient() {
 
   if (!ready || loading) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-zinc-500">Yukleniyor...</p>
+      <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
+        <p className="text-store-muted">Yukleniyor...</p>
       </main>
     );
   }
 
   if (error || !order) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+      <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           {error ?? 'Siparis bulunamadi'}
         </p>
-        <Link href="/hesabim" className="mt-4 inline-block text-sm text-amber-800 hover:underline dark:text-amber-300">
+        <Link
+          href="/hesabim"
+          className="mt-4 inline-block text-sm font-semibold text-store-primary hover:underline"
+        >
           Hesabima don
         </Link>
       </main>
@@ -124,36 +127,39 @@ export default function OrderDetailPageClient() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 px-6 py-10">
+    <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-10 md:px-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/hesabim" className="text-sm text-amber-800 hover:underline dark:text-amber-300">
+        <Link
+          href="/hesabim"
+          className="text-sm font-semibold text-store-primary hover:underline"
+        >
           ← Hesabima don
         </Link>
         <button
           type="button"
           onClick={() => void loadOrder()}
-          className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+          className="rounded-lg border border-store-border px-3 py-1.5 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
         >
           Durumu yenile
         </button>
       </div>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+      <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Siparis #{order.id}</h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{formatDate(order.createdAt)}</p>
+            <h1 className="text-2xl font-bold text-store-text">Siparis #{order.id}</h1>
+            <p className="mt-2 text-sm text-store-muted">{formatDate(order.createdAt)}</p>
           </div>
           <span
-            className={`inline-flex rounded-full px-3 py-1.5 text-sm font-semibold ${orderStatusBadgeClass(order.status)}`}
+            className={`inline-flex rounded px-3 py-1.5 text-sm font-semibold ${orderStatusBadgeClass(order.status)}`}
           >
             {orderStatusLabel(order.status)}
           </span>
         </div>
 
-        <div className="mt-6 grid gap-4 text-sm text-zinc-700 dark:text-zinc-300 sm:grid-cols-2">
+        <div className="mt-6 grid gap-4 text-sm text-store-muted sm:grid-cols-2">
           <div>
-            <p className="font-medium text-zinc-900 dark:text-zinc-50">Teslimat</p>
+            <p className="font-semibold text-store-text">Teslimat</p>
             <p className="mt-1 whitespace-pre-wrap">
               {order.shippingCity
                 ? `${order.shippingAddressLine ?? ''}\n${order.shippingDistrict} / ${order.shippingCity}`
@@ -162,7 +168,7 @@ export default function OrderDetailPageClient() {
             {order.customerPhone ? <p className="mt-1">{order.customerPhone}</p> : null}
           </div>
           <div>
-            <p className="font-medium text-zinc-900 dark:text-zinc-50">Odeme</p>
+            <p className="font-semibold text-store-text">Odeme</p>
             <p className="mt-1">
               {paymentMethodLabel(order.paymentMethod)}
               {order.paymentStatus ? ` · ${paymentStatusLabel(order.paymentStatus)}` : ''}
@@ -172,22 +178,22 @@ export default function OrderDetailPageClient() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Urunler</h2>
+      <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+        <h2 className="text-xl font-semibold text-store-text">Urunler</h2>
         <ul className="mt-4 space-y-4">
           {(order.items ?? []).map((item) => (
-            <li key={item.id} className="border-b border-zinc-100 pb-4 last:border-0 dark:border-zinc-800">
+            <li key={item.id} className="border-b border-store-border pb-4 last:border-0">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-50">{item.productName}</p>
+                  <p className="font-semibold text-store-text">{item.productName}</p>
                   {item.variantLabel ? (
-                    <p className="text-sm text-amber-800 dark:text-amber-200">{item.variantLabel}</p>
+                    <p className="text-sm text-store-accent-text">{item.variantLabel}</p>
                   ) : null}
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="mt-1 text-sm text-store-muted">
                     {item.quantity} × {formatPrice(item.unitPrice)}
                   </p>
                   {item.selectedOptions.length > 0 ? (
-                    <ul className="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    <ul className="mt-2 space-y-1 text-sm text-store-muted">
                       {item.selectedOptions.map((option) => (
                         <li key={`${item.id}-${option.optionId}`}>
                           {option.label}: {option.value}
@@ -196,12 +202,12 @@ export default function OrderDetailPageClient() {
                     </ul>
                   ) : null}
                 </div>
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">{formatPrice(item.lineTotal)}</p>
+                <p className="font-semibold text-store-text">{formatPrice(item.lineTotal)}</p>
               </div>
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-right text-xl font-bold text-zinc-900 dark:text-zinc-50">
+        <p className="mt-6 text-right text-xl font-bold text-store-primary-container">
           Toplam: {formatPrice(order.total)}
         </p>
       </section>

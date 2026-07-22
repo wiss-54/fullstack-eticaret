@@ -114,21 +114,21 @@ export default function AccountPageClient() {
 
   if (!ready || loading) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-zinc-500">Yukleniyor...</p>
+      <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
+        <p className="text-store-muted">Yukleniyor...</p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 px-6 py-10">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+    <main className="mx-auto w-full max-w-7xl space-y-8 px-4 py-10 md:px-10">
+      <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Hesap Bilgileri</h2>
+            <h2 className="text-xl font-semibold text-store-text">Hesap Bilgileri</h2>
             {user ? (
-              <div className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                <p>{user.fullName}</p>
+              <div className="mt-3 space-y-1 text-sm text-store-muted">
+                <p className="font-medium text-store-text">{user.fullName}</p>
                 <p>{user.email}</p>
                 {user.phone ? <p>{user.phone}</p> : null}
               </div>
@@ -137,51 +137,49 @@ export default function AccountPageClient() {
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-xl border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700"
+            className="rounded-lg border border-store-border px-4 py-2 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
           >
             Cikis Yap
           </button>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+      <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Siparislerim</h2>
+          <h2 className="text-xl font-semibold text-store-text">Siparislerim</h2>
           <button
             type="button"
             onClick={() => void loadOrders()}
-            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+            className="rounded-lg border border-store-border px-3 py-1.5 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
           >
             Yenile
           </button>
         </div>
 
         {error ? (
-          <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-            {error}
-          </p>
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
         ) : null}
 
         {orders.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">Henuz siparisin yok.</p>
+          <p className="mt-4 text-sm text-store-muted">Henuz siparisin yok.</p>
         ) : (
           <div className="mt-4 space-y-3">
             {orders.map((order) => (
               <Link
                 key={order.id}
                 href={`/hesabim/siparis/${order.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 transition hover:border-amber-300 dark:border-zinc-800 dark:hover:border-amber-800"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-store-border p-4 transition hover:border-store-primary"
               >
                 <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-50">Siparis #{order.id}</p>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{formatDate(order.createdAt)}</p>
+                  <p className="font-semibold text-store-text">Siparis #{order.id}</p>
+                  <p className="mt-1 text-sm text-store-muted">{formatDate(order.createdAt)}</p>
                   <span
-                    className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}
+                    className={`mt-2 inline-flex rounded px-2.5 py-1 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}
                   >
                     {orderStatusLabel(order.status)}
                   </span>
                 </div>
-                <p className="font-semibold text-zinc-900 dark:text-zinc-50">{formatPrice(order.total)}</p>
+                <p className="font-bold text-store-primary-container">{formatPrice(order.total)}</p>
               </Link>
             ))}
           </div>
