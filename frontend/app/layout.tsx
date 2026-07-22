@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
-import { DM_Sans, Geist, Geist_Mono, Libre_Franklin, Source_Serif_4 } from "next/font/google";
+import {
+  DM_Sans,
+  Geist,
+  Geist_Mono,
+  Hanken_Grotesk,
+  Inter,
+  JetBrains_Mono,
+  Libre_Franklin,
+  Source_Serif_4,
+} from "next/font/google";
 import { CartProvider } from "@/components/CartProvider";
 import DeployWatcher from "@/components/DeployWatcher";
 import "./globals.css";
@@ -32,6 +41,24 @@ const storeElegant = Source_Serif_4({
   weight: ["400", "600", "700"],
 });
 
+const adminDisplay = Hanken_Grotesk({
+  variable: "--font-admin-display",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const adminBody = Inter({
+  variable: "--font-admin-body",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
+const adminMono = JetBrains_Mono({
+  variable: "--font-admin-mono",
+  subsets: ["latin"],
+  weight: ["500"],
+});
+
 export const metadata: Metadata = {
   title: 'EticaretShop | E-Ticaret',
   description: 'EticaretShop online magaza',
@@ -45,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} ${storeClassic.variable} ${storeModern.variable} ${storeElegant.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${storeClassic.variable} ${storeModern.variable} ${storeElegant.variable} ${adminDisplay.variable} ${adminBody.variable} ${adminMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
         <CartProvider>
