@@ -9,6 +9,9 @@ import {
   validateCustomerSession,
 } from '@/lib/customer-api';
 
+const fieldClass =
+  'w-full rounded-lg border border-store-border bg-store-surface px-4 py-3 text-store-text outline-none transition focus:border-store-primary-container focus:ring-2 focus:ring-store-primary-container/20';
+
 export default function VerifyEmailPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,34 +75,32 @@ export default function VerifyEmailPageClient() {
   }
 
   return (
-    <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-12">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">EticaretShop</p>
-        <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">E-posta Dogrulama</h1>
+    <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-4 py-12 md:px-6">
+      <div className="rounded-xl bg-store-surface p-8 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+        <p className="text-sm font-semibold text-store-primary">EticaretShop</p>
+        <h1 className="mt-1 text-2xl font-bold text-store-text">E-posta Dogrulama</h1>
 
         {status === 'loading' ? (
-          <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">Dogrulama yapiliyor...</p>
+          <p className="mt-6 text-sm text-store-muted">Dogrulama yapiliyor...</p>
         ) : null}
 
         {status === 'success' ? (
-          <p className="mt-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+          <p className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             {message ?? 'E-posta adresiniz dogrulandi. Yonlendiriliyorsunuz...'}
           </p>
         ) : null}
 
         {status === 'error' ? (
           <>
-            <p className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-              {message}
-            </p>
+            <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{message}</p>
 
             <form onSubmit={handleResend} className="mt-6 space-y-4">
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-store-muted">
                 Yeni dogrulama linki almak icin e-posta adresinizi girin:
               </p>
               <input
                 type="email"
-                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+                className={fieldClass}
                 value={resendEmail}
                 onChange={(e) => setResendEmail(e.target.value)}
                 placeholder="ornek@email.com"
@@ -108,22 +109,25 @@ export default function VerifyEmailPageClient() {
               <button
                 type="submit"
                 disabled={resendLoading}
-                className="w-full rounded-xl bg-amber-800 px-4 py-3 font-medium text-white disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
+                className="w-full rounded-lg bg-store-primary-container px-4 py-3 font-semibold text-store-on-primary transition hover:bg-store-primary disabled:opacity-60"
               >
                 {resendLoading ? 'Gonderiliyor...' : 'Dogrulama mailini tekrar gonder'}
               </button>
             </form>
 
             {resendMessage ? (
-              <p className="mt-4 rounded-xl bg-zinc-100 px-4 py-3 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+              <p className="mt-4 rounded-lg bg-store-surface-low px-4 py-3 text-sm text-store-muted">
                 {resendMessage}
               </p>
             ) : null}
           </>
         ) : null}
 
-        <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
-          <Link href={`/giris?return=${encodeURIComponent(returnTo)}`} className="text-amber-800 hover:underline dark:text-amber-300">
+        <p className="mt-6 text-center text-sm text-store-muted">
+          <Link
+            href={`/giris?return=${encodeURIComponent(returnTo)}`}
+            className="font-semibold text-store-primary hover:underline"
+          >
             Giris sayfasina don
           </Link>
         </p>
