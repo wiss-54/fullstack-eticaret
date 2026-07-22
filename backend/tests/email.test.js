@@ -6,7 +6,7 @@ describe('email service', () => {
   const originalBrevoPass = process.env.BREVO_SMTP_PASS;
 
   beforeAll(() => {
-    process.env.FRONTEND_URL = 'https://test.hatiraniyarat.com';
+    process.env.FRONTEND_URL = 'https://eticaretshop.com.tr';
   });
 
   afterAll(() => {

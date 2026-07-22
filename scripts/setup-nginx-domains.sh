@@ -20,5 +20,5 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 echo "==> SSL sertifikasi (henuz yoksa):"
-echo "    sudo certbot --nginx -d test.hatiraniyarat.com -d admintest.hatiraniyarat.com"
+echo "    sudo certbot --nginx -d eticaretshop.com.tr -d www.eticaretshop.com.tr -d admin.eticaretshop.com.tr"
 echo "==> Nginx hazir"

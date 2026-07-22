@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const ADMIN_HOST = 'admintest.hatiraniyarat.com';
-const PUBLIC_HOST = 'test.hatiraniyarat.com';
+const ADMIN_HOST = 'admin.eticaretshop.com.tr';
+const PUBLIC_HOSTS = new Set(['eticaretshop.com.tr', 'www.eticaretshop.com.tr']);
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host')?.split(':')[0] ?? '';
@@ -37,7 +37,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (host === PUBLIC_HOST && pathname.startsWith('/admin')) {
+  if (PUBLIC_HOSTS.has(host) && pathname.startsWith('/admin')) {
     const adminPath = pathname.replace(/^\/admin/, '') || '/';
     return NextResponse.redirect(new URL(adminPath, `https://${ADMIN_HOST}`));
   }

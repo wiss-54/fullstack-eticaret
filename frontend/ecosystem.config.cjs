@@ -12,7 +12,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        NEXT_PUBLIC_API_URL: 'https://test.hatiraniyarat.com',
+        NEXT_PUBLIC_API_URL: 'https://eticaretshop.com.tr',
       },
     },
   ],

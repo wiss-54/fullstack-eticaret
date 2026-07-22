@@ -45,11 +45,11 @@ async function getProductCount() {
 
 async function getSystemStatus() {
   const shopUrl =
-    process.env.MONITOR_SHOP_URL || 'https://test.hatiraniyarat.com';
+    process.env.MONITOR_SHOP_URL || 'https://eticaretshop.com.tr';
   const adminUrl =
-    process.env.MONITOR_ADMIN_URL || 'https://admintest.hatiraniyarat.com/login';
+    process.env.MONITOR_ADMIN_URL || 'https://admin.eticaretshop.com.tr/login';
   const apiUrl =
-    process.env.MONITOR_API_URL || 'https://test.hatiraniyarat.com/api/test-db';
+    process.env.MONITOR_API_URL || 'https://eticaretshop.com.tr/api/test-db';
 
   const [database, shop, adminPanel, api] = await Promise.all([
     checkDatabase().catch((err) => ({

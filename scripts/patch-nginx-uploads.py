@@ -16,11 +16,17 @@ BLOCK = """
 """
 
 FILES = [
+    Path("/etc/nginx/sites-available/eticaretshop.com.tr.conf"),
+    Path("/etc/nginx/sites-available/admin.eticaretshop.com.tr.conf"),
     Path("/etc/nginx/sites-available/test.hatiraniyarat.com"),
     Path("/etc/nginx/sites-available/admintest.hatiraniyarat.com.conf"),
 ]
 
 for path in FILES:
+    if not path.exists():
+        print(f"skip (missing): {path}")
+        continue
+
     text = path.read_text()
     if "location /uploads/" in text:
         print(f"skip (already present): {path}")
