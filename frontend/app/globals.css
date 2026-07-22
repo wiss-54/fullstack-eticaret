@@ -10,6 +10,55 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Stitch Zinc & Amber Admin */
+  --color-admin-bg: var(--admin-bg);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-surface-low: var(--admin-surface-low);
+  --color-admin-surface-high: var(--admin-surface-high);
+  --color-admin-border: var(--admin-border);
+  --color-admin-primary: var(--admin-primary);
+  --color-admin-primary-container: var(--admin-primary-container);
+  --color-admin-on-primary-container: var(--admin-on-primary-container);
+  --color-admin-text: var(--admin-text);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-accent: var(--admin-accent);
+  --color-admin-danger: var(--admin-danger);
+  --font-admin-display: var(--font-admin-display), var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif;
+  --font-admin-mono: var(--font-admin-mono), var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Default = Stitch dark admin (Zinc & Amber) */
+[data-admin-theme='dark'],
+:root {
+  --admin-bg: #131316;
+  --admin-surface: #1b1b1e;
+  --admin-surface-low: #1f1f22;
+  --admin-surface-high: #2a2a2d;
+  --admin-border: #47464a;
+  --admin-primary: #ffc174;
+  --admin-primary-container: #f59e0b;
+  --admin-on-primary-container: #613b00;
+  --admin-text: #e4e1e6;
+  --admin-muted: #c8c6c9;
+  --admin-accent: #d8c3ad;
+  --admin-danger: #ffb4ab;
+}
+
+[data-admin-theme='light'] {
+  --admin-bg: #f3f3f3;
+  --admin-surface: #ffffff;
+  --admin-surface-low: #eeeeee;
+  --admin-surface-high: #e8e8e8;
+  --admin-border: #d8c3ad;
+  --admin-primary: #855300;
+  --admin-primary-container: #f59e0b;
+  --admin-on-primary-container: #613b00;
+  --admin-text: #1a1c1c;
+  --admin-muted: #5f5e61;
+  --admin-accent: #534434;
+  --admin-danger: #ba1a1a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,7 +74,6 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Magaza vitrin tipografileri — temaya gore secilir */
 .font-store-classic {
   font-family: var(--font-store-classic), var(--font-geist-sans), ui-sans-serif, system-ui,
     sans-serif;
@@ -38,4 +86,24 @@ body {
 
 .font-store-elegant {
   font-family: var(--font-store-elegant), ui-serif, Georgia, 'Times New Roman', serif;
+}
+
+.font-admin-display {
+  font-family: var(--font-admin-display);
+}
+
+.font-admin-mono {
+  font-family: var(--font-admin-mono);
+}
+
+[data-admin-theme] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-admin-theme] ::-webkit-scrollbar-track {
+  background: var(--admin-bg);
+}
+[data-admin-theme] ::-webkit-scrollbar-thumb {
+  background: #353438;
+  border-radius: 4px;
 }
