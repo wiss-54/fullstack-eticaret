@@ -66,7 +66,7 @@ function ServiceIcon({ title }: { title: string }) {
             : '🖥️';
 
   return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-900/5 text-2xl dark:bg-white/10">
+    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-admin-surface-high text-xl">
       {icon}
     </div>
   );
@@ -83,25 +83,25 @@ function ServiceCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-3xl border p-5 shadow-sm transition ${
+      className={`relative overflow-hidden rounded-xl border p-5 shadow-sm transition ${
         up
-          ? 'border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/40 dark:from-emerald-950/30 dark:to-stone-950'
-          : 'border-red-200/80 bg-gradient-to-br from-red-50 to-white dark:border-red-900/40 dark:from-red-950/30 dark:to-stone-950'
+          ? 'border-emerald-500/30 bg-admin-surface-low'
+          : 'border-admin-danger/40 bg-admin-surface-low'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <ServiceIcon title={title} />
           <div>
-            <h3 className="font-semibold text-stone-900 dark:text-stone-50">{title}</h3>
-            <p className="text-sm text-stone-500">{up ? 'Erisilebilir' : 'Sorun tespit edildi'}</p>
+            <h3 className="font-semibold text-admin-text">{title}</h3>
+            <p className="text-sm text-admin-muted">{up ? 'Erisilebilir' : 'Sorun tespit edildi'}</p>
           </div>
         </div>
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+          className={`rounded-full px-3 py-1 font-admin-mono text-xs font-semibold ${
             up
-              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-              : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
+              ? 'bg-emerald-500/15 text-emerald-400'
+              : 'bg-admin-danger/15 text-admin-danger'
           }`}
         >
           {up ? 'UP' : 'DOWN'}
@@ -110,11 +110,11 @@ function ServiceCard({
 
       <div className="mt-5 space-y-3">
         <div>
-          <div className="mb-1 flex justify-between text-xs text-stone-500">
+          <div className="mb-1 flex justify-between font-admin-mono text-xs text-admin-muted">
             <span>Gecikme</span>
             <span>{check.latencyMs !== undefined ? `${check.latencyMs} ms` : '-'}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
+          <div className="h-2 overflow-hidden rounded-full bg-admin-bg">
             <div
               className={`h-full rounded-full transition-all duration-500 ${latencyTone(check.latencyMs)}`}
               style={{ width: `${latencyPercent(check.latencyMs)}%` }}
@@ -253,18 +253,16 @@ export default function MonitoringDashboard() {
     : 0;
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+    <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-6 md:px-8 md:py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
-            Monitoring
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-admin-text">Izleme</h1>
+          <p className="mt-1 text-sm text-admin-muted">
             Servisler her {REFRESH_MS / 1000} saniyede otomatik yenilenir
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm dark:border-stone-700 dark:bg-stone-900">
+          <label className="flex items-center gap-2 rounded-lg border border-admin-border bg-admin-surface-low px-4 py-2 text-sm text-admin-text">
             <input
               type="checkbox"
               checked={autoRefresh}
@@ -276,7 +274,7 @@ export default function MonitoringDashboard() {
             type="button"
             onClick={() => void handleManualRefresh()}
             disabled={refreshing}
-            className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900"
+            className="rounded-lg bg-admin-primary-container px-4 py-2 text-sm font-semibold text-admin-on-primary-container disabled:opacity-60"
           >
             {refreshing ? 'Yenileniyor...' : 'Simdi Yenile'}
           </button>
@@ -288,21 +286,21 @@ export default function MonitoringDashboard() {
             {Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="h-44 animate-pulse rounded-2xl border border-stone-200 bg-white/70 dark:border-stone-800 dark:bg-stone-950/70"
+                className="h-44 animate-pulse rounded-xl border border-admin-border bg-admin-surface-low"
               />
             ))}
           </div>
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 dark:border-red-900 dark:bg-red-950/40">
-            <p className="font-medium text-red-800 dark:text-red-200">{error}</p>
-            <p className="mt-1 text-sm text-red-700 dark:text-red-300">
+          <div className="rounded-xl border border-admin-danger/40 bg-admin-surface-low px-5 py-4">
+            <p className="font-medium text-admin-danger">{error}</p>
+            <p className="mt-1 text-sm text-admin-muted">
               Oturum suresi dolmus olabilir. Tekrar giris yapmayi dene.
             </p>
             <Link
               href={paths.login}
-              className="mt-3 inline-block rounded-xl bg-red-800 px-4 py-2 text-sm text-white"
+              className="mt-3 inline-block rounded-lg bg-admin-danger px-4 py-2 text-sm text-admin-bg"
             >
               Giris Sayfasina Git
             </Link>

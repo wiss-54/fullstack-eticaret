@@ -83,49 +83,51 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8">
+    <main className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-8">
       <AdminPageHeader
-        title="Siparisler"
+        title="Siparis Yonetimi"
         description="Musteri siparislerini goruntule ve durum guncelle"
       />
 
       {error ? (
-        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <p className="mb-4 rounded-lg border border-admin-danger/40 bg-admin-bg px-4 py-3 text-sm text-admin-danger">
           {error}
         </p>
       ) : null}
 
       {loading ? (
-        <p className="text-stone-500">Yukleniyor...</p>
+        <p className="text-admin-muted">Yukleniyor...</p>
       ) : orders.length === 0 ? (
-        <p className="text-stone-500">Henuz siparis yok.</p>
+        <p className="text-admin-muted">Henuz siparis yok.</p>
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
             <article
               key={order.id}
-              className="rounded-2xl border border-stone-200 bg-white p-5 dark:border-stone-800 dark:bg-stone-900"
+              className="rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="font-semibold text-stone-900 dark:text-stone-50">
+                  <p className="font-semibold text-admin-text">
                     Siparis #{order.id} · {order.customerName}
                   </p>
-                  <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                  <p className="mt-1 text-sm text-admin-muted">
                     {order.customerEmail}
                     {order.customerPhone ? ` · ${order.customerPhone}` : ''}
                   </p>
-                  <p className="mt-1 text-sm text-stone-500">{formatDate(order.createdAt)}</p>
-                  <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
+                  <p className="mt-1 font-admin-mono text-sm text-admin-muted">
+                    {formatDate(order.createdAt)}
+                  </p>
+                  <p className="mt-2 text-sm text-admin-text">
                     {formatPrice(order.total)} · {paymentMethodLabel(order.paymentMethod)}
                     {order.paymentStatus ? ` · ${paymentStatusLabel(order.paymentStatus)}` : ''}
                   </p>
                 </div>
 
                 <label className="text-sm">
-                  <span className="mb-1 block text-stone-500">Durum</span>
+                  <span className="mb-1 block text-admin-muted">Durum</span>
                   <select
-                    className="rounded-lg border border-stone-300 px-3 py-2 dark:border-stone-700 dark:bg-stone-950"
+                    className="rounded-lg border border-admin-border bg-admin-bg px-3 py-2 text-admin-text outline-none ring-admin-primary/30 focus:ring-2"
                     value={order.status}
                     disabled={updatingId === order.id}
                     onChange={(e) => void handleStatusChange(order.id, e.target.value as OrderStatus)}
@@ -140,20 +142,20 @@ export default function AdminOrdersPage() {
               </div>
 
               {order.items && order.items.length > 0 ? (
-                <ul className="mt-4 space-y-2 border-t border-stone-100 pt-4 text-sm dark:border-stone-800">
+                <ul className="mt-4 space-y-2 border-t border-admin-border pt-4 text-sm text-admin-muted">
                   {order.items.map((item) => (
-                    <li key={item.id} className="flex justify-between gap-3 text-stone-700 dark:text-stone-300">
+                    <li key={item.id} className="flex justify-between gap-3">
                       <span>
                         {item.productName}
                         {item.variantLabel ? ` (${item.variantLabel})` : ''} × {item.quantity}
                       </span>
-                      <span>{formatPrice(item.lineTotal)}</span>
+                      <span className="text-admin-text">{formatPrice(item.lineTotal)}</span>
                     </li>
                   ))}
                 </ul>
               ) : null}
 
-              <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">
+              <p className="mt-3 text-sm text-admin-muted">
                 Adres:{' '}
                 {order.shippingCity
                   ? `${order.shippingAddressLine ?? ''}, ${order.shippingDistrict} / ${order.shippingCity}`
