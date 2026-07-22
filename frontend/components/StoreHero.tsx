@@ -24,7 +24,7 @@ function HeroText({
   className?: string;
   as?: 'p' | 'h2' | 'h3' | 'span';
 }) {
-  const accent = settings.accentColor || '#92400e';
+  const accent = settings.accentColor || '#855300';
 
   if (editor) {
     return (
@@ -70,12 +70,9 @@ function HeroCta({
 }) {
   const className =
     variant === 'primary'
-      ? `${btnClass} px-6 py-3 text-sm font-semibold text-white shadow-sm`
-      : `${btnClass} border bg-white/80 px-6 py-3 text-sm font-semibold backdrop-blur dark:bg-zinc-950/60`;
-  const style =
-    variant === 'primary'
-      ? { backgroundColor: accent }
-      : { borderColor: `${accent}66`, color: accent };
+      ? `${btnClass} px-8 py-4 text-sm font-semibold text-store-on-primary shadow-sm transition hover:opacity-90`
+      : `${btnClass} bg-store-inverse px-8 py-4 text-sm font-semibold text-store-inverse-text shadow-sm transition hover:opacity-90`;
+  const style = variant === 'primary' ? { backgroundColor: accent } : undefined;
 
   if (preview) {
     return (
@@ -98,7 +95,7 @@ function HeroCta({
 }
 
 export default function StoreHero({ settings, editor }: StoreHeroProps) {
-  const accent = settings.accentColor || '#92400e';
+  const accent = settings.accentColor || '#855300';
   const btn = getButtonRadiusClass(settings);
   const preview = Boolean(editor);
 
@@ -117,28 +114,30 @@ export default function StoreHero({ settings, editor }: StoreHeroProps) {
 
   const mtClassByKey: Record<string, string> = {
     eyebrow: '',
-    title: 'mt-3',
-    subtitle: 'mt-4',
-    ctas: 'mt-8',
+    title: 'mt-4',
+    subtitle: 'mt-5',
+    ctas: 'mt-10',
   };
 
+  const surfaceClass =
+    settings.surfaceStyle === 'cool'
+      ? 'border-slate-200 bg-gradient-to-br from-slate-50 via-white to-sky-50'
+      : settings.surfaceStyle === 'soft'
+        ? 'border-store-border bg-gradient-to-br from-rose-50 via-store-bg to-amber-50/40'
+        : settings.surfaceStyle === 'contrast'
+          ? 'border-store-border bg-gradient-to-br from-store-surface-low via-store-surface to-store-bg'
+          : 'border-store-border bg-gradient-to-br from-store-bg via-white to-[#fff8ef]';
+
   return (
-    <section
-      className={`relative overflow-hidden border-b ${
-        settings.surfaceStyle === 'cool'
-          ? 'border-slate-200 bg-gradient-to-br from-slate-50 via-white to-sky-50 dark:border-slate-800 dark:from-slate-950 dark:to-slate-900'
-          : settings.surfaceStyle === 'soft'
-            ? 'border-rose-100 bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50 dark:border-rose-900/40 dark:from-zinc-950 dark:to-rose-950/20'
-            : settings.surfaceStyle === 'contrast'
-              ? 'border-zinc-300 bg-gradient-to-br from-zinc-200 via-white to-zinc-100 dark:border-zinc-700 dark:from-zinc-900 dark:to-black'
-              : 'border-amber-100 bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:border-amber-900/40 dark:from-zinc-950 dark:via-amber-950/20 dark:to-rose-950/20'
-      }`}
-    >
-      <div className="absolute -right-16 top-0 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl dark:bg-amber-500/10" />
+    <section className={`relative overflow-hidden border-b ${surfaceClass}`}>
       <div
-        className={`relative mx-auto max-w-6xl px-6 ${
-          settings.heroLayout === 'minimal' ? 'py-10' : 'py-14'
-        } ${isSplit ? 'lg:max-w-3xl lg:pl-6' : ''}`}
+        className="pointer-events-none absolute -right-20 top-8 h-72 w-72 rounded-full opacity-40 blur-3xl"
+        style={{ backgroundColor: `${accent}33` }}
+      />
+      <div
+        className={`relative mx-auto max-w-7xl px-4 md:px-10 ${
+          settings.heroLayout === 'minimal' ? 'py-12' : 'py-16 md:py-20'
+        } ${isSplit ? 'lg:max-w-3xl lg:pl-10' : ''}`}
       >
         <div className={isCentered ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl'}>
           {heroTextItemsOrder.map((key, index) => {
@@ -152,7 +151,7 @@ export default function StoreHero({ settings, editor }: StoreHeroProps) {
                     value={settings.heroEyebrow}
                     settings={settings}
                     editor={editor}
-                    className="text-sm font-semibold uppercase tracking-[0.2em]"
+                    className="inline-block rounded bg-store-surface-low px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-store-accent-text"
                     as="p"
                   />
                 </div>
@@ -167,10 +166,10 @@ export default function StoreHero({ settings, editor }: StoreHeroProps) {
                     value={settings.heroTitle}
                     settings={settings}
                     editor={editor}
-                    className={`font-bold tracking-tight text-zinc-900 dark:text-zinc-50 ${
+                    className={`font-bold tracking-tight text-store-text ${
                       settings.heroLayout === 'minimal'
-                        ? 'text-3xl lg:text-4xl'
-                        : 'text-4xl lg:text-5xl'
+                        ? 'text-3xl md:text-4xl'
+                        : 'text-4xl md:text-5xl lg:text-6xl'
                     }`}
                     as="h2"
                   />
@@ -186,7 +185,7 @@ export default function StoreHero({ settings, editor }: StoreHeroProps) {
                     value={settings.heroSubtitle}
                     settings={settings}
                     editor={editor}
-                    className={`text-lg leading-relaxed text-zinc-600 dark:text-zinc-300 ${
+                    className={`text-lg leading-relaxed text-store-muted ${
                       isCentered ? 'mx-auto max-w-2xl' : 'max-w-xl'
                     }`}
                     as="p"

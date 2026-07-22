@@ -4,7 +4,7 @@ import CheckoutPageClient from '@/components/CheckoutPageClient';
 
 export default function CheckoutPage() {
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title="Odeme" />
       <CheckoutPageClient />
       <StoreFooter />

@@ -15,7 +15,7 @@ type HomeProps = {
 const FALLBACK_SETTINGS: StoreSettings = {
   brandName: 'EticaretShop',
   logoUrl: null,
-  accentColor: '#92400e',
+  accentColor: '#855300',
   themeId: 'classic-amber',
   surfaceStyle: 'warm',
   radiusStyle: 'rounded',

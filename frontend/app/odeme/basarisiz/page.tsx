@@ -5,7 +5,7 @@ import PaymentFailClient from '@/components/PaymentFailClient';
 
 export default function PaymentFailPage() {
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title="Odeme" />
       <Suspense
         fallback={

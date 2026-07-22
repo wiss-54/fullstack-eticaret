@@ -4,7 +4,7 @@ import AccountPageClient from '@/components/AccountPageClient';
 
 export default function AccountPage() {
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title="Hesabim" />
       <AccountPageClient />
       <StoreFooter />

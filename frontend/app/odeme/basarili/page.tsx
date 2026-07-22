@@ -5,7 +5,7 @@ import PaymentSuccessClient from '@/components/PaymentSuccessClient';
 
 export default function PaymentSuccessPage() {
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title="Odeme" />
       <Suspense
         fallback={

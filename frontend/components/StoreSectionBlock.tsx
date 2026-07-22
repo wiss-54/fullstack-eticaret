@@ -85,14 +85,14 @@ export default function StoreSectionBlock({
           {features.map((item, index) => (
             <div
               key={`${item.title}-${item.text}`}
-              className={`${card} border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950`}
+              className={`${card} border border-store-border bg-store-surface p-5`}
             >
               <SectionText
                 styleKey={`feature.${index}.title`}
                 value={item.title}
                 settings={settings}
                 editor={editor}
-                className="font-semibold text-zinc-900 dark:text-zinc-50"
+                className="font-semibold text-store-text"
                 as="p"
               />
               <SectionText
@@ -100,7 +100,7 @@ export default function StoreSectionBlock({
                 value={item.text}
                 settings={settings}
                 editor={editor}
-                className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+                className="mt-2 text-sm text-store-muted"
                 as="p"
               />
             </div>
@@ -112,15 +112,15 @@ export default function StoreSectionBlock({
 
   if (section.type === 'products') {
     return (
-      <section id="urunler" className="mx-auto w-full max-w-6xl px-6 py-12">
-        <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <section id="urunler" className="mx-auto w-full max-w-7xl px-4 py-14 md:px-10">
+        <div className="mb-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <SectionText
               styleKey="products.eyebrow"
               value={settings.productsEyebrow}
               settings={settings}
               editor={editor}
-              className="text-sm font-semibold uppercase tracking-[0.18em]"
+              className="text-sm font-semibold uppercase tracking-[0.18em] text-store-accent-text"
               as="p"
             />
             <SectionText
@@ -128,7 +128,7 @@ export default function StoreSectionBlock({
               value={settings.productsTitle}
               settings={settings}
               editor={editor}
-              className="text-3xl font-bold text-zinc-900 dark:text-zinc-50"
+              className="text-3xl font-bold text-store-text"
               as="h2"
             />
           </div>
@@ -137,7 +137,7 @@ export default function StoreSectionBlock({
             value={settings.productsSubtitle}
             settings={settings}
             editor={editor}
-            className="max-w-md text-sm text-zinc-600 dark:text-zinc-400"
+            className="max-w-md text-sm text-store-muted"
             as="p"
           />
         </div>
@@ -168,8 +168,8 @@ export default function StoreSectionBlock({
             {error}
           </div>
         ) : products.length === 0 ? (
-          <div className={`${card} border border-dashed border-amber-200 bg-white p-12 text-center dark:border-amber-900/40 dark:bg-zinc-950`}>
-            <p className="text-lg font-medium text-zinc-800 dark:text-zinc-200">Henuz urun yok</p>
+          <div className={`${card} border border-dashed border-store-border bg-store-surface p-12 text-center`}>
+            <p className="text-lg font-medium text-store-text">Henuz urun yok</p>
             {editor ? (
               <button
                 type="button"

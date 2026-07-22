@@ -16,34 +16,46 @@ export default function StoreHeader({
   subtitle = 'EticaretShop',
   badge,
   logoUrl = null,
-  accentColor = '#92400e',
+  accentColor = '#855300',
 }: StoreHeaderProps) {
   const logoSrc = safeMediaUrl(logoUrl);
+  const brand = subtitle || 'EticaretShop';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-amber-100/80 bg-white/90 backdrop-blur dark:border-amber-900/30 dark:bg-zinc-950/90">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 border-b border-store-border bg-store-bg/95 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-10">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           {logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoSrc} alt={subtitle} className="h-10 w-10 rounded-lg object-cover" />
+            <img src={logoSrc} alt={brand} className="h-10 w-10 rounded object-cover" />
           ) : null}
-          <div>
-            <Link
-              href="/"
-              className="text-sm font-semibold uppercase tracking-[0.18em]"
+          <div className="min-w-0">
+            <p
+              className="truncate text-xl font-bold tracking-tight md:text-2xl"
               style={{ color: accentColor }}
             >
-              {subtitle}
-            </Link>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{title}</h1>
+              {brand}
+            </p>
+            {title && title !== brand ? (
+              <p className="truncate text-xs text-store-muted md:text-sm">{title}</p>
+            ) : null}
           </div>
-        </div>
-        <div className="flex items-center gap-3">
+        </Link>
+
+        <nav className="hidden items-center gap-6 text-sm font-semibold text-store-muted lg:flex">
+          <a href="#urunler" className="transition hover:text-store-primary">
+            Kategoriler
+          </a>
+          <a href="#urunler" className="transition hover:text-store-primary">
+            Koleksiyon
+          </a>
+        </nav>
+
+        <div className="flex items-center gap-2 sm:gap-3">
           {badge ? (
             <span
-              className="hidden rounded-full px-3 py-1 text-sm sm:inline"
-              style={{ backgroundColor: `${accentColor}22`, color: accentColor }}
+              className="hidden rounded px-3 py-1 text-xs font-semibold sm:inline"
+              style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
             >
               {badge}
             </span>

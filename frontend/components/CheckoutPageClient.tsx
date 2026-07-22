@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
+import CheckoutProgress from '@/components/CheckoutProgress';
 import { customerCreateOrder, customerInitPayment } from '@/lib/customer-api';
 import { TR_CITIES, getDistrictsForCity } from '@/lib/tr-locations';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
@@ -16,6 +17,11 @@ function formatPrice(price: number) {
 }
 
 type PaymentMethod = 'cod' | 'manual' | 'paytr';
+
+const fieldClass =
+  'w-full rounded-lg border border-store-border bg-store-surface px-4 py-3 text-store-text outline-none transition focus:border-store-primary-container focus:ring-2 focus:ring-store-primary-container/20 disabled:opacity-50';
+
+const labelClass = 'mb-2 block text-sm font-semibold text-store-text';
 
 export default function CheckoutPageClient() {
   const ready = useCustomerGuard('/giris?return=/odeme');
@@ -38,20 +44,20 @@ export default function CheckoutPageClient() {
 
   if (!ready) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-zinc-500">Yukleniyor...</p>
+      <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
+        <p className="text-store-muted">Yukleniyor...</p>
       </main>
     );
   }
 
   if (items.length === 0) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="rounded-2xl border border-dashed border-amber-200 bg-white p-10 text-center dark:border-amber-900/40 dark:bg-zinc-950">
-          <p className="text-zinc-600 dark:text-zinc-400">Sepetin bos.</p>
+      <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
+        <div className="rounded-xl border border-dashed border-store-border bg-store-surface p-10 text-center shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+          <p className="text-store-muted">Sepetin bos.</p>
           <Link
             href="/"
-            className="mt-4 inline-block rounded-xl bg-amber-800 px-4 py-2 text-sm text-white dark:bg-amber-500 dark:text-zinc-950"
+            className="mt-4 inline-block rounded-lg bg-store-primary-container px-5 py-3 text-sm font-semibold text-store-on-primary transition hover:bg-store-primary"
           >
             Alisverise Basla
           </Link>
@@ -98,166 +104,192 @@ export default function CheckoutPageClient() {
     }
   }
 
+  const submitLabel = loading
+    ? paymentMethod === 'paytr'
+      ? 'Odemeye yonlendiriliyor...'
+      : 'Siparis olusturuluyor...'
+    : paymentMethod === 'paytr'
+      ? 'Odemeyi Yap'
+      : 'Siparisi Onayla';
+
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950"
-        >
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Teslimat Bilgileri</h2>
-            <p className="mt-1 text-sm text-zinc-500">
+    <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
+      <CheckoutProgress active="checkout" />
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-store-text">Odeme ve Teslimat</h1>
+        <p className="mt-2 text-store-muted">
+          Siparisinizi tamamlamak icin lutfen bilgilerinizi girin.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-8 lg:flex-row">
+        <form id="checkout-form" onSubmit={handleSubmit} className="flex-1 space-y-4">
+          <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+            <h2 className="mb-6 text-xl font-semibold text-store-text">Teslimat Adresi</h2>
+            <p className="mb-4 text-sm text-store-muted">
               Adres PayTR odemesine iletilir; kargo icin il / ilce ayri saklanir.
             </p>
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Il</span>
-              <select
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-                value={shippingCity}
-                onChange={(e) => {
-                  setShippingCity(e.target.value);
-                  setShippingDistrict('');
-                }}
-                required
-              >
-                <option value="">Seciniz</option>
-                {TR_CITIES.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Ilce</span>
-              <select
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900 disabled:opacity-50"
-                value={shippingDistrict}
-                onChange={(e) => setShippingDistrict(e.target.value)}
-                disabled={!shippingCity}
-                required
-              >
-                <option value="">{shippingCity ? 'Seciniz' : 'Once il secin'}</option>
-                {districts.map((district) => (
-                  <option key={district} value={district}>
-                    {district}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">
-              Acik adres (mahalle, cadde, no, daire)
-            </span>
-            <textarea
-              className="min-h-24 w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-              value={shippingAddressLine}
-              onChange={(e) => setShippingAddressLine(e.target.value)}
-              placeholder="Ornek: Caferaga Mah. Moda Cad. No:12 D:3"
-              required
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">Telefon</span>
-            <input
-              className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="05xx xxx xx xx"
-              required
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-600 dark:text-zinc-400">
-              Siparis notu (opsiyonel)
-            </span>
-            <textarea
-              className="min-h-20 w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
-              value={orderNote}
-              onChange={(e) => setOrderNote(e.target.value)}
-            />
-          </label>
-
-          <fieldset>
-            <legend className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">Odeme yontemi</legend>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'paytr'}
-                  onChange={() => setPaymentMethod('paytr')}
-                />
-                Kredi / banka karti (PayTR)
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className={labelClass}>Il</span>
+                <select
+                  className={fieldClass}
+                  value={shippingCity}
+                  onChange={(e) => {
+                    setShippingCity(e.target.value);
+                    setShippingDistrict('');
+                  }}
+                  required
+                >
+                  <option value="">Il Seciniz</option>
+                  {TR_CITIES.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'cod'}
-                  onChange={() => setPaymentMethod('cod')}
-                />
-                Kapida odeme
+
+              <label className="block">
+                <span className={labelClass}>Ilce</span>
+                <select
+                  className={fieldClass}
+                  value={shippingDistrict}
+                  onChange={(e) => setShippingDistrict(e.target.value)}
+                  disabled={!shippingCity}
+                  required
+                >
+                  <option value="">{shippingCity ? 'Ilce Seciniz' : 'Once il secin'}</option>
+                  {districts.map((district) => (
+                    <option key={district} value={district}>
+                      {district}
+                    </option>
+                  ))}
+                </select>
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'manual'}
-                  onChange={() => setPaymentMethod('manual')}
+
+              <label className="block sm:col-span-2">
+                <span className={labelClass}>Acik Adres</span>
+                <textarea
+                  className={`${fieldClass} min-h-24 resize-none`}
+                  value={shippingAddressLine}
+                  onChange={(e) => setShippingAddressLine(e.target.value)}
+                  placeholder="Mahalle, sokak, bina ve daire no vb."
+                  required
                 />
-                Havale / EFT (manuel onay)
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className={labelClass}>Telefon</span>
+                <input
+                  className={fieldClass}
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="05XX XXX XX XX"
+                  required
+                />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className={labelClass}>Siparis notu (opsiyonel)</span>
+                <textarea
+                  className={`${fieldClass} min-h-20 resize-none`}
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                />
               </label>
             </div>
+          </section>
+
+          <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+            <h2 className="mb-6 text-xl font-semibold text-store-text">Odeme Yontemi</h2>
+            <div className="flex border-b border-store-border">
+              {(
+                [
+                  { id: 'paytr' as const, label: 'Kredi / Banka Karti' },
+                  { id: 'manual' as const, label: 'Havale / EFT' },
+                  { id: 'cod' as const, label: 'Kapida Odeme' },
+                ] as const
+              ).map((method) => (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => setPaymentMethod(method.id)}
+                  className={`flex-1 py-3 text-center text-sm font-semibold transition ${
+                    paymentMethod === method.id
+                      ? 'border-b-2 border-store-primary text-store-primary'
+                      : 'text-store-muted hover:text-store-primary'
+                  }`}
+                >
+                  {method.label}
+                </button>
+              ))}
+            </div>
             {paymentMethod === 'paytr' ? (
-              <p className="mt-2 text-xs text-zinc-500">
-                Su an on gosterim: PayTR anahtari yokken mock odeme ekrani acilir.
+              <p className="mt-4 rounded-lg bg-store-surface-low p-3 text-center text-sm text-store-primary">
+                256-bit SSL ile guvenli kart odemesi (PayTR)
               </p>
-            ) : null}
-          </fieldset>
+            ) : (
+              <p className="mt-4 text-sm text-store-muted">
+                {paymentMethod === 'cod'
+                  ? 'Kapida odeme ile siparisiniz olusturulur.'
+                  : 'Havale / EFT siparisi manuel onay bekler.'}
+              </p>
+            )}
+          </section>
 
           {error ? (
-            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-              {error}
-            </p>
+            <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
           ) : null}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-amber-800 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-store-primary-container px-4 py-4 text-sm font-semibold text-store-on-primary transition hover:bg-store-primary disabled:opacity-60 lg:hidden"
           >
-            {loading
-              ? paymentMethod === 'paytr'
-                ? 'Odemeye yonlendiriliyor...'
-                : 'Siparis olusturuluyor...'
-              : paymentMethod === 'paytr'
-                ? 'Kart ile Ode'
-                : 'Siparisi Onayla'}
+            {submitLabel}
           </button>
         </form>
 
-        <aside className="h-fit rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Siparis Ozeti</h2>
-          <ul className="mt-4 space-y-3">
+        <aside className="h-fit w-full rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)] lg:sticky lg:top-24 lg:w-96">
+          <h3 className="mb-6 border-b border-store-border pb-4 text-xl font-semibold text-store-text">
+            Siparis Ozeti
+          </h3>
+          <ul className="mb-6 space-y-4">
             {items.map((item) => (
-              <li key={item.lineId} className="text-sm text-zinc-700 dark:text-zinc-300">
-                <span className="font-medium">{item.name}</span>
-                {item.variantLabel ? ` · ${item.variantLabel}` : ''} × {item.quantity}
-                <span className="float-right">{formatPrice(item.unitPrice * item.quantity)}</span>
+              <li key={item.lineId} className="flex items-start justify-between gap-3 text-sm">
+                <div>
+                  <p className="font-semibold text-store-text">{item.name}</p>
+                  <p className="text-store-muted">
+                    {item.variantLabel ? `${item.variantLabel} · ` : ''}
+                    {item.quantity} Adet
+                  </p>
+                </div>
+                <p className="font-semibold text-store-text">
+                  {formatPrice(item.unitPrice * item.quantity)}
+                </p>
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-2xl font-bold text-zinc-900 dark:text-zinc-50">{formatPrice(total)}</p>
+          <div className="mb-6 space-y-3 border-b border-store-border pb-6 text-store-muted">
+            <div className="flex justify-between">
+              <span>Ara Toplam</span>
+              <span className="font-medium text-store-text">{formatPrice(total)}</span>
+            </div>
+          </div>
+          <div className="mb-6 flex items-center justify-between">
+            <span className="text-xl font-semibold text-store-text">Toplam</span>
+            <span className="text-xl font-bold text-store-primary-container">{formatPrice(total)}</span>
+          </div>
+          <button
+            type="submit"
+            form="checkout-form"
+            disabled={loading}
+            className="hidden w-full items-center justify-center gap-2 rounded-lg bg-store-primary-container px-4 py-4 text-sm font-semibold text-store-on-primary transition hover:bg-store-primary disabled:opacity-60 lg:flex"
+          >
+            {submitLabel}
+          </button>
         </aside>
       </div>
     </main>
