@@ -33,8 +33,8 @@ const storeElegant = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: 'Hatira Niyat | E-Ticaret',
-  description: 'Hatira Niyat online magaza',
+  title: 'EticaretShop | E-Ticaret',
+  description: 'EticaretShop online magaza',
 };
 
 export default function RootLayout({

@@ -83,7 +83,7 @@ export default function RegisterPageClient() {
     return (
       <main className="mx-auto flex max-w-md flex-1 flex-col justify-center px-6 py-12">
         <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Hatira Niyarat</p>
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">EticaretShop</p>
           <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">E-postani kontrol et</h1>
           <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
             {successMessage ?? 'Kayit olusturuldu.'}
@@ -124,7 +124,7 @@ export default function RegisterPageClient() {
         onSubmit={handleSubmit}
         className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
       >
-        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Hatira Niyarat</p>
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">EticaretShop</p>
         <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">Kayit Ol</h1>
 
         <div className="mt-6 space-y-4">

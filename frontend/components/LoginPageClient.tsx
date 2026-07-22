@@ -72,7 +72,7 @@ export default function LoginPageClient() {
         onSubmit={handleSubmit}
         className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
       >
-        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Hatira Niyarat</p>
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">EticaretShop</p>
         <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">Giris Yap</h1>
 
         <div className="mt-6 space-y-4">

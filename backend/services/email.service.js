@@ -24,8 +24,8 @@ function isMailerSendConfigured() {
 
 function getFromAddress() {
   return {
-    email: process.env.MAIL_FROM_EMAIL || 'noreply@support.hatiraniyarat.com',
-    name: process.env.MAIL_FROM_NAME || 'Hatıranı Yarat',
+    email: process.env.MAIL_FROM_EMAIL || 'noreply@eticaretshop.com.tr',
+    name: process.env.MAIL_FROM_NAME || 'EticaretShop',
   };
 }
 
@@ -87,7 +87,7 @@ function buildOrderConfirmationContent(order) {
     '',
     `Siparis detayi: ${orderUrl}`,
     '',
-    'Hatirani Yarat',
+    'EticaretShop',
   ]
     .filter(Boolean)
     .join('\n');
@@ -122,7 +122,7 @@ function buildOrderConfirmationContent(order) {
           Siparisi gor
         </a>
       </p>
-      <p style="margin-top:24px;color:#78716c;font-size:12px">Hatirani Yarat</p>
+      <p style="margin-top:24px;color:#78716c;font-size:12px">EticaretShop</p>
     </div>
   `.trim();
 
@@ -139,7 +139,7 @@ function buildEmailVerificationContent(user) {
   const text = [
     `Merhaba ${user.fullName},`,
     '',
-    'Hatıranı Yarat hesabınızı oluşturduğunuz için teşekkürler.',
+    'EticaretShop hesabınızı oluşturduğunuz için teşekkürler.',
     'Hesabınızı aktifleştirmek için aşağıdaki bağlantıya tıklayın:',
     '',
     verifyUrl,
@@ -147,13 +147,13 @@ function buildEmailVerificationContent(user) {
     'Bu bağlantı 24 saat geçerlidir.',
     'Eğer bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.',
     '',
-    'Hatıranı Yarat',
+    'EticaretShop',
   ].join('\n');
 
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1c1917;max-width:560px">
       <p>Merhaba <strong>${user.fullName}</strong>,</p>
-      <p>Hatıranı Yarat hesabınızı oluşturduğunuz için teşekkürler.</p>
+      <p>EticaretShop hesabınızı oluşturduğunuz için teşekkürler.</p>
       <p>Hesabınızı aktifleştirmek için aşağıdaki butona tıklayın:</p>
       <p style="margin:24px 0">
         <a href="${verifyUrl}" style="display:inline-block;background:#b45309;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">
@@ -162,7 +162,7 @@ function buildEmailVerificationContent(user) {
       </p>
       <p style="color:#78716c;font-size:14px">Bu bağlantı 24 saat geçerlidir.</p>
       <p style="color:#78716c;font-size:14px">Eğer bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
-      <p style="margin-top:24px;color:#78716c;font-size:12px">Hatıranı Yarat</p>
+      <p style="margin-top:24px;color:#78716c;font-size:12px">EticaretShop</p>
     </div>
   `.trim();
 
