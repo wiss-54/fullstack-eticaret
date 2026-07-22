@@ -18,7 +18,6 @@ import { createStoreSection, SECTION_PALETTE } from '@/lib/store-sections';
 import type { EditorSelection } from '@/lib/editor-selection';
 import StoreEditorCanvas from '@/components/StoreEditorCanvas';
 import StoreEditorInspector from '@/components/StoreEditorInspector';
-import { useAdminTheme } from '@/components/admin/AdminThemeProvider';
 
 const emptyFeatures = [
   { title: '', text: '' },
@@ -29,24 +28,6 @@ const emptyFeatures = [
 
 export default function StoreVisualEditor() {
   const router = useRouter();
-  const { theme } = useAdminTheme();
-  const dark = theme === 'dark';
-  const chrome = dark ? 'bg-zinc-950 text-zinc-50' : 'bg-zinc-100 text-zinc-900';
-  const panel = dark
-    ? 'border-zinc-800 bg-zinc-900'
-    : 'border-zinc-200 bg-white';
-  const btnGhost = dark
-    ? 'rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800'
-    : 'rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50';
-  const btnPrimary =
-    'rounded-md bg-amber-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-60';
-  const muted = dark ? 'text-zinc-400' : 'text-zinc-500';
-  const selectActive = dark
-    ? 'border-amber-600 bg-amber-950/40'
-    : 'border-zinc-900 bg-zinc-50';
-  const selectIdle = dark
-    ? 'border-dashed border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800/60'
-    : 'border-dashed border-zinc-300 hover:border-zinc-500 hover:bg-zinc-50';
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [themes, setThemes] = useState<StoreThemePreset[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -257,115 +238,168 @@ export default function StoreVisualEditor() {
 
   if (loading || !settings) {
     return (
-      <div className={`flex h-full items-center justify-center ${chrome}`}>
-        <p className={`text-sm ${muted}`}>{error ?? 'Gorsel editor yukleniyor...'}</p>
+      <div className="flex h-full items-center justify-center bg-admin-bg text-admin-muted">
+        <p className="font-admin-mono text-sm tracking-wide">
+          {error ?? 'Gorsel editor yukleniyor...'}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className={`flex h-full flex-col ${chrome}`}>
-      <header className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 ${panel}`}>
+    <div className="flex h-full flex-col bg-admin-bg text-admin-text">
+      <header className="flex h-16 shrink-0 flex-wrap items-center justify-between gap-3 border-b border-admin-border bg-admin-surface-low px-4 md:px-8">
         <div>
-          <h1 className={`text-lg font-semibold tracking-tight ${dark ? 'text-zinc-50' : 'text-zinc-900'}`}>
-            Magaza tasarimi
-          </h1>
-          <p className={`text-xs ${muted}`}>Sayfayi gorerek yerlestir ve kaydet</p>
+          <h1 className="text-lg font-bold tracking-tight text-admin-primary">Store Editor</h1>
+          <p className="font-admin-mono text-[10px] uppercase tracking-[0.14em] text-admin-muted">
+            Gorsel magaza duzenleyici
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={getAdminPaths().site} target="_blank" className={btnGhost}>
-            Canli site
+          <Link
+            href={getAdminPaths().site}
+            target="_blank"
+            className="rounded border border-admin-border bg-admin-surface-high px-4 py-2 font-admin-mono text-xs font-semibold uppercase tracking-wide text-admin-text transition hover:bg-admin-surface"
+          >
+            Canli siteyi gor
           </Link>
-          <button type="button" onClick={() => void handleSave()} disabled={saving} className={btnPrimary}>
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving}
+            className="rounded bg-admin-primary px-4 py-2 font-admin-mono text-xs font-semibold uppercase tracking-wide text-admin-on-primary-container transition hover:bg-admin-primary-container disabled:opacity-60"
+          >
             {saving ? 'Kaydediliyor...' : 'Kaydet'}
           </button>
         </div>
       </header>
 
       {(error || saved) && (
-        <div className={`border-b px-4 py-2 text-sm ${panel}`}>
-          {error ? <p className="text-red-500">{error}</p> : null}
-          {saved ? <p className="text-emerald-500">Kaydedildi. Canli sitede gorunur.</p> : null}
+        <div className="border-b border-admin-border bg-admin-surface-low px-4 py-2 text-sm md:px-8">
+          {error ? <p className="text-admin-danger">{error}</p> : null}
+          {saved ? (
+            <p className="text-emerald-400">Kaydedildi. Canli sitede gorunur.</p>
+          ) : null}
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[240px_minmax(0,1fr)_minmax(300px,340px)]">
-        <aside className={`min-h-0 overflow-y-auto border-r p-3 ${panel}`}>
-          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>
-            Hizli islem
-          </p>
-          <div className="mb-5 grid gap-2">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[256px_minmax(0,1fr)_minmax(300px,340px)]">
+        <aside className="flex min-h-0 flex-col overflow-y-auto border-r border-admin-border bg-admin-surface py-4">
+          <div className="border-b border-admin-border px-5 pb-4">
+            <h2 className="text-lg font-bold text-admin-primary">Duzenleyici</h2>
+            <p className="mt-1 font-admin-mono text-[10px] uppercase tracking-wider text-admin-muted">
+              Gorsel kontroller
+            </p>
+          </div>
+
+          <div className="space-y-1 px-3 py-4">
             <button
               type="button"
               onClick={() => setSelection({ type: 'product' })}
-              className={`rounded-lg border px-3 py-3 text-left transition ${
-                selection?.type === 'product' ? selectActive : selectIdle
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${
+                selection?.type === 'product'
+                  ? 'border-r-4 border-admin-primary bg-admin-border/20 font-semibold text-admin-primary'
+                  : 'text-admin-muted hover:bg-admin-border/10 hover:text-admin-text'
               }`}
             >
-              <span className="block text-sm font-semibold">+ Urun ekle</span>
-              <span className={`text-xs ${muted}`}>Vitrine yeni urun koy</span>
+              <span className="text-sm font-medium">+ Urun ekle</span>
             </button>
             <button
               type="button"
               onClick={() => setSelection({ type: 'style' })}
-              className={`rounded-lg border px-3 py-3 text-left transition ${
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${
                 selection?.type === 'style' || selection?.type === 'header'
-                  ? selectActive
-                  : selectIdle
+                  ? 'border-r-4 border-admin-primary bg-admin-border/20 font-semibold text-admin-primary'
+                  : 'text-admin-muted hover:bg-admin-border/10 hover:text-admin-text'
               }`}
             >
-              <span className="block text-sm font-semibold">Marka & yazi tipi</span>
-              <span className={`text-xs ${muted}`}>Font, renk, logo</span>
+              <span className="text-sm font-medium">Marka & yazi tipi</span>
             </button>
           </div>
 
-          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>
-            Bolum ekle
-          </p>
-          <div className="grid gap-2">
-            {SECTION_PALETTE.map((item) => (
-              <button
-                key={item.type}
-                type="button"
-                onClick={() => addSection(item.type)}
-                className={`rounded-lg border px-3 py-3 text-left transition ${selectIdle}`}
-              >
-                <span className="block text-sm font-medium">+ {item.label}</span>
-                <span className={`text-xs ${muted}`}>{item.hint}</span>
-              </button>
-            ))}
+          <div className="px-5 pt-2">
+            <p className="mb-2 font-admin-mono text-[10px] uppercase tracking-wider text-admin-muted">
+              Bolum ekle
+            </p>
+            <div className="grid gap-2">
+              {SECTION_PALETTE.map((item) => (
+                <button
+                  key={item.type}
+                  type="button"
+                  onClick={() => addSection(item.type)}
+                  className="rounded-lg border border-dashed border-admin-border bg-admin-bg px-3 py-3 text-left transition hover:border-admin-primary hover:bg-admin-surface-low"
+                >
+                  <span className="block text-sm font-medium text-admin-text">+ {item.label}</span>
+                  <span className="text-xs text-admin-muted">{item.hint}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <p className={`mb-2 mt-6 text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>
-            Hazir temalar
-          </p>
-          <div className="space-y-2">
-            {themes.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                disabled={applyingTheme === preset.id}
-                onClick={() => void handleApplyTheme(preset.id)}
-                className={`w-full rounded-lg border p-2.5 text-left transition ${
-                  settings.themeId === preset.id
-                    ? dark
-                      ? 'border-amber-500 ring-1 ring-amber-500'
-                      : 'border-zinc-900 ring-1 ring-zinc-900'
-                    : dark
-                      ? 'border-zinc-700 hover:border-zinc-500'
-                      : 'border-zinc-200 hover:border-zinc-400'
-                }`}
-              >
-                <div
-                  className="mb-2 h-9 rounded-md"
-                  style={{
-                    background: `linear-gradient(135deg, ${preset.previewAccent}, ${preset.previewAccent}99)`,
-                  }}
-                />
-                <p className="text-sm font-medium">{preset.name}</p>
-                <p className={`text-[11px] leading-snug ${muted}`}>{preset.description}</p>
-              </button>
-            ))}
+          <div className="mt-6 px-5 pb-4">
+            <p className="mb-2 font-admin-mono text-[10px] uppercase tracking-wider text-admin-muted">
+              Bolum listesi
+            </p>
+            <div className="flex flex-col gap-2">
+              {settings.sections.map((section) => {
+                const active =
+                  selection?.type === 'section' && selection.sectionId === section.id;
+                const label =
+                  SECTION_PALETTE.find((item) => item.type === section.type)?.label ??
+                  section.type;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => setSelection({ type: 'section', sectionId: section.id })}
+                    className={`flex items-center justify-between rounded border px-3 py-2.5 text-left transition ${
+                      active
+                        ? 'border-admin-primary/50 bg-admin-bg'
+                        : 'border-admin-border bg-admin-bg hover:border-admin-primary'
+                    }`}
+                  >
+                    <span className="text-sm text-admin-text">{label}</span>
+                    <span
+                      className={`font-admin-mono text-[10px] uppercase ${
+                        section.enabled ? 'text-admin-primary' : 'text-admin-muted'
+                      }`}
+                    >
+                      {section.enabled ? 'Acik' : 'Kapali'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-auto border-t border-admin-border px-5 pt-4">
+            <p className="mb-2 font-admin-mono text-[10px] uppercase tracking-wider text-admin-muted">
+              Hazir temalar
+            </p>
+            <div className="space-y-2 pb-2">
+              {themes.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  disabled={applyingTheme === preset.id}
+                  onClick={() => void handleApplyTheme(preset.id)}
+                  className={`w-full rounded-lg border p-2.5 text-left transition ${
+                    settings.themeId === preset.id
+                      ? 'border-admin-primary ring-1 ring-admin-primary'
+                      : 'border-admin-border hover:border-admin-primary/60'
+                  }`}
+                >
+                  <div
+                    className="mb-2 h-9 rounded-md"
+                    style={{
+                      background: `linear-gradient(135deg, ${preset.previewAccent}, ${preset.previewAccent}99)`,
+                    }}
+                  />
+                  <p className="text-sm font-medium text-admin-text">{preset.name}</p>
+                  <p className="text-[11px] leading-snug text-admin-muted">{preset.description}</p>
+                </button>
+              ))}
+            </div>
           </div>
         </aside>
 
@@ -382,7 +416,7 @@ export default function StoreVisualEditor() {
           onTextChange={updateSettings}
         />
 
-        <aside className={`flex min-h-0 flex-col overflow-hidden border-l ${panel}`}>
+        <aside className="flex min-h-0 flex-col overflow-hidden border-l border-admin-border bg-admin-surface">
           <StoreEditorInspector
             settings={settings}
             selection={selection}
