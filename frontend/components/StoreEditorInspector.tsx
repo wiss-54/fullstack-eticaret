@@ -35,14 +35,14 @@ function Field({
 }) {
   return (
     <label className="block text-sm">
-      <span className="mb-1 block text-stone-500">{label}</span>
+      <span className="mb-1 block text-admin-muted">{label}</span>
       {children}
     </label>
   );
 }
 
 const inputClass =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-amber-700/30 focus:ring-2 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-50';
+  'w-full rounded-lg border border-admin-border bg-admin-bg px-3 py-2 text-sm text-admin-text outline-none ring-admin-primary/30 focus:ring-2';
 
 function InspectorShell({
   title,
@@ -58,19 +58,17 @@ function InspectorShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-stone-200 px-4 py-3 dark:border-stone-800">
+    <div className="flex h-full min-h-0 flex-col bg-admin-surface">
+      <div className="shrink-0 border-b border-admin-border px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             {subtitle ? (
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
+              <p className="font-admin-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-admin-muted">
                 {subtitle}
               </p>
             ) : null}
-            <h3 className="mt-0.5 truncate text-base font-semibold text-stone-900 dark:text-stone-50">
-              {title}
-            </h3>
-            {hint ? <p className="mt-1 text-xs leading-relaxed text-stone-500">{hint}</p> : null}
+            <h3 className="mt-0.5 truncate text-base font-semibold text-admin-text">{title}</h3>
+            {hint ? <p className="mt-1 text-xs leading-relaxed text-admin-muted">{hint}</p> : null}
           </div>
           {actions}
         </div>
