@@ -145,7 +145,11 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
 
   if (!hasVariants && product.stock < 1) {
     return (
-      <button type="button" disabled className="rounded-xl bg-zinc-300 px-5 py-3 text-sm font-medium text-zinc-600">
+      <button
+        type="button"
+        disabled
+        className="rounded-lg bg-store-surface-low px-5 py-3 text-sm font-medium text-store-muted"
+      >
         Stokta Yok
       </button>
     );
@@ -154,8 +158,8 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
   return (
     <div className="space-y-5">
       {hasVariants ? (
-        <div className="space-y-4 rounded-2xl border border-amber-100 bg-amber-50/60 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Varyant Sec</p>
+        <div className="space-y-4 rounded-xl border border-store-border bg-store-surface-low p-5">
+          <p className="text-sm font-semibold text-store-accent-text">Varyant Sec</p>
           {variantAxes.map((axis) => (
             <VariantAxisPicker
               key={axis.id}
@@ -169,7 +173,7 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
             />
           ))}
           {selectedVariant ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-sm text-store-muted">
               Secilen: {selectedVariant.selections.map((selection) => selection.label).join(' / ')} · Stok:{' '}
               {selectedVariant.stock}
               {selectedVariant.sku ? ` · SKU: ${selectedVariant.sku}` : ''}
@@ -179,8 +183,8 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
       ) : null}
 
       {textOptions.length > 0 ? (
-        <div className="space-y-4 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-800">
-          <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Kisilestirme</p>
+        <div className="space-y-4 rounded-xl border border-store-border p-5">
+          <p className="text-sm font-semibold text-store-text">Kisilestirme</p>
           {textOptions.map((option) => (
             <TextOptionField
               key={option.id}
@@ -193,9 +197,9 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
       ) : null}
 
       <label className="block space-y-2">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Siparis notu (opsiyonel)</span>
+        <span className="text-sm font-medium text-store-text">Siparis notu (opsiyonel)</span>
         <textarea
-          className="min-h-24 w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="min-h-24 w-full rounded-lg border border-store-border px-4 py-3 text-sm text-store-text outline-none transition focus:border-store-primary-container focus:ring-2 focus:ring-store-primary-container/20"
           placeholder="Ornek: Hediye paketi olsun"
           value={customerNote}
           onChange={(event) => setCustomerNote(event.target.value)}
@@ -203,18 +207,18 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
         />
       </label>
 
-      <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{formatPrice(unitPrice)}</p>
+      <p className="text-2xl font-bold text-store-primary-container">{formatPrice(unitPrice)}</p>
 
       <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={handleAddToCart}
-          className="rounded-xl bg-amber-800 px-5 py-3 text-sm font-medium text-white hover:bg-amber-900 dark:bg-amber-500 dark:text-zinc-950"
+          className="rounded-lg bg-store-primary-container px-5 py-3 text-sm font-semibold text-store-on-primary transition hover:bg-store-primary"
         >
           Sepete Ekle
         </button>
-        {error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
-        {message ? <p className="text-sm text-green-700 dark:text-green-300">{message}</p> : null}
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
       </div>
     </div>
   );
@@ -237,7 +241,7 @@ function VariantAxisPicker({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{axis.name}</p>
+      <p className="text-sm font-medium text-store-text">{axis.name}</p>
       <div className="flex flex-wrap gap-2">
         {axis.values.map((value) => {
           const isAvailable = availableIds.has(value.id);
@@ -252,7 +256,7 @@ function VariantAxisPicker({
                 onClick={() => onSelect(value.id)}
                 title={value.label}
                 className={`h-10 w-10 rounded-full border-2 disabled:opacity-30 ${
-                  isSelected ? 'border-amber-700' : 'border-transparent'
+                  isSelected ? 'border-store-primary' : 'border-transparent'
                 }`}
                 style={{ backgroundColor: value.colorHex }}
               />
@@ -265,10 +269,10 @@ function VariantAxisPicker({
               type="button"
               disabled={!isAvailable}
               onClick={() => onSelect(value.id)}
-              className={`rounded-xl border px-4 py-2 text-sm disabled:opacity-40 ${
+              className={`rounded-lg border px-4 py-2 text-sm disabled:opacity-40 ${
                 isSelected
-                  ? 'border-amber-700 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
-                  : 'border-zinc-300 dark:border-zinc-700'
+                  ? 'border-store-primary bg-store-surface-low text-store-primary'
+                  : 'border-store-border text-store-muted'
               }`}
             >
               {value.label}
@@ -291,12 +295,12 @@ function TextOptionField({
 }) {
   return (
     <label className="block space-y-2">
-      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <span className="text-sm font-medium text-store-text">
         {option.label}
         {option.required ? ' *' : ''}
       </span>
       <input
-        className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-lg border border-store-border px-4 py-3 text-sm text-store-text outline-none transition focus:border-store-primary-container focus:ring-2 focus:ring-store-primary-container/20"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         maxLength={200}
