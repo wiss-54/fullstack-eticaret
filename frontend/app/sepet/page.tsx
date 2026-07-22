@@ -4,7 +4,7 @@ import CartPageClient from '@/components/CartPageClient';
 
 export default function CartPage() {
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title="Sepetim" />
       <CartPageClient />
       <StoreFooter />

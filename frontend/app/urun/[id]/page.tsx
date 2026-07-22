@@ -42,12 +42,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const imageSrc = safeMediaUrl(product.imageUrl);
 
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title={product.name} badge={`Stok: ${product.stock}`} />
 
-      <main className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-6 py-10 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-3xl border border-amber-100 bg-white shadow-sm dark:border-amber-900/30 dark:bg-zinc-950">
-          <div className="flex min-h-96 items-center justify-center bg-gradient-to-br from-amber-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
+      <main className="mx-auto grid w-full max-w-7xl flex-1 gap-8 px-4 py-10 md:px-10 lg:grid-cols-2">
+        <div className="overflow-hidden rounded-lg bg-store-surface shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+          <div className="flex min-h-96 items-center justify-center bg-store-surface-low">
             {imageSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -56,24 +56,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="text-sm text-zinc-500">Gorsel yok</span>
+              <span className="text-sm text-store-muted">Gorsel yok</span>
             )}
           </div>
         </div>
 
-        <section className="rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
+        <section className="rounded-lg bg-store-surface p-8 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-store-accent-text">
             Urun detayi
           </p>
-          <p className="mt-3 text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-            {formatPrice(product.price)}
-          </p>
-          <p className="mt-4 leading-relaxed text-zinc-600 dark:text-zinc-400">
-            {product.description}
-          </p>
+          <p className="mt-3 text-3xl font-bold text-store-primary">{formatPrice(product.price)}</p>
+          <p className="mt-4 leading-relaxed text-store-muted">{product.description}</p>
 
           {hasOptions ? (
-            <p className="mt-4 text-sm text-amber-800 dark:text-amber-200">
+            <p className="mt-4 text-sm text-store-accent-text">
               Bu urun kisisellestirme secenekleri iceriyor.
             </p>
           ) : null}
@@ -82,7 +78,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <ProductPurchasePanel product={product} />
             <Link
               href="/"
-              className="inline-block rounded-xl border border-zinc-300 px-5 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+              className="inline-block rounded border border-store-border px-5 py-3 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
             >
               Urunlere Don
             </Link>

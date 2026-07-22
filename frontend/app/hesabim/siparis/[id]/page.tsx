@@ -4,7 +4,7 @@ import OrderDetailPageClient from '@/components/OrderDetailPageClient';
 
 export default function OrderDetailPage() {
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title="Siparis Detayi" />
       <OrderDetailPageClient />
       <StoreFooter />

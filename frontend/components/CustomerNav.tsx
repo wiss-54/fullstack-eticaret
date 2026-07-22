@@ -30,7 +30,7 @@ export default function CustomerNav() {
     return (
       <Link
         href="/hesabim"
-        className="rounded-full border border-amber-300 px-4 py-2 text-sm font-medium text-amber-900 dark:border-amber-800 dark:text-amber-200"
+        className="rounded bg-store-primary px-4 py-2.5 text-sm font-semibold text-store-on-primary transition hover:opacity-90"
       >
         Hesabim
       </Link>
@@ -38,16 +38,16 @@ export default function CustomerNav() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
       <Link
         href="/giris"
-        className="rounded-full px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300"
+        className="rounded px-3 py-2 text-sm font-medium text-store-muted transition hover:text-store-primary"
       >
         Giris
       </Link>
       <Link
         href="/kayit"
-        className="rounded-full border border-amber-300 px-4 py-2 text-sm font-medium text-amber-900 dark:border-amber-800 dark:text-amber-200"
+        className="hidden rounded bg-store-primary px-4 py-2.5 text-sm font-semibold text-store-on-primary transition hover:opacity-90 sm:inline-block"
       >
         Kayit Ol
       </Link>

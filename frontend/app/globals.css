@@ -24,6 +24,18 @@
   --color-admin-muted: var(--admin-muted);
   --color-admin-accent: var(--admin-accent);
   --color-admin-danger: var(--admin-danger);
+  --color-store-bg: var(--store-bg);
+  --color-store-surface: var(--store-surface);
+  --color-store-surface-low: var(--store-surface-low);
+  --color-store-border: var(--store-border);
+  --color-store-text: var(--store-text);
+  --color-store-muted: var(--store-muted);
+  --color-store-accent-text: var(--store-accent-text);
+  --color-store-primary: var(--store-primary);
+  --color-store-primary-container: var(--store-primary-container);
+  --color-store-on-primary: var(--store-on-primary);
+  --color-store-inverse: var(--store-inverse);
+  --color-store-inverse-text: var(--store-inverse-text);
   --font-admin-display: var(--font-admin-display), var(--font-geist-sans), ui-sans-serif, system-ui,
     sans-serif;
   --font-admin-mono: var(--font-admin-mono), var(--font-geist-mono), ui-monospace, monospace;
@@ -44,6 +56,20 @@
   --admin-muted: #c8c6c9;
   --admin-accent: #d8c3ad;
   --admin-danger: #ffb4ab;
+
+  /* Stitch Luminous Commerce (storefront) */
+  --store-bg: #f9f9f9;
+  --store-surface: #ffffff;
+  --store-surface-low: #f3f3f3;
+  --store-border: #e4e1e6;
+  --store-text: #1a1c1c;
+  --store-muted: #5f5e61;
+  --store-accent-text: #534434;
+  --store-primary: #855300;
+  --store-primary-container: #f59e0b;
+  --store-on-primary: #ffffff;
+  --store-inverse: #2f3131;
+  --store-inverse-text: #f0f1f1;
 }
 
 [data-admin-theme='light'] {

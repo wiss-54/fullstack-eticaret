@@ -5,7 +5,7 @@ import MockCardPaymentClient from '@/components/MockCardPaymentClient';
 
 export default function MockCardPaymentPage() {
   return (
-    <div className="flex min-h-full flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-full flex-col bg-store-bg">
       <StoreHeader title="Kart Odeme" />
       <Suspense
         fallback={
