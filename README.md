@@ -12,6 +12,11 @@ Push/PR → Secret Scan → Backend (test + audit) → Frontend (lint + build + 
          main branch push → SSH Deploy → PM2 restart → Health check
 ```
 
+**Deploy kurali:** Production'a kod yalnizca `main` uzerinden gider.
+Feature branch / manuel SSH ile `git reset` + build yapilmaz.
+`scripts/deploy.sh` sadece GitHub Actions (`DEPLOY_SOURCE=github-actions`) ile calisir.
+Acil durum disinda manuel deploy yasaktir.
+
 ### Güvenlik katmanları
 
 | Katman | Araç | Ne yapar |

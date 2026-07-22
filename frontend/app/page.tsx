@@ -13,7 +13,7 @@ type HomeProps = {
 };
 
 const FALLBACK_SETTINGS: StoreSettings = {
-  brandName: 'Hatira Niyat',
+  brandName: 'EticaretShop',
   logoUrl: null,
   accentColor: '#92400e',
   themeId: 'classic-amber',
@@ -22,7 +22,7 @@ const FALLBACK_SETTINGS: StoreSettings = {
   buttonStyle: 'pill',
   heroLayout: 'split',
   fontStyle: 'classic',
-  heroEyebrow: 'Hatira Niyat',
+  heroEyebrow: 'EticaretShop',
   heroTitle: 'Ozel anlarina ozel urunler',
   heroSubtitle: 'Kişiselleştirilebilir seçenekler, sipariş notu ve güvenli alışveriş.',
   heroCtaLabel: 'Urunleri Kesfet',
@@ -34,7 +34,7 @@ const FALLBACK_SETTINGS: StoreSettings = {
   productsTitle: 'One cikan urunler',
   productsSubtitle:
     'Varyantli urunlerde beden/renk bazli stok, kategoriler ve kisisellestirme alanlari desteklenir.',
-  footerLeft: 'Hatira Niyat. Tum haklari saklidir.',
+  footerLeft: 'EticaretShop. Tum haklari saklidir.',
   footerRight: 'Guvenli odeme ve kisisellestirme altyapisi gelistiriliyor.',
   sections: [
     { id: 'hero', type: 'hero', enabled: true },

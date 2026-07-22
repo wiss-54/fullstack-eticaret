@@ -29,7 +29,7 @@ const THEME_PRESETS = [
       buttonStyle: 'pill',
       heroLayout: 'split',
       fontStyle: 'classic',
-      heroEyebrow: 'Hatira Niyat',
+      heroEyebrow: 'EticaretShop',
       heroTitle: 'Ozel anlarina ozel urunler',
       heroSubtitle:
         'Kişiselleştirilebilir seçenekler, sipariş notu ve güvenli alışveriş.',

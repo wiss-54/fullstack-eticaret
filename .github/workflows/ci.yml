@@ -150,6 +150,8 @@ jobs:
           set -euo pipefail
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
           export APP_DIR="/home/beratav/fullstack-eticaret"
+          export DEPLOY_SOURCE="github-actions"
+          export DEPLOY_BRANCH="main"
           cd "$APP_DIR"
           bash scripts/deploy.sh
           ENDSSH

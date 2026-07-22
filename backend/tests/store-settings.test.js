@@ -17,7 +17,7 @@ const { pool } = require('../db');
 const app = require('../app');
 
 const sampleSettings = {
-  brandName: 'Hatira Niyat',
+  brandName: 'EticaretShop',
   logoUrl: null,
   accentColor: '#92400e',
   themeId: 'classic-amber',
@@ -26,7 +26,7 @@ const sampleSettings = {
   buttonStyle: 'pill',
   heroLayout: 'split',
   fontStyle: 'classic',
-  heroEyebrow: 'Hatira Niyat',
+  heroEyebrow: 'EticaretShop',
   heroTitle: 'Baslik',
   heroSubtitle: 'Aciklama',
   heroCtaLabel: 'Kesfet',

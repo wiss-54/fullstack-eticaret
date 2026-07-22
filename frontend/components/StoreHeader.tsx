@@ -13,7 +13,7 @@ type StoreHeaderProps = {
 
 export default function StoreHeader({
   title = 'Urunler',
-  subtitle = 'Hatira Niyat',
+  subtitle = 'EticaretShop',
   badge,
   logoUrl = null,
   accentColor = '#92400e',

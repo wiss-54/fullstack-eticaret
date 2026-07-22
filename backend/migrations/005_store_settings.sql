@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS store_settings (
   id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-  brand_name VARCHAR(100) NOT NULL DEFAULT 'Hatira Niyat',
+  brand_name VARCHAR(100) NOT NULL DEFAULT 'EticaretShop',
   logo_url TEXT,
   accent_color VARCHAR(20) NOT NULL DEFAULT '#92400e',
-  hero_eyebrow VARCHAR(120) NOT NULL DEFAULT 'Hatira Niyat',
+  hero_eyebrow VARCHAR(120) NOT NULL DEFAULT 'EticaretShop',
   hero_title VARCHAR(200) NOT NULL DEFAULT 'Ozel anlarina ozel urunler',
   hero_subtitle TEXT NOT NULL DEFAULT 'Kişiselleştirilebilir seçenekler, sipariş notu ve güvenli alışveriş.',
   hero_cta_label VARCHAR(100) NOT NULL DEFAULT 'Urunleri Kesfet',
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS store_settings (
   products_eyebrow VARCHAR(120) NOT NULL DEFAULT 'Koleksiyon',
   products_title VARCHAR(200) NOT NULL DEFAULT 'One cikan urunler',
   products_subtitle TEXT NOT NULL DEFAULT 'Varyantli urunlerde beden/renk bazli stok, kategoriler ve kisisellestirme alanlari desteklenir.',
-  footer_left TEXT NOT NULL DEFAULT 'Hatira Niyat. Tum haklari saklidir.',
+  footer_left TEXT NOT NULL DEFAULT 'EticaretShop. Tum haklari saklidir.',
   footer_right TEXT NOT NULL DEFAULT 'Guvenli odeme ve kisisellestirme altyapisi gelistiriliyor.',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

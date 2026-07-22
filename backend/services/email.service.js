@@ -1,4 +1,22 @@
+const nodemailer = require('nodemailer');
 const { getFrontendUrl } = require('./payments.service');
+
+function getEmailProvider() {
+  const explicit = (process.env.EMAIL_PROVIDER || '').trim().toLowerCase();
+  if (explicit === 'brevo' || explicit === 'mailersend' || explicit === 'mock') {
+    return explicit;
+  }
+
+  if (isBrevoConfigured()) return 'brevo';
+  if (isMailerSendConfigured()) return 'mailersend';
+  return 'mock';
+}
+
+function isBrevoConfigured() {
+  return Boolean(
+    process.env.BREVO_SMTP_USER?.trim() && process.env.BREVO_SMTP_PASS?.trim(),
+  );
+}
 
 function isMailerSendConfigured() {
   return Boolean(process.env.MAILERSEND_API_TOKEN?.trim());
@@ -6,8 +24,8 @@ function isMailerSendConfigured() {
 
 function getFromAddress() {
   return {
-    email: process.env.MAIL_FROM_EMAIL || 'noreply@test.hatiraniyarat.com',
-    name: process.env.MAIL_FROM_NAME || 'Hatıranı Yarat',
+    email: process.env.MAIL_FROM_EMAIL || 'noreply@eticaretshop.com.tr',
+    name: process.env.MAIL_FROM_NAME || 'EticaretShop',
   };
 }
 
@@ -69,7 +87,7 @@ function buildOrderConfirmationContent(order) {
     '',
     `Siparis detayi: ${orderUrl}`,
     '',
-    'Hatirani Yarat',
+    'EticaretShop',
   ]
     .filter(Boolean)
     .join('\n');
@@ -104,7 +122,7 @@ function buildOrderConfirmationContent(order) {
           Siparisi gor
         </a>
       </p>
-      <p style="margin-top:24px;color:#78716c;font-size:12px">Hatirani Yarat</p>
+      <p style="margin-top:24px;color:#78716c;font-size:12px">EticaretShop</p>
     </div>
   `.trim();
 
@@ -113,6 +131,82 @@ function buildOrderConfirmationContent(order) {
     text,
     html,
   };
+}
+
+function buildEmailVerificationContent(user) {
+  const verifyUrl = `${getFrontendUrl()}/eposta-dogrula?token=${encodeURIComponent(user.verificationToken)}`;
+
+  const text = [
+    `Merhaba ${user.fullName},`,
+    '',
+    'EticaretShop hesabınızı oluşturduğunuz için teşekkürler.',
+    'Hesabınızı aktifleştirmek için aşağıdaki bağlantıya tıklayın:',
+    '',
+    verifyUrl,
+    '',
+    'Bu bağlantı 24 saat geçerlidir.',
+    'Eğer bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.',
+    '',
+    'EticaretShop',
+  ].join('\n');
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1c1917;max-width:560px">
+      <p>Merhaba <strong>${user.fullName}</strong>,</p>
+      <p>EticaretShop hesabınızı oluşturduğunuz için teşekkürler.</p>
+      <p>Hesabınızı aktifleştirmek için aşağıdaki butona tıklayın:</p>
+      <p style="margin:24px 0">
+        <a href="${verifyUrl}" style="display:inline-block;background:#b45309;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">
+          E-postamı doğrula
+        </a>
+      </p>
+      <p style="color:#78716c;font-size:14px">Bu bağlantı 24 saat geçerlidir.</p>
+      <p style="color:#78716c;font-size:14px">Eğer bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
+      <p style="margin-top:24px;color:#78716c;font-size:12px">EticaretShop</p>
+    </div>
+  `.trim();
+
+  return {
+    subject: 'E-posta adresinizi doğrulayın',
+    text,
+    html,
+  };
+}
+
+async function sendViaBrevo({ to, subject, text, html }) {
+  const user = process.env.BREVO_SMTP_USER?.trim();
+  const pass = process.env.BREVO_SMTP_PASS?.trim();
+  if (!user || !pass) {
+    const error = new Error('Brevo SMTP bilgileri tanimli degil');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const from = getFromAddress();
+  const transporter = nodemailer.createTransport({
+    host: process.env.BREVO_SMTP_HOST?.trim() || 'smtp-relay.brevo.com',
+    port: Number(process.env.BREVO_SMTP_PORT || 2525),
+    secure: false,
+    auth: { user, pass },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: `"${from.name}" <${from.email}>`,
+      to,
+      subject,
+      text,
+      html,
+    });
+  } catch (err) {
+    console.error('Brevo SMTP hatasi:', err.message);
+    const error = new Error(`Brevo e-posta gonderilemedi: ${err.message}`);
+    error.statusCode = 502;
+    error.details = err;
+    throw error;
+  }
+
+  return { provider: 'brevo', accepted: true };
 }
 
 async function sendViaMailerSend({ to, subject, text, html }) {
@@ -147,9 +241,7 @@ async function sendViaMailerSend({ to, subject, text, html }) {
       details = await response.text();
     }
     console.error('MailerSend API hatasi:', response.status, details);
-    const error = new Error(
-      `MailerSend e-posta gonderilemedi (${response.status})`,
-    );
+    const error = new Error(`MailerSend e-posta gonderilemedi (${response.status})`);
     error.statusCode = response.status;
     error.details = details;
     throw error;
@@ -163,52 +255,18 @@ async function sendEmail({ to, subject, text, html }) {
     throw new Error('Alici e-posta adresi gerekli');
   }
 
-  if (!isMailerSendConfigured()) {
+  const provider = getEmailProvider();
+
+  if (provider === 'mock') {
     console.info('[email:mock]', { to, subject });
     return { provider: 'mock', accepted: true };
   }
 
+  if (provider === 'brevo') {
+    return sendViaBrevo({ to, subject, text, html });
+  }
+
   return sendViaMailerSend({ to, subject, text, html });
-}
-
-function buildEmailVerificationContent(user) {
-  const verifyUrl = `${getFrontendUrl()}/eposta-dogrula?token=${encodeURIComponent(user.verificationToken)}`;
-
-  const text = [
-    `Merhaba ${user.fullName},`,
-    '',
-    'Hatıranı Yarat hesabınızı oluşturduğunuz için teşekkürler.',
-    'Hesabınızı aktifleştirmek için aşağıdaki bağlantıya tıklayın:',
-    '',
-    verifyUrl,
-    '',
-    'Bu bağlantı 24 saat geçerlidir.',
-    'Eğer bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.',
-    '',
-    'Hatıranı Yarat',
-  ].join('\n');
-
-  const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1c1917;max-width:560px">
-      <p>Merhaba <strong>${user.fullName}</strong>,</p>
-      <p>Hatıranı Yarat hesabınızı oluşturduğunuz için teşekkürler.</p>
-      <p>Hesabınızı aktifleştirmek için aşağıdaki butona tıklayın:</p>
-      <p style="margin:24px 0">
-        <a href="${verifyUrl}" style="display:inline-block;background:#b45309;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">
-          E-postamı doğrula
-        </a>
-      </p>
-      <p style="color:#78716c;font-size:14px">Bu bağlantı 24 saat geçerlidir.</p>
-      <p style="color:#78716c;font-size:14px">Eğer bu kaydı siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
-      <p style="margin-top:24px;color:#78716c;font-size:12px">Hatıranı Yarat</p>
-    </div>
-  `.trim();
-
-  return {
-    subject: 'E-posta adresinizi doğrulayın',
-    text,
-    html,
-  };
 }
 
 async function sendEmailVerificationEmail(user) {
@@ -244,6 +302,8 @@ function scheduleOrderConfirmationEmail(order) {
 }
 
 module.exports = {
+  getEmailProvider,
+  isBrevoConfigured,
   isMailerSendConfigured,
   buildOrderConfirmationContent,
   buildEmailVerificationContent,

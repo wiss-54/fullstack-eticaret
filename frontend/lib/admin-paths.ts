@@ -1,4 +1,4 @@
-const ADMIN_HOST = 'admintest.hatiraniyarat.com';
+const ADMIN_HOST = 'admin.eticaretshop.com.tr';
 
 export function getAdminPaths(hostname?: string) {
   const host =
@@ -11,7 +11,7 @@ export function getAdminPaths(hostname?: string) {
       monitoring: '/monitoring',
       orders: '/siparisler',
       settings: '/ayarlar',
-      site: 'https://test.hatiraniyarat.com',
+      site: 'https://eticaretshop.com.tr',
     };
   }
 

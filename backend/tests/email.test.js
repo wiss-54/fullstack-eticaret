@@ -1,19 +1,29 @@
 describe('email service', () => {
   const originalToken = process.env.MAILERSEND_API_TOKEN;
   const originalFrontend = process.env.FRONTEND_URL;
+  const originalProvider = process.env.EMAIL_PROVIDER;
+  const originalBrevoUser = process.env.BREVO_SMTP_USER;
+  const originalBrevoPass = process.env.BREVO_SMTP_PASS;
 
   beforeAll(() => {
-    process.env.FRONTEND_URL = 'https://test.hatiraniyarat.com';
+    process.env.FRONTEND_URL = 'https://eticaretshop.com.tr';
   });
 
   afterAll(() => {
     process.env.MAILERSEND_API_TOKEN = originalToken;
     process.env.FRONTEND_URL = originalFrontend;
+    process.env.EMAIL_PROVIDER = originalProvider;
+    process.env.BREVO_SMTP_USER = originalBrevoUser;
+    process.env.BREVO_SMTP_PASS = originalBrevoPass;
   });
 
   afterEach(() => {
     delete process.env.MAILERSEND_API_TOKEN;
+    delete process.env.EMAIL_PROVIDER;
+    delete process.env.BREVO_SMTP_USER;
+    delete process.env.BREVO_SMTP_PASS;
     jest.restoreAllMocks();
+    jest.resetModules();
   });
 
   it('buildOrderConfirmationContent siparis ozetini olusturur', () => {
@@ -58,6 +68,7 @@ describe('email service', () => {
   });
 
   it('sendEmail mock modda token olmadan calisir', async () => {
+    process.env.EMAIL_PROVIDER = 'mock';
     const logSpy = jest.spyOn(console, 'info').mockImplementation(() => {});
     const { sendEmail } = require('../services/email.service');
 

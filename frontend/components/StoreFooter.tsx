@@ -5,9 +5,9 @@ type StoreFooterProps = {
 };
 
 export default function StoreFooter({
-  leftText = 'Hatira Niyat. Tum haklari saklidir.',
+  leftText = 'EticaretShop. Tum haklari saklidir.',
   rightText = 'Guvenli odeme ve kisisellestirme altyapisi gelistiriliyor.',
-  brandName = 'Hatira Niyat',
+  brandName = 'EticaretShop',
 }: StoreFooterProps) {
   const left = leftText.includes(brandName)
     ? `© ${new Date().getFullYear()} ${leftText}`

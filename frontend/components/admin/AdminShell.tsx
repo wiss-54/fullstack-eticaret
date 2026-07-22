@@ -92,7 +92,7 @@ function AdminShellInner({ children }: AdminShellProps) {
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-500">
                 Yonetim
               </p>
-              <p className="mt-1 truncate text-base font-semibold tracking-tight">Hatirani Yarat</p>
+              <p className="mt-1 truncate text-base font-semibold tracking-tight">EticaretShop</p>
             </>
           )}
         </div>
@@ -168,7 +168,7 @@ function AdminShellInner({ children }: AdminShellProps) {
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-500">
               Yonetim
             </p>
-            <p className="text-sm font-semibold">Hatirani Yarat</p>
+            <p className="text-sm font-semibold">EticaretShop</p>
           </div>
           <div className="flex items-center gap-2">
             <button
