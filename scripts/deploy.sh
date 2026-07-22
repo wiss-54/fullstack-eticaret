@@ -4,20 +4,39 @@ set -euo pipefail
 # GitHub Actions SSH oturumunda PATH bos gelebiliyor.
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
+# Deploy yalnizca CI (main push) ile. Feature branch / manuel SSH deploy yasak.
+# Acil durum disinda ALLOW_MANUAL_DEPLOY kullanma.
+if [[ "${DEPLOY_SOURCE:-}" != "github-actions" && "${ALLOW_MANUAL_DEPLOY:-}" != "1" ]]; then
+  echo "ERROR: Deploy sadece GitHub Actions uzerinden (main branch) calisir."
+  echo "       PR merge → CI yesil → main push → otomatik deploy."
+  echo "Acil durum (kayit tutarak): ALLOW_MANUAL_DEPLOY=1 bash scripts/deploy.sh"
+  exit 1
+fi
+
 APP_DIR="${APP_DIR:-/home/beratav/fullstack-eticaret}"
 BACKEND_DIR="$APP_DIR/backend"
 FRONTEND_DIR="$APP_DIR/frontend"
 DOMAIN="${DOMAIN:-https://eticaretshop.com.tr}"
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 
-echo "==> Deploy basliyor: $APP_DIR"
+echo "==> Deploy basliyor: $APP_DIR (branch: origin/$DEPLOY_BRANCH)"
 
 cd "$APP_DIR"
-git fetch origin main
-git reset --hard origin/main
+git fetch origin "$DEPLOY_BRANCH"
+
+if [[ "$DEPLOY_BRANCH" != "main" && "${ALLOW_NON_MAIN_DEPLOY:-}" != "1" ]]; then
+  echo "ERROR: Sadece main deploy edilebilir (istenen: $DEPLOY_BRANCH)."
+  exit 1
+fi
+
+git reset --hard "origin/$DEPLOY_BRANCH"
+
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD || true)"
+echo "==> HEAD: $(git rev-parse --short HEAD) (ref: $CURRENT_BRANCH)"
 
 COMMIT_SHA="$(git rev-parse --short HEAD)"
 DEPLOYED_AT="$(date -Iseconds)"
-echo "{\"commit\":\"$COMMIT_SHA\",\"deployedAt\":\"$DEPLOYED_AT\"}" > "$BACKEND_DIR/.deploy-info.json"
+echo "{\"commit\":\"$COMMIT_SHA\",\"deployedAt\":\"$DEPLOYED_AT\",\"branch\":\"$DEPLOY_BRANCH\",\"source\":\"${DEPLOY_SOURCE:-manual}\"}" > "$BACKEND_DIR/.deploy-info.json"
 
 echo "==> Backend"
 cd "$BACKEND_DIR"
@@ -59,4 +78,4 @@ sleep 5
 curl -fsS http://localhost:5000/api/test-db
 curl -fsS http://localhost:3000 > /dev/null
 
-echo "==> Deploy tamamlandi"
+echo "==> Deploy tamamlandi (yalnizca origin/$DEPLOY_BRANCH)"
