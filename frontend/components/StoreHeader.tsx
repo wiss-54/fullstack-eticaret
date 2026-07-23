@@ -2,6 +2,7 @@ import Link from 'next/link';
 import CartNav from '@/components/CartNav';
 import CustomerNav from '@/components/CustomerNav';
 import StoreThemeToggle from '@/components/StoreThemeToggle';
+import { safeHref } from '@/lib/safe-href';
 import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type StoreHeaderProps = {
@@ -31,6 +32,8 @@ export default function StoreHeader({
 }: StoreHeaderProps) {
   const logoSrc = safeMediaUrl(logoUrl);
   const brand = subtitle || 'EticaretShop';
+  const link1Href = safeHref(navItem1Href, '#urunler');
+  const link2Href = safeHref(navItem2Href, '#urunler');
 
   const brandBlock = (
     <>
@@ -72,10 +75,10 @@ export default function StoreHeader({
             </>
           ) : (
             <>
-              <a href={navItem1Href} className="transition hover:text-store-primary">
+              <a href={link1Href} className="transition hover:text-store-primary">
                 {navItem1Label}
               </a>
-              <a href={navItem2Href} className="transition hover:text-store-primary">
+              <a href={link2Href} className="transition hover:text-store-primary">
                 {navItem2Label}
               </a>
             </>
