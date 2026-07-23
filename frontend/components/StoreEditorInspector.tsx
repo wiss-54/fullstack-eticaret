@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import type { Category, Product, StoreFeatureCard, StoreSection, StoreSettings } from '@/lib/types';
@@ -90,16 +90,16 @@ function Accordion({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
+    <div className="overflow-hidden rounded-xl border border-admin-border">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between bg-stone-50 px-3 py-2.5 text-left text-sm font-semibold text-stone-800 dark:bg-stone-900/50 dark:text-stone-100"
+        className="flex w-full items-center justify-between bg-admin-surface-low px-3 py-2.5 text-left text-sm font-semibold text-admin-text"
       >
         <span>{title}</span>
-        <span className="text-stone-400">{open ? '−' : '+'}</span>
+        <span className="text-admin-muted">{open ? '−' : '+'}</span>
       </button>
-      {open ? <div className="space-y-3 border-t border-stone-200 p-3 dark:border-stone-800">{children}</div> : null}
+      {open ? <div className="space-y-3 border-t border-admin-border p-3">{children}</div> : null}
     </div>
   );
 }
@@ -118,9 +118,9 @@ function ReorderList<T extends string>({
       {items.map((itemKey, index) => (
         <div
           key={itemKey}
-          className="flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-2 py-2 dark:border-stone-800 dark:bg-stone-950/40"
+          className="flex items-center gap-2 rounded-lg border border-admin-border bg-admin-bg px-2 py-2"
         >
-          <span className="flex-1 text-sm font-medium text-stone-700 dark:text-stone-200">
+          <span className="flex-1 text-sm font-medium text-admin-text">
             {labels[itemKey] ?? itemKey}
           </span>
           <div className="flex shrink-0 gap-1">
@@ -128,7 +128,7 @@ function ReorderList<T extends string>({
               type="button"
               disabled={index === 0}
               onClick={() => onMove(index, index - 1)}
-              className="rounded-md border border-stone-300 px-2 py-1 text-xs disabled:opacity-30 dark:border-stone-700"
+              className="rounded-md border border-admin-border px-2 py-1 text-xs text-admin-text disabled:opacity-30"
               title="Yukari"
             >
               ↑
@@ -137,7 +137,7 @@ function ReorderList<T extends string>({
               type="button"
               disabled={index === items.length - 1}
               onClick={() => onMove(index, index + 1)}
-              className="rounded-md border border-stone-300 px-2 py-1 text-xs disabled:opacity-30 dark:border-stone-700"
+              className="rounded-md border border-admin-border px-2 py-1 text-xs text-admin-text disabled:opacity-30"
               title="Asagi"
             >
               ↓
@@ -239,7 +239,7 @@ function HeroPanel({
 
   return (
     <div className="space-y-3">
-      <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-100">
+      <p className="rounded-lg border border-admin-primary/30 bg-admin-primary-container/15 px-3 py-2 text-xs leading-relaxed text-admin-text">
         Ozellik kartlari artik Hero icinde degil. Onlari ayri <b>Ozellikler</b> bolumuyle ekle —
         cakisma olmaz.
       </p>
@@ -294,7 +294,7 @@ function HeroPanel({
             onChange={(e) => patch('heroSecondaryCtaHref', e.target.value)}
           />
         </Field>
-        <p className="text-[11px] text-stone-500">
+        <p className="text-[11px] text-admin-muted">
           Butonlar sadece canli sitede gider. Editorde tiklanmaz.
         </p>
       </Accordion>
@@ -314,8 +314,8 @@ function HeroPanel({
       </Accordion>
 
       <Accordion title="3. Sira (metin / buton)" open={openOrder} onToggle={() => setOpenOrder((v) => !v)}>
-        <p className="text-xs text-stone-500">↑ ↓ ile sirayi degistir.</p>
-        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Metin sirasi</p>
+        <p className="text-xs text-admin-muted">↑ ↓ ile sirayi degistir.</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-admin-muted">Metin sirasi</p>
         <ReorderList
           items={[...heroTextOrder]}
           labels={{
@@ -331,7 +331,7 @@ function HeroPanel({
             )
           }
         />
-        <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+        <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-admin-muted">
           Buton sirasi
         </p>
         <ReorderList
@@ -391,7 +391,7 @@ export default function StoreEditorInspector({
         title="Bir sey sec"
         hint="Ortadaki onizlemede bir bolume veya metne tikla. Soldan bolum ekleyebilirsin."
       >
-        <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-900/50">
+        <div className="rounded-xl border border-dashed border-admin-border bg-admin-surface-low p-3">
           <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
         </div>
       </InspectorShell>
@@ -448,7 +448,7 @@ export default function StoreEditorInspector({
             <div className="flex gap-2">
               <input
                 type="color"
-                className="h-10 w-12 rounded-lg border border-stone-300 dark:border-stone-700"
+                className="h-10 w-12 rounded-lg border border-admin-border"
                 value={settings.accentColor}
                 onChange={(e) => patch('accentColor', e.target.value)}
               />
@@ -467,8 +467,8 @@ export default function StoreEditorInspector({
               if (!logoUrl) onServerLogoUrl(null);
             }}
           />
-          <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
-            <p className="mb-3 text-sm font-medium text-stone-900 dark:text-stone-50">
+          <div className="border-t border-admin-border pt-4 ">
+            <p className="mb-3 text-sm font-medium text-admin-text">
               Tipografi & stil
             </p>
             <AppearanceFields settings={settings} patch={patch} />
@@ -508,15 +508,15 @@ export default function StoreEditorInspector({
       <InspectorShell title="Urun ekle" subtitle="Hizli islem">
         <div className="space-y-4">
           <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
-          <div className="border-t border-stone-200 pt-4 dark:border-stone-800">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+          <div className="border-t border-admin-border pt-4 ">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-admin-muted">
               Vitrindeki urunler ({products.length})
             </p>
             <ul className="space-y-1 text-sm">
               {products.slice(0, 12).map((product) => (
                 <li
                   key={product.id}
-                  className="truncate rounded-lg bg-stone-50 px-2 py-1.5 text-stone-700 dark:bg-stone-900 dark:text-stone-300"
+                  className="truncate rounded-lg bg-admin-surface-low px-2 py-1.5 text-admin-text bg-admin-surface-high "
                 >
                   {product.name}
                 </li>
@@ -532,7 +532,7 @@ export default function StoreEditorInspector({
   if (!section) {
     return (
       <InspectorShell title="Bolum bulunamadi">
-        <p className="text-sm text-stone-500">Baska bir bolum sec.</p>
+        <p className="text-sm text-admin-muted">Baska bir bolum sec.</p>
       </InspectorShell>
     );
   }
@@ -542,7 +542,7 @@ export default function StoreEditorInspector({
       <button
         type="button"
         onClick={() => onRemoveSection(section.id)}
-        className="shrink-0 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40"
+        className="shrink-0 rounded-lg border border-admin-danger/50 px-2.5 py-1.5 text-xs font-semibold text-admin-danger hover:bg-admin-danger/10"
       >
         Sil
       </button>
@@ -559,11 +559,11 @@ export default function StoreEditorInspector({
 
       {section.type === 'features' ? (
         <div className="space-y-3">
-          <p className="text-xs text-stone-500">Kart metinlerini buradan duzenle (max 4).</p>
+          <p className="text-xs text-admin-muted">Kart metinlerini buradan duzenle (max 4).</p>
           {settings.featureCards.slice(0, 4).map((card, index) => (
             <div
               key={index}
-              className="space-y-2 rounded-xl border border-stone-200 p-3 dark:border-stone-800"
+              className="space-y-2 rounded-xl border border-admin-border p-3"
             >
               <input
                 className={inputClass}
@@ -584,7 +584,7 @@ export default function StoreEditorInspector({
 
       {section.type === 'products' ? (
         <div className="space-y-4">
-          <div className="rounded-xl border border-dashed border-amber-700/40 bg-amber-50/60 p-3 dark:border-amber-600/40 dark:bg-amber-950/20">
+          <div className="rounded-xl border border-dashed border-admin-primary/40 bg-admin-primary-container/10 p-3">
             <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
           </div>
           <Field label="Ust baslik">

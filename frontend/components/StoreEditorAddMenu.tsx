@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef } from 'react';
 import type { StoreSection } from '@/lib/types';
@@ -40,9 +40,9 @@ export default function StoreEditorAddMenu({ open, anchorLabel, onClose, onPick 
   return (
     <div
       ref={ref}
-      className="absolute left-1/2 top-full z-30 mt-2 w-[min(92vw,280px)] -translate-x-1/2 rounded-2xl border border-stone-200 bg-white p-2 shadow-xl dark:border-stone-700 dark:bg-stone-950"
+      className="absolute left-1/2 top-full z-30 mt-2 w-[min(92vw,280px)] -translate-x-1/2 rounded-2xl border border-admin-border bg-admin-surface p-2 shadow-xl"
     >
-      <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+      <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-admin-muted">
         {anchorLabel ?? 'Bolum ekle'}
       </p>
       <div className="grid gap-1">
@@ -54,12 +54,12 @@ export default function StoreEditorAddMenu({ open, anchorLabel, onClose, onPick 
               onPick(item.type);
               onClose();
             }}
-            className="rounded-xl px-3 py-2.5 text-left transition hover:bg-amber-50 dark:hover:bg-amber-950/30"
+            className="rounded-xl px-3 py-2.5 text-left transition hover:bg-admin-primary-container/15"
           >
-            <span className="block text-sm font-medium text-stone-900 dark:text-stone-50">
+            <span className="block text-sm font-medium text-admin-text">
               {item.label}
             </span>
-            <span className="text-xs text-stone-500">{item.hint}</span>
+            <span className="text-xs text-admin-muted">{item.hint}</span>
           </button>
         ))}
       </div>

@@ -22,6 +22,9 @@ type ProductOptionsEditorProps = {
   onSaved?: (options: ProductOption[]) => void;
 };
 
+const fieldClass =
+  'rounded-xl border border-admin-border bg-admin-bg px-3 py-2 text-sm text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2';
+
 function toDraft(options: ProductOption[]): DraftOption[] {
   return options.map((option) => ({
     label: option.label,
@@ -97,40 +100,40 @@ export default function ProductOptionsEditor({
   }
 
   return (
-    <div className="mt-6 space-y-4 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+    <div className="mt-6 space-y-4 border-t border-admin-border pt-6">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">Urun Secenekleri</h3>
+        <h3 className="font-semibold text-admin-text">Urun Secenekleri</h3>
         <button
           type="button"
           onClick={() => setDraft((current) => [...current, emptyOption()])}
-          className="rounded-lg border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
+          className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
         >
           Secenek Ekle
         </button>
       </div>
 
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-sm text-admin-muted">
         Kisilestirme alanlari (metin). Beden/renk stoklari icin yukaridaki Varyant Matrisi bolumunu kullan.
       </p>
 
       {draft.length === 0 ? (
-        <p className="text-sm text-zinc-500">Bu urun icin henuz secenek yok.</p>
+        <p className="text-sm text-admin-muted">Bu urun icin henuz secenek yok.</p>
       ) : (
         <div className="space-y-4">
           {draft.map((option, index) => (
             <div
               key={`option-${index}`}
-              className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+              className="rounded-xl border border-admin-border bg-admin-surface-low p-4"
             >
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
-                  className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  className={fieldClass}
                   placeholder="Secenek adi (or. Beden)"
                   value={option.label}
                   onChange={(event) => updateOption(index, { label: event.target.value })}
                 />
                 <select
-                  className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  className={fieldClass}
                   value={option.optionType}
                   onChange={(event) =>
                     updateOption(index, {
@@ -149,7 +152,7 @@ export default function ProductOptionsEditor({
                 </select>
               </div>
 
-              <label className="mt-3 flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <label className="mt-3 flex items-center gap-2 text-sm text-admin-text">
                 <input
                   type="checkbox"
                   checked={option.required}
@@ -163,7 +166,7 @@ export default function ProductOptionsEditor({
                   {option.choices.map((choice, choiceIndex) => (
                     <div key={`choice-${choiceIndex}`} className="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
                       <input
-                        className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                        className={fieldClass}
                         placeholder="Deger (or. M)"
                         value={choice.label}
                         onChange={(event) => {
@@ -173,7 +176,7 @@ export default function ProductOptionsEditor({
                         }}
                       />
                       <input
-                        className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                        className={fieldClass}
                         placeholder="Fiyat +"
                         type="number"
                         step="0.01"
@@ -194,7 +197,7 @@ export default function ProductOptionsEditor({
                             choices: option.choices.filter((_, idx) => idx !== choiceIndex),
                           })
                         }
-                        className="rounded-lg border border-red-300 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:text-red-300"
+                        className="rounded-lg border border-admin-danger/50 px-3 py-2 text-sm text-admin-danger"
                       >
                         Sil
                       </button>
@@ -207,7 +210,7 @@ export default function ProductOptionsEditor({
                         choices: [...option.choices, { label: '', priceDelta: '0' }],
                       })
                     }
-                    className="rounded-lg border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
+                    className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
                   >
                     Deger Ekle
                   </button>
@@ -217,7 +220,7 @@ export default function ProductOptionsEditor({
               <button
                 type="button"
                 onClick={() => setDraft((current) => current.filter((_, idx) => idx !== index))}
-                className="mt-3 text-sm text-red-600 dark:text-red-300"
+                className="mt-3 text-sm text-admin-danger"
               >
                 Bu secenegi kaldir
               </button>
@@ -231,12 +234,12 @@ export default function ProductOptionsEditor({
           type="button"
           disabled={saving}
           onClick={() => void handleSave()}
-          className="rounded-xl bg-amber-800 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
+          className="rounded-xl bg-admin-primary-container px-4 py-3 text-sm font-medium text-admin-on-primary-container disabled:opacity-60"
         >
           {saving ? 'Kaydediliyor...' : 'Secenekleri Kaydet'}
         </button>
-        {message ? <p className="text-sm text-green-700 dark:text-green-300">{message}</p> : null}
-        {error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
+        {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+        {error ? <p className="text-sm text-admin-danger">{error}</p> : null}
       </div>
     </div>
   );

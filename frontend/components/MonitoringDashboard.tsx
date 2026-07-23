@@ -26,7 +26,7 @@ function formatAgo(date: Date) {
 }
 
 function latencyTone(ms?: number) {
-  if (ms === undefined) return 'bg-stone-400';
+  if (ms === undefined) return 'bg-admin-muted';
   if (ms < 200) return 'bg-emerald-500';
   if (ms < 500) return 'bg-amber-500';
   return 'bg-red-500';

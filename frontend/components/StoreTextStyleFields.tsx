@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { StoreSettings, StoreTextStyle } from '@/lib/types';
 import {
@@ -19,7 +19,7 @@ type Props = {
 };
 
 const selectClass =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-amber-700/30 focus:ring-2 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-50';
+  'w-full rounded-lg border border-admin-border bg-admin-bg px-3 py-2 text-sm text-admin-text outline-none ring-admin-primary/30 focus:ring-2';
 
 export default function StoreTextStyleFields({ settings, styleKey, onChange }: Props) {
   const style = getTextStyle(settings.textStyles, styleKey) ?? {};
@@ -29,11 +29,11 @@ export default function StoreTextStyleFields({ settings, styleKey, onChange }: P
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-stone-200 bg-stone-50/80 p-3 dark:border-stone-800 dark:bg-stone-900/40">
-      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Yazi ozellikleri</p>
+    <div className="space-y-3 rounded-xl border border-admin-border bg-admin-surface-low p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-admin-muted">Yazi ozellikleri</p>
 
       <label className="block text-sm">
-        <span className="mb-1 block text-stone-500">Boyut</span>
+        <span className="mb-1 block text-admin-muted">Boyut</span>
         <select
           className={selectClass}
           value={style.size ?? ''}
@@ -52,7 +52,7 @@ export default function StoreTextStyleFields({ settings, styleKey, onChange }: P
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block text-sm">
-          <span className="mb-1 block text-stone-500">Kalinlik</span>
+          <span className="mb-1 block text-admin-muted">Kalinlik</span>
           <select
             className={selectClass}
             value={style.weight ?? ''}
@@ -70,7 +70,7 @@ export default function StoreTextStyleFields({ settings, styleKey, onChange }: P
         </label>
 
         <label className="block text-sm">
-          <span className="mb-1 block text-stone-500">Hizalama</span>
+          <span className="mb-1 block text-admin-muted">Hizalama</span>
           <select
             className={selectClass}
             value={style.align ?? ''}
@@ -90,7 +90,7 @@ export default function StoreTextStyleFields({ settings, styleKey, onChange }: P
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block text-sm">
-          <span className="mb-1 block text-stone-500">Satir araligi</span>
+          <span className="mb-1 block text-admin-muted">Satir araligi</span>
           <select
             className={selectClass}
             value={style.lineHeight ?? ''}
@@ -108,7 +108,7 @@ export default function StoreTextStyleFields({ settings, styleKey, onChange }: P
         </label>
 
         <label className="block text-sm">
-          <span className="mb-1 block text-stone-500">Harf araligi</span>
+          <span className="mb-1 block text-admin-muted">Harf araligi</span>
           <select
             className={selectClass}
             value={style.letterSpacing ?? ''}
@@ -130,7 +130,7 @@ export default function StoreTextStyleFields({ settings, styleKey, onChange }: P
       </div>
 
       <label className="block text-sm">
-        <span className="mb-1 block text-stone-500">Renk</span>
+        <span className="mb-1 block text-admin-muted">Renk</span>
         <select
           className={selectClass}
           value={style.color ?? ''}
@@ -149,11 +149,11 @@ export default function StoreTextStyleFields({ settings, styleKey, onChange }: P
 
       {style.color === 'custom' ? (
         <label className="block text-sm">
-          <span className="mb-1 block text-stone-500">Ozel renk</span>
+          <span className="mb-1 block text-admin-muted">Ozel renk</span>
           <div className="flex gap-2">
             <input
               type="color"
-              className="h-10 w-12 rounded-lg border border-stone-300 dark:border-stone-700"
+              className="h-10 w-12 rounded-lg border border-admin-border"
               value={style.customColor ?? '#111827'}
               onChange={(e) => patch('customColor', e.target.value)}
             />

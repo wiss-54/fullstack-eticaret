@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, type DragEvent } from 'react';
 import StoreHero from '@/components/StoreHero';
@@ -42,7 +42,7 @@ function InsertSlot({
           event.stopPropagation();
           setOpen((value) => !value);
         }}
-        className="rounded-full border border-dashed border-zinc-400 bg-white px-4 py-1.5 text-xs font-semibold text-zinc-600 shadow-sm transition hover:border-sky-500 hover:bg-sky-50 hover:text-sky-800"
+        className="rounded-full border border-dashed border-admin-border bg-admin-surface px-4 py-1.5 text-xs font-semibold text-admin-muted shadow-sm transition hover:border-admin-primary hover:bg-admin-primary-container/15 hover:text-admin-primary"
       >
         + Bolum ekle
       </button>
@@ -96,15 +96,15 @@ export default function StoreEditorCanvas({
 
   return (
     <div
-      className="min-h-0 overflow-auto bg-zinc-200/70 p-4"
+      className="min-h-0 overflow-auto bg-admin-bg p-4"
       onClick={() => onSelect({ type: 'none' })}
     >
-      <div className="mx-auto max-w-5xl overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-sm">
+      <div className="mx-auto max-w-5xl overflow-hidden rounded-xl border border-admin-border bg-admin-surface shadow-sm">
         <div className={`min-h-[70vh] ${getStoreShellClass(settings)}`}>
           <div
             className={`border-b-2 ${
               selection?.type === 'header' || selection?.type === 'style'
-                ? 'border-sky-500'
+                ? 'border-admin-primary'
                 : 'border-transparent'
             }`}
             onClick={(e) => {
@@ -135,7 +135,7 @@ export default function StoreEditorCanvas({
             return (
               <div key={section.id}>
                 {isDragOver ? (
-                  <div className="mx-4 h-1 rounded-full bg-sky-500 shadow-sm" />
+                  <div className="mx-4 h-1 rounded-full bg-admin-primary shadow-sm" />
                 ) : null}
                 <div
                   onDragOver={(event) => {
@@ -152,10 +152,10 @@ export default function StoreEditorCanvas({
                   }}
                   className={`group relative border-y-2 transition ${
                     selected
-                      ? 'border-sky-500 bg-sky-50/40'
+                      ? 'border-admin-primary bg-admin-primary-container/15/40'
                       : isDragOver
-                        ? 'border-sky-400 bg-sky-50/30'
-                        : 'border-transparent hover:border-sky-300'
+                        ? 'border-admin-primary/60 bg-admin-primary-container/10'
+                        : 'border-transparent hover:border-admin-primary/40'
                   } ${section.enabled ? '' : 'opacity-45'} ${isDragging ? 'opacity-40' : ''}`}
                 >
                   <div
@@ -169,18 +169,18 @@ export default function StoreEditorCanvas({
                       setDraggingId(null);
                       setDragOverId(null);
                     }}
-                    className="absolute left-2 top-1/2 z-20 flex -translate-y-1/2 cursor-grab flex-col items-center gap-0.5 rounded-md border border-zinc-200 bg-white px-1.5 py-2 text-zinc-400 shadow-sm active:cursor-grabbing"
+                    className="absolute left-2 top-1/2 z-20 flex -translate-y-1/2 cursor-grab flex-col items-center gap-0.5 rounded-md border border-admin-border bg-admin-surface px-1.5 py-2 text-admin-muted shadow-sm active:cursor-grabbing"
                     onClick={(event) => event.stopPropagation()}
                     title="Surukle ve birak"
                   >
-                    <span className="block h-0.5 w-3 rounded bg-zinc-400" />
-                    <span className="block h-0.5 w-3 rounded bg-zinc-400" />
-                    <span className="block h-0.5 w-3 rounded bg-zinc-400" />
+                    <span className="block h-0.5 w-3 rounded bg-admin-muted" />
+                    <span className="block h-0.5 w-3 rounded bg-admin-muted" />
+                    <span className="block h-0.5 w-3 rounded bg-admin-muted" />
                   </div>
                   <div className="absolute right-3 top-3 z-20 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                     <button
                       type="button"
-                      className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-medium text-zinc-700 shadow-sm"
+                      className="rounded-md border border-admin-border bg-admin-surface px-2 py-1 text-xs font-medium text-admin-text shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggle(section.id);
@@ -191,7 +191,7 @@ export default function StoreEditorCanvas({
                     {settings.sections.length > 1 ? (
                       <button
                         type="button"
-                        className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-600 shadow-sm"
+                        className="rounded-md border border-admin-danger/50 bg-admin-surface px-2 py-1 text-xs font-medium text-admin-danger shadow-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           onRemove(section.id);
@@ -202,7 +202,7 @@ export default function StoreEditorCanvas({
                     ) : null}
                   </div>
 
-                  <div className="pointer-events-none absolute left-12 top-3 z-20 rounded-md bg-zinc-800 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+                  <div className="pointer-events-none absolute left-12 top-3 z-20 rounded-md bg-admin-surface-high px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-admin-text">
                     {sectionLabel(section.type)}
                   </div>
 
@@ -231,7 +231,7 @@ export default function StoreEditorCanvas({
           })}
 
           <div
-            className={`border-t-2 ${selection?.type === 'footer' ? 'border-sky-500' : 'border-transparent'}`}
+            className={`border-t-2 ${selection?.type === 'footer' ? 'border-admin-primary' : 'border-transparent'}`}
             onClick={(e) => {
               e.stopPropagation();
               onSelect({ type: 'footer' });
@@ -247,14 +247,14 @@ export default function StoreEditorCanvas({
                   }}
                   className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
                     selectedStyleKey === 'footer.left'
-                      ? 'border-sky-500 bg-sky-50'
-                      : 'border-dashed border-zinc-300 hover:border-sky-400'
+                      ? 'border-admin-primary bg-admin-primary-container/15'
+                      : 'border-dashed border-admin-border hover:border-admin-primary'
                   }`}
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-admin-muted">
                     Alt bilgi sol
                   </span>
-                  <p className="mt-1 line-clamp-2 text-zinc-700">{settings.footerLeft}</p>
+                  <p className="mt-1 line-clamp-2 text-admin-text">{settings.footerLeft}</p>
                 </button>
                 <button
                   type="button"
@@ -264,14 +264,14 @@ export default function StoreEditorCanvas({
                   }}
                   className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
                     selectedStyleKey === 'footer.right'
-                      ? 'border-sky-500 bg-sky-50'
-                      : 'border-dashed border-zinc-300 hover:border-sky-400'
+                      ? 'border-admin-primary bg-admin-primary-container/15'
+                      : 'border-dashed border-admin-border hover:border-admin-primary'
                   }`}
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-admin-muted">
                     Alt bilgi sag
                   </span>
-                  <p className="mt-1 line-clamp-2 text-zinc-700">{settings.footerRight}</p>
+                  <p className="mt-1 line-clamp-2 text-admin-text">{settings.footerRight}</p>
                 </button>
               </div>
             </div>
@@ -285,7 +285,7 @@ export default function StoreEditorCanvas({
           </div>
         </div>
       </div>
-      <p className="mx-auto mt-3 max-w-5xl text-center text-xs text-zinc-600">
+      <p className="mx-auto mt-3 max-w-5xl text-center text-xs text-admin-muted">
         Tikla → duzenle · Cift tikla → yaz · Linkler sadece canli sitede calisir
       </p>
     </div>
