@@ -135,7 +135,9 @@ function AdminShellInner({ children }: AdminShellProps) {
   if (!ready) {
     return (
       <div
-        className="flex h-dvh items-center justify-center bg-admin-bg text-admin-muted"
+        className={`flex h-dvh items-center justify-center bg-admin-bg text-admin-muted ${
+          theme === 'dark' ? 'dark' : ''
+        }`}
         data-admin-theme={theme}
       >
         <p className="font-admin-mono text-sm tracking-wide">Yonetim paneli yukleniyor...</p>
@@ -145,7 +147,9 @@ function AdminShellInner({ children }: AdminShellProps) {
 
   return (
     <div
-      className="flex h-dvh overflow-hidden bg-admin-bg font-admin-display text-admin-text"
+      className={`flex h-dvh overflow-hidden bg-admin-bg font-admin-display text-admin-text ${
+        theme === 'dark' ? 'dark' : ''
+      }`}
       data-admin-theme={theme}
     >
       <aside

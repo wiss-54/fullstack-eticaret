@@ -62,22 +62,16 @@ export default function ProductImageField({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Urun gorseli</p>
-      <p className="text-xs text-zinc-500">
+    <div className="space-y-3 rounded-lg border border-admin-border bg-admin-bg p-4">
+      <p className="text-sm font-medium text-admin-text">Urun gorseli</p>
+      <p className="text-xs text-admin-muted">
         PC&apos;den yukleyebilir veya dis URL yapistirabilirsin (JPEG/PNG/WEBP/GIF, max 5MB).
       </p>
 
       {statusPath || value ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-900">
-          <span className="break-all text-zinc-700 dark:text-zinc-300">
-            {statusPath ?? value}
-          </span>
-          <button
-            type="button"
-            onClick={handleClear}
-            className="shrink-0 text-red-600 dark:text-red-300"
-          >
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-admin-surface-low px-3 py-2 text-sm">
+          <span className="break-all text-admin-muted">{statusPath ?? value}</span>
+          <button type="button" onClick={handleClear} className="shrink-0 text-admin-danger">
             Kaldir
           </button>
         </div>
@@ -88,7 +82,7 @@ export default function ProductImageField({
           type="button"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
-          className="rounded-xl border border-zinc-300 px-4 py-2 text-sm disabled:opacity-60 dark:border-zinc-700"
+          className="rounded-lg border border-admin-border px-4 py-2 text-sm text-admin-text disabled:opacity-60"
         >
           {uploading ? 'Yukleniyor...' : 'Bilgisayardan yukle'}
         </button>
@@ -102,14 +96,14 @@ export default function ProductImageField({
       </div>
 
       <input
-        className="w-full rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full rounded-lg border border-admin-border bg-admin-surface px-4 py-3 text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
         placeholder="veya gorsel URL yapistir (https://...)"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
 
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <p className="rounded-lg border border-admin-danger/40 bg-admin-surface-low px-3 py-2 text-sm text-admin-danger">
           {error}
         </p>
       ) : null}
