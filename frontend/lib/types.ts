@@ -236,6 +236,10 @@ export type StoreSettings = {
   productsEyebrow: string;
   productsTitle: string;
   productsSubtitle: string;
+  navItem1Label: string;
+  navItem1Href: string;
+  navItem2Label: string;
+  navItem2Href: string;
   footerLeft: string;
   footerRight: string;
   textStyles?: StoreTextStyles;

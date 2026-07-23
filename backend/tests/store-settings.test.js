@@ -37,6 +37,10 @@ const sampleSettings = {
   productsEyebrow: 'Koleksiyon',
   productsTitle: 'Urunler',
   productsSubtitle: 'Liste',
+  navItem1Label: 'Kategoriler',
+  navItem1Href: '#urunler',
+  navItem2Label: 'Koleksiyon',
+  navItem2Href: '#urunler',
   footerLeft: 'Footer sol',
   footerRight: 'Footer sag',
   sections: [

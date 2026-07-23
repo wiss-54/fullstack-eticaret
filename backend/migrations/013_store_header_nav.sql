@@ -1,0 +1,5 @@
+ALTER TABLE store_settings
+  ADD COLUMN IF NOT EXISTS nav_item_1_label VARCHAR(80) NOT NULL DEFAULT 'Kategoriler',
+  ADD COLUMN IF NOT EXISTS nav_item_1_href VARCHAR(300) NOT NULL DEFAULT '#urunler',
+  ADD COLUMN IF NOT EXISTS nav_item_2_label VARCHAR(80) NOT NULL DEFAULT 'Koleksiyon',
+  ADD COLUMN IF NOT EXISTS nav_item_2_href VARCHAR(300) NOT NULL DEFAULT '#urunler';

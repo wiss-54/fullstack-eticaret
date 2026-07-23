@@ -34,6 +34,10 @@ const FALLBACK_SETTINGS: StoreSettings = {
   productsTitle: 'One cikan urunler',
   productsSubtitle:
     'Varyantli urunlerde beden/renk bazli stok, kategoriler ve kisisellestirme alanlari desteklenir.',
+  navItem1Label: 'Kategoriler',
+  navItem1Href: '#urunler',
+  navItem2Label: 'Koleksiyon',
+  navItem2Href: '#urunler',
   footerLeft: 'EticaretShop. Tum haklari saklidir.',
   footerRight: 'Guvenli odeme ve kisisellestirme altyapisi gelistiriliyor.',
   sections: [
@@ -80,6 +84,10 @@ export default async function Home({ searchParams }: HomeProps) {
         badge={`${products.length} urun`}
         logoUrl={settings.logoUrl}
         accentColor={settings.accentColor}
+        navItem1Label={settings.navItem1Label}
+        navItem1Href={settings.navItem1Href}
+        navItem2Label={settings.navItem2Label}
+        navItem2Href={settings.navItem2Href}
       />
 
       {sections.map((section) => {

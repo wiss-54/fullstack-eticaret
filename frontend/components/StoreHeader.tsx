@@ -10,6 +10,10 @@ type StoreHeaderProps = {
   badge?: string;
   logoUrl?: string | null;
   accentColor?: string;
+  navItem1Label?: string;
+  navItem1Href?: string;
+  navItem2Label?: string;
+  navItem2Href?: string;
   /** Editor canvas: no sticky overlay, no live nav actions */
   preview?: boolean;
 };
@@ -19,6 +23,10 @@ export default function StoreHeader({
   subtitle = 'EticaretShop',
   badge,
   logoUrl = null,
+  navItem1Label = 'Kategoriler',
+  navItem1Href = '#urunler',
+  navItem2Label = 'Koleksiyon',
+  navItem2Href = '#urunler',
   preview = false,
 }: StoreHeaderProps) {
   const logoSrc = safeMediaUrl(logoUrl);
@@ -59,16 +67,16 @@ export default function StoreHeader({
         <nav className="hidden items-center gap-6 text-sm font-semibold text-store-muted lg:flex">
           {preview ? (
             <>
-              <span>Kategoriler</span>
-              <span>Koleksiyon</span>
+              <span>{navItem1Label}</span>
+              <span>{navItem2Label}</span>
             </>
           ) : (
             <>
-              <a href="#urunler" className="transition hover:text-store-primary">
-                Kategoriler
+              <a href={navItem1Href} className="transition hover:text-store-primary">
+                {navItem1Label}
               </a>
-              <a href="#urunler" className="transition hover:text-store-primary">
-                Koleksiyon
+              <a href={navItem2Href} className="transition hover:text-store-primary">
+                {navItem2Label}
               </a>
             </>
           )}
