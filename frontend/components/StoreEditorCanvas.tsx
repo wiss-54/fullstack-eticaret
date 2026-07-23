@@ -143,6 +143,10 @@ export default function StoreEditorCanvas({
                 badge={`${products.length} urun`}
                 logoUrl={settings.logoUrl}
                 accentColor={settings.accentColor}
+                navItem1Label={settings.navItem1Label}
+                navItem1Href={settings.navItem1Href}
+                navItem2Label={settings.navItem2Label}
+                navItem2Href={settings.navItem2Href}
               />
             </div>
           </div>

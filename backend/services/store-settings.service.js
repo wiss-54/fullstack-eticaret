@@ -6,6 +6,14 @@ const {
   listThemePresets,
 } = require('./store-theme-presets');
 
+const DEFAULT_HERO_TEXT_ITEMS_ORDER = ['eyebrow', 'title', 'subtitle', 'ctas'];
+const DEFAULT_HERO_CTA_BUTTONS_ORDER = ['primary', 'secondary'];
+const DEFAULT_HERO_FEATURE_SIDE = 'right';
+const DEFAULT_NAV_ITEM_1_LABEL = 'Kategoriler';
+const DEFAULT_NAV_ITEM_1_HREF = '#urunler';
+const DEFAULT_NAV_ITEM_2_LABEL = 'Koleksiyon';
+const DEFAULT_NAV_ITEM_2_HREF = '#urunler';
+
 function mapRow(row) {
   return {
     brandName: row.brandName,
@@ -38,6 +46,10 @@ function mapRow(row) {
     productsEyebrow: row.productsEyebrow,
     productsTitle: row.productsTitle,
     productsSubtitle: row.productsSubtitle,
+    navItem1Label: row.navItem1Label || DEFAULT_NAV_ITEM_1_LABEL,
+    navItem1Href: row.navItem1Href || DEFAULT_NAV_ITEM_1_HREF,
+    navItem2Label: row.navItem2Label || DEFAULT_NAV_ITEM_2_LABEL,
+    navItem2Href: row.navItem2Href || DEFAULT_NAV_ITEM_2_HREF,
     footerLeft: row.footerLeft,
     footerRight: row.footerRight,
     textStyles:
@@ -74,6 +86,10 @@ const SELECT_SQL = `
     products_eyebrow AS "productsEyebrow",
     products_title AS "productsTitle",
     products_subtitle AS "productsSubtitle",
+    nav_item_1_label AS "navItem1Label",
+    nav_item_1_href AS "navItem1Href",
+    nav_item_2_label AS "navItem2Label",
+    nav_item_2_href AS "navItem2Href",
     footer_left AS "footerLeft",
     footer_right AS "footerRight",
     text_styles AS "textStyles",
@@ -83,10 +99,6 @@ const SELECT_SQL = `
   WHERE id = 1
   LIMIT 1
 `;
-
-const DEFAULT_HERO_TEXT_ITEMS_ORDER = ['eyebrow', 'title', 'subtitle', 'ctas'];
-const DEFAULT_HERO_CTA_BUTTONS_ORDER = ['primary', 'secondary'];
-const DEFAULT_HERO_FEATURE_SIDE = 'right';
 
 async function getStoreSettings() {
   const result = await pool.query(SELECT_SQL);
@@ -137,10 +149,14 @@ async function updateStoreSettings(input) {
         products_eyebrow = $21,
         products_title = $22,
         products_subtitle = $23,
-        footer_left = $24,
-        footer_right = $25,
-        text_styles = $26::jsonb,
-        sections = $27::jsonb,
+        nav_item_1_label = $24,
+        nav_item_1_href = $25,
+        nav_item_2_label = $26,
+        nav_item_2_href = $27,
+        footer_left = $28,
+        footer_right = $29,
+        text_styles = $30::jsonb,
+        sections = $31::jsonb,
         updated_at = NOW()
       WHERE id = 1
       RETURNING
@@ -167,6 +183,10 @@ async function updateStoreSettings(input) {
         products_eyebrow AS "productsEyebrow",
         products_title AS "productsTitle",
         products_subtitle AS "productsSubtitle",
+        nav_item_1_label AS "navItem1Label",
+        nav_item_1_href AS "navItem1Href",
+        nav_item_2_label AS "navItem2Label",
+        nav_item_2_href AS "navItem2Href",
         footer_left AS "footerLeft",
         footer_right AS "footerRight",
         text_styles AS "textStyles",
@@ -197,6 +217,10 @@ async function updateStoreSettings(input) {
       input.productsEyebrow,
       input.productsTitle,
       input.productsSubtitle,
+      input.navItem1Label || DEFAULT_NAV_ITEM_1_LABEL,
+      input.navItem1Href || DEFAULT_NAV_ITEM_1_HREF,
+      input.navItem2Label || DEFAULT_NAV_ITEM_2_LABEL,
+      input.navItem2Href || DEFAULT_NAV_ITEM_2_HREF,
       input.footerLeft,
       input.footerRight,
       JSON.stringify(input.textStyles ?? {}),
@@ -226,6 +250,10 @@ async function applyThemePreset(themeId) {
     ...preset.settings,
     brandName: current.brandName,
     logoUrl: current.logoUrl,
+    navItem1Label: current.navItem1Label,
+    navItem1Href: current.navItem1Href,
+    navItem2Label: current.navItem2Label,
+    navItem2Href: current.navItem2Href,
     footerLeft: current.footerLeft,
     footerRight: current.footerRight,
   });

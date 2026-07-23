@@ -448,6 +448,43 @@ export default function StoreEditorInspector({
               onChange={(e) => patch('brandName', e.target.value)}
             />
           </Field>
+          <div className="border-t border-admin-border pt-4">
+            <p className="mb-3 text-sm font-medium text-admin-text">Ust menu linkleri</p>
+            <div className="space-y-3">
+              <Field label="1. link yazisi">
+                <input
+                  className={inputClass}
+                  value={settings.navItem1Label}
+                  onChange={(e) => patch('navItem1Label', e.target.value)}
+                  placeholder="Kategoriler"
+                />
+              </Field>
+              <Field label="1. link adresi">
+                <input
+                  className={inputClass}
+                  value={settings.navItem1Href}
+                  onChange={(e) => patch('navItem1Href', e.target.value)}
+                  placeholder="#urunler"
+                />
+              </Field>
+              <Field label="2. link yazisi">
+                <input
+                  className={inputClass}
+                  value={settings.navItem2Label}
+                  onChange={(e) => patch('navItem2Label', e.target.value)}
+                  placeholder="Koleksiyon"
+                />
+              </Field>
+              <Field label="2. link adresi">
+                <input
+                  className={inputClass}
+                  value={settings.navItem2Href}
+                  onChange={(e) => patch('navItem2Href', e.target.value)}
+                  placeholder="#urunler"
+                />
+              </Field>
+            </div>
+          </div>
           <Field label="Vurgu rengi">
             <div className="flex gap-2">
               <input

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import CartNav from '@/components/CartNav';
 import CustomerNav from '@/components/CustomerNav';
 import StoreThemeToggle from '@/components/StoreThemeToggle';
+import { safeHref } from '@/lib/safe-href';
 import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type StoreHeaderProps = {
@@ -10,6 +11,10 @@ type StoreHeaderProps = {
   badge?: string;
   logoUrl?: string | null;
   accentColor?: string;
+  navItem1Label?: string;
+  navItem1Href?: string;
+  navItem2Label?: string;
+  navItem2Href?: string;
   /** Editor canvas: no sticky overlay, no live nav actions */
   preview?: boolean;
 };
@@ -19,10 +24,16 @@ export default function StoreHeader({
   subtitle = 'EticaretShop',
   badge,
   logoUrl = null,
+  navItem1Label = 'Kategoriler',
+  navItem1Href = '#urunler',
+  navItem2Label = 'Koleksiyon',
+  navItem2Href = '#urunler',
   preview = false,
 }: StoreHeaderProps) {
   const logoSrc = safeMediaUrl(logoUrl);
   const brand = subtitle || 'EticaretShop';
+  const link1Href = safeHref(navItem1Href, '#urunler');
+  const link2Href = safeHref(navItem2Href, '#urunler');
 
   const brandBlock = (
     <>
@@ -59,16 +70,16 @@ export default function StoreHeader({
         <nav className="hidden items-center gap-6 text-sm font-semibold text-store-muted lg:flex">
           {preview ? (
             <>
-              <span>Kategoriler</span>
-              <span>Koleksiyon</span>
+              <span>{navItem1Label}</span>
+              <span>{navItem2Label}</span>
             </>
           ) : (
             <>
-              <a href="#urunler" className="transition hover:text-store-primary">
-                Kategoriler
+              <a href={link1Href} className="transition hover:text-store-primary">
+                {navItem1Label}
               </a>
-              <a href="#urunler" className="transition hover:text-store-primary">
-                Koleksiyon
+              <a href={link2Href} className="transition hover:text-store-primary">
+                {navItem2Label}
               </a>
             </>
           )}

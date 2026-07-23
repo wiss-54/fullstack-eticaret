@@ -78,6 +78,22 @@ const sectionSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
+const storeHrefSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(300)
+  .refine(
+    (value) =>
+      value.startsWith('#') ||
+      value.startsWith('/') ||
+      /^https?:\/\/.+/i.test(value),
+    { message: 'Link #, / veya http(s) ile baslamali' },
+  )
+  .refine((value) => !/^javascript:/i.test(value), {
+    message: 'Gecersiz link',
+  });
+
 const storeSettingsUpdateSchema = z.object({
   brandName: z.string().trim().min(1).max(100),
   logoUrl: logoUrlSchema,
@@ -95,9 +111,9 @@ const storeSettingsUpdateSchema = z.object({
   heroTitle: z.string().trim().min(1).max(200),
   heroSubtitle: z.string().trim().min(1).max(1000),
   heroCtaLabel: z.string().trim().min(1).max(100),
-  heroCtaHref: z.string().trim().min(1).max(300),
+  heroCtaHref: storeHrefSchema,
   heroSecondaryCtaLabel: z.string().trim().min(1).max(100),
-  heroSecondaryCtaHref: z.string().trim().min(1).max(300),
+  heroSecondaryCtaHref: storeHrefSchema,
   heroTextItemsOrder: z
     .array(z.enum(['eyebrow', 'title', 'subtitle', 'ctas']))
     .min(1)
@@ -113,6 +129,10 @@ const storeSettingsUpdateSchema = z.object({
   productsEyebrow: z.string().trim().min(1).max(120),
   productsTitle: z.string().trim().min(1).max(200),
   productsSubtitle: z.string().trim().min(1).max(1000),
+  navItem1Label: z.string().trim().min(1).max(80),
+  navItem1Href: storeHrefSchema,
+  navItem2Label: z.string().trim().min(1).max(80),
+  navItem2Href: storeHrefSchema,
   footerLeft: z.string().trim().min(1).max(500),
   footerRight: z.string().trim().min(1).max(500),
   textStyles: z.record(z.string().max(80), textStyleSchema).optional(),
