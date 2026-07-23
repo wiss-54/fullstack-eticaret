@@ -11,6 +11,7 @@ import {
 } from "next/font/google";
 import { CartProvider } from "@/components/CartProvider";
 import DeployWatcher from "@/components/DeployWatcher";
+import { StoreThemeProvider } from "@/components/StoreThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -74,10 +75,17 @@ export default function RootLayout({
       lang="tr"
       className={`${geistSans.variable} ${geistMono.variable} ${storeClassic.variable} ${storeModern.variable} ${storeElegant.variable} ${adminDisplay.variable} ${adminBody.variable} ${adminMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('store_theme');document.documentElement.setAttribute('data-store-theme',t==='dark'?'dark':'light');}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
-        <CartProvider>
-          {children}
-        </CartProvider>
+        <StoreThemeProvider>
+          <CartProvider>{children}</CartProvider>
+        </StoreThemeProvider>
         <DeployWatcher />
       </body>
     </html>

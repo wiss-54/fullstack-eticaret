@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import CartNav from '@/components/CartNav';
 import CustomerNav from '@/components/CustomerNav';
+import StoreThemeToggle from '@/components/StoreThemeToggle';
 import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type StoreHeaderProps = {
@@ -60,6 +61,7 @@ export default function StoreHeader({
               {badge}
             </span>
           ) : null}
+          <StoreThemeToggle />
           <CartNav />
           <CustomerNav />
         </div>

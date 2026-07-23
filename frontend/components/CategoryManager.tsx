@@ -89,17 +89,17 @@ export default function CategoryManager() {
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+    <section className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Kategoriler</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          iKas ve Shopify magazalarinda oldugu gibi urunleri kategorilere ayir.
+        <h2 className="text-lg font-semibold text-admin-text">Kategoriler</h2>
+        <p className="mt-1 text-sm text-admin-muted">
+          Urunleri kategorilere ayir; filtreleme ve vitrin duzeni icin kullanilir.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-3">
         <input
-          className="min-w-[220px] flex-1 rounded-xl border border-zinc-300 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900"
+          className="min-w-[220px] flex-1 rounded-lg border border-admin-border bg-admin-bg px-4 py-3 text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
           placeholder="Kategori adi (or. Tisort)"
           value={name}
           onChange={(event) => setName(event.target.value)}
@@ -108,7 +108,7 @@ export default function CategoryManager() {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-zinc-900 px-4 py-3 text-sm text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="rounded-lg bg-admin-primary-container px-4 py-3 text-sm font-semibold text-admin-on-primary-container disabled:opacity-60"
         >
           {saving ? 'Kaydediliyor...' : editingId ? 'Guncelle' : 'Ekle'}
         </button>
@@ -116,7 +116,7 @@ export default function CategoryManager() {
           <button
             type="button"
             onClick={resetForm}
-            className="rounded-xl border border-zinc-300 px-4 py-3 text-sm dark:border-zinc-700"
+            className="rounded-lg border border-admin-border px-4 py-3 text-sm text-admin-muted"
           >
             Iptal
           </button>
@@ -124,26 +124,26 @@ export default function CategoryManager() {
       </form>
 
       {error ? (
-        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded-lg border border-admin-danger/40 bg-admin-bg px-4 py-3 text-sm text-admin-danger">
           {error}
         </p>
       ) : null}
 
       {loading ? (
-        <p className="mt-4 text-sm text-zinc-500">Yukleniyor...</p>
+        <p className="mt-4 text-sm text-admin-muted">Yukleniyor...</p>
       ) : (
         <div className="mt-4 space-y-2">
           {categories.length === 0 ? (
-            <p className="text-sm text-zinc-500">Henuz kategori yok.</p>
+            <p className="text-sm text-admin-muted">Henuz kategori yok.</p>
           ) : (
             categories.map((category) => (
               <div
                 key={category.id}
-                className="flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-800"
+                className="flex items-center justify-between rounded-lg border border-admin-border bg-admin-bg px-4 py-3"
               >
                 <div>
-                  <p className="font-medium text-zinc-900 dark:text-zinc-50">{category.name}</p>
-                  <p className="text-xs text-zinc-500">/{category.slug}</p>
+                  <p className="font-medium text-admin-text">{category.name}</p>
+                  <p className="font-admin-mono text-xs text-admin-muted">/{category.slug}</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -152,14 +152,14 @@ export default function CategoryManager() {
                       setEditingId(category.id);
                       setName(category.name);
                     }}
-                    className="rounded-lg border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
+                    className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
                   >
                     Duzenle
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleDelete(category.id)}
-                    className="rounded-lg border border-red-300 px-3 py-1 text-sm text-red-700 dark:border-red-900 dark:text-red-300"
+                    className="rounded-lg border border-admin-danger/50 px-3 py-1 text-sm text-admin-danger"
                   >
                     Sil
                   </button>

@@ -9,9 +9,9 @@ export const FONT_STYLE_LABELS: Record<StoreSettings['fontStyle'], string> = {
 export function getStoreShellClass(settings: StoreSettings) {
   const surface = {
     warm: 'bg-store-bg text-store-text',
-    cool: 'bg-slate-50 text-store-text dark:bg-slate-950 dark:text-zinc-50',
-    soft: 'bg-rose-50/40 text-store-text dark:bg-zinc-950 dark:text-zinc-50',
-    contrast: 'bg-store-surface-low text-store-text dark:bg-black dark:text-zinc-50',
+    cool: 'bg-store-bg text-store-text',
+    soft: 'bg-store-bg text-store-text',
+    contrast: 'bg-store-surface-low text-store-text',
   }[settings.surfaceStyle];
 
   const font = {

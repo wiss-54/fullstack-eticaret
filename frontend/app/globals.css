@@ -41,23 +41,8 @@
   --font-admin-mono: var(--font-admin-mono), var(--font-geist-mono), ui-monospace, monospace;
 }
 
-/* Default = Stitch dark admin (Zinc & Amber) */
-[data-admin-theme='dark'],
+/* Storefront default = Luminous Commerce light */
 :root {
-  --admin-bg: #131316;
-  --admin-surface: #1b1b1e;
-  --admin-surface-low: #1f1f22;
-  --admin-surface-high: #2a2a2d;
-  --admin-border: #47464a;
-  --admin-primary: #ffc174;
-  --admin-primary-container: #f59e0b;
-  --admin-on-primary-container: #613b00;
-  --admin-text: #e4e1e6;
-  --admin-muted: #c8c6c9;
-  --admin-accent: #d8c3ad;
-  --admin-danger: #ffb4ab;
-
-  /* Stitch Luminous Commerce (storefront) */
   --store-bg: #f9f9f9;
   --store-surface: #ffffff;
   --store-surface-low: #f3f3f3;
@@ -70,6 +55,22 @@
   --store-on-primary: #ffffff;
   --store-inverse: #2f3131;
   --store-inverse-text: #f0f1f1;
+}
+
+/* Admin dark (Stitch Zinc & Amber) */
+[data-admin-theme='dark'] {
+  --admin-bg: #131316;
+  --admin-surface: #1b1b1e;
+  --admin-surface-low: #1f1f22;
+  --admin-surface-high: #2a2a2d;
+  --admin-border: #47464a;
+  --admin-primary: #ffc174;
+  --admin-primary-container: #f59e0b;
+  --admin-on-primary-container: #613b00;
+  --admin-text: #e4e1e6;
+  --admin-muted: #c8c6c9;
+  --admin-accent: #d8c3ad;
+  --admin-danger: #ffb4ab;
 }
 
 [data-admin-theme='light'] {
@@ -85,6 +86,24 @@
   --admin-muted: #5f5e61;
   --admin-accent: #534434;
   --admin-danger: #ba1a1a;
+}
+
+/* Storefront dark */
+[data-store-theme='dark'] {
+  --store-bg: #121214;
+  --store-surface: #1b1b1e;
+  --store-surface-low: #232326;
+  --store-border: #47464a;
+  --store-text: #e4e1e6;
+  --store-muted: #c8c6c9;
+  --store-accent-text: #d8c3ad;
+  --store-primary: #ffc174;
+  --store-primary-container: #f59e0b;
+  --store-on-primary: #2a1700;
+  --store-inverse: #f0f1f1;
+  --store-inverse-text: #1a1c1c;
+  --background: #121214;
+  --foreground: #e4e1e6;
 }
 
 @media (prefers-color-scheme: dark) {
