@@ -25,6 +25,14 @@ type Props = {
   onTextChange: (settings: StoreSettings) => void;
 };
 
+/** High-contrast chrome on top of any store theme (admin tokens can vanish on light canvas). */
+const chromeBtn =
+  'rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs font-medium text-neutral-800 shadow-sm';
+const chromeLabel =
+  'pointer-events-none absolute left-3 top-3 z-20 rounded-md bg-neutral-900 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white';
+const chromeSelect =
+  'rounded-lg border border-neutral-300 bg-white px-3 py-2 text-left text-sm text-neutral-800 shadow-sm transition hover:border-amber-600';
+
 function InsertSlot({
   label,
   onPick,
@@ -42,7 +50,7 @@ function InsertSlot({
           event.stopPropagation();
           setOpen((value) => !value);
         }}
-        className="rounded-full border border-dashed border-admin-border bg-admin-surface px-4 py-1.5 text-xs font-semibold text-admin-muted shadow-sm transition hover:border-admin-primary hover:bg-admin-primary-container/15 hover:text-admin-primary"
+        className="rounded-full border border-dashed border-neutral-400 bg-white px-4 py-1.5 text-xs font-semibold text-neutral-700 shadow-sm transition hover:border-amber-600 hover:text-amber-800"
       >
         + Bolum ekle
       </button>
@@ -70,6 +78,11 @@ export default function StoreEditorCanvas({
 }: Props) {
   const selectedId = selectionId(selection);
   const selectedStyleKey = selection?.type === 'text' ? selection.styleKey : null;
+  const headerSelected = selection?.type === 'header' || selection?.type === 'style';
+  const footerSelected =
+    selection?.type === 'footer' ||
+    selectedStyleKey === 'footer.left' ||
+    selectedStyleKey === 'footer.right';
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -99,21 +112,32 @@ export default function StoreEditorCanvas({
       className="min-h-0 overflow-auto bg-admin-bg p-4"
       onClick={() => onSelect({ type: 'none' })}
     >
-      <div className="mx-auto max-w-5xl overflow-hidden rounded-xl border border-admin-border bg-admin-surface shadow-sm">
+      <div className="mx-auto max-w-5xl overflow-hidden rounded-xl border border-admin-border bg-white shadow-sm">
         <div className={`min-h-[70vh] ${getStoreShellClass(settings)}`}>
           <div
-            className={`border-b-2 ${
-              selection?.type === 'header' || selection?.type === 'style'
-                ? 'border-admin-primary'
-                : 'border-transparent'
+            role="button"
+            tabIndex={0}
+            className={`group relative cursor-pointer border-b-2 outline-none transition ${
+              headerSelected
+                ? 'border-amber-500 ring-2 ring-inset ring-amber-400/40'
+                : 'border-transparent hover:border-amber-300'
             }`}
             onClick={(e) => {
               e.stopPropagation();
               onSelect({ type: 'header' });
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelect({ type: 'header' });
+              }
+            }}
           >
-            <div className="pointer-events-none">
+            <span className={chromeLabel}>Header · Marka</span>
+            <div className="pointer-events-none pt-8">
               <StoreHeader
+                preview
                 title="Magazamiz"
                 subtitle={settings.brandName}
                 badge={`${products.length} urun`}
@@ -135,7 +159,7 @@ export default function StoreEditorCanvas({
             return (
               <div key={section.id}>
                 {isDragOver ? (
-                  <div className="mx-4 h-1 rounded-full bg-admin-primary shadow-sm" />
+                  <div className="mx-4 h-1 rounded-full bg-amber-500 shadow-sm" />
                 ) : null}
                 <div
                   onDragOver={(event) => {
@@ -152,10 +176,10 @@ export default function StoreEditorCanvas({
                   }}
                   className={`group relative border-y-2 transition ${
                     selected
-                      ? 'border-admin-primary bg-admin-primary-container/15/40'
+                      ? 'border-amber-500 bg-amber-50/40'
                       : isDragOver
-                        ? 'border-admin-primary/60 bg-admin-primary-container/10'
-                        : 'border-transparent hover:border-admin-primary/40'
+                        ? 'border-amber-400 bg-amber-50/30'
+                        : 'border-transparent hover:border-amber-300'
                   } ${section.enabled ? '' : 'opacity-45'} ${isDragging ? 'opacity-40' : ''}`}
                 >
                   <div
@@ -169,18 +193,18 @@ export default function StoreEditorCanvas({
                       setDraggingId(null);
                       setDragOverId(null);
                     }}
-                    className="absolute left-2 top-1/2 z-20 flex -translate-y-1/2 cursor-grab flex-col items-center gap-0.5 rounded-md border border-admin-border bg-admin-surface px-1.5 py-2 text-admin-muted shadow-sm active:cursor-grabbing"
+                    className="absolute left-2 top-1/2 z-20 flex -translate-y-1/2 cursor-grab flex-col items-center gap-0.5 rounded-md border border-neutral-200 bg-white px-1.5 py-2 text-neutral-400 shadow-sm active:cursor-grabbing"
                     onClick={(event) => event.stopPropagation()}
                     title="Surukle ve birak"
                   >
-                    <span className="block h-0.5 w-3 rounded bg-admin-muted" />
-                    <span className="block h-0.5 w-3 rounded bg-admin-muted" />
-                    <span className="block h-0.5 w-3 rounded bg-admin-muted" />
+                    <span className="block h-0.5 w-3 rounded bg-neutral-400" />
+                    <span className="block h-0.5 w-3 rounded bg-neutral-400" />
+                    <span className="block h-0.5 w-3 rounded bg-neutral-400" />
                   </div>
                   <div className="absolute right-3 top-3 z-20 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                     <button
                       type="button"
-                      className="rounded-md border border-admin-border bg-admin-surface px-2 py-1 text-xs font-medium text-admin-text shadow-sm"
+                      className={chromeBtn}
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggle(section.id);
@@ -191,7 +215,7 @@ export default function StoreEditorCanvas({
                     {settings.sections.length > 1 ? (
                       <button
                         type="button"
-                        className="rounded-md border border-admin-danger/50 bg-admin-surface px-2 py-1 text-xs font-medium text-admin-danger shadow-sm"
+                        className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-600 shadow-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           onRemove(section.id);
@@ -202,7 +226,7 @@ export default function StoreEditorCanvas({
                     ) : null}
                   </div>
 
-                  <div className="pointer-events-none absolute left-12 top-3 z-20 rounded-md bg-admin-surface-high px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-admin-text">
+                  <div className={`${chromeLabel} left-12`}>
                     {sectionLabel(section.type)}
                   </div>
 
@@ -231,13 +255,30 @@ export default function StoreEditorCanvas({
           })}
 
           <div
-            className={`border-t-2 ${selection?.type === 'footer' ? 'border-admin-primary' : 'border-transparent'}`}
+            role="button"
+            tabIndex={0}
+            className={`relative cursor-pointer border-t-2 outline-none transition ${
+              footerSelected
+                ? 'border-amber-500 ring-2 ring-inset ring-amber-400/40'
+                : 'border-transparent hover:border-amber-300'
+            }`}
             onClick={(e) => {
               e.stopPropagation();
               onSelect({ type: 'footer' });
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelect({ type: 'footer' });
+              }
+            }}
           >
-            <div className="pointer-events-auto px-6 py-4">
+            <span className={chromeLabel}>Footer · Alt bilgi</span>
+            <div
+              className="pointer-events-auto space-y-3 px-6 pb-4 pt-10"
+              onClick={(event) => event.stopPropagation()}
+            >
               <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
@@ -245,16 +286,16 @@ export default function StoreEditorCanvas({
                     event.stopPropagation();
                     onSelect(textTarget('footer.left', 'Alt bilgi sol'));
                   }}
-                  className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
+                  className={`${chromeSelect} ${
                     selectedStyleKey === 'footer.left'
-                      ? 'border-admin-primary bg-admin-primary-container/15'
-                      : 'border-dashed border-admin-border hover:border-admin-primary'
+                      ? 'border-amber-500 ring-2 ring-amber-400/40'
+                      : ''
                   }`}
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-admin-muted">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
                     Alt bilgi sol
                   </span>
-                  <p className="mt-1 line-clamp-2 text-admin-text">{settings.footerLeft}</p>
+                  <p className="mt-1 line-clamp-2 text-neutral-800">{settings.footerLeft}</p>
                 </button>
                 <button
                   type="button"
@@ -262,16 +303,16 @@ export default function StoreEditorCanvas({
                     event.stopPropagation();
                     onSelect(textTarget('footer.right', 'Alt bilgi sag'));
                   }}
-                  className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
+                  className={`${chromeSelect} ${
                     selectedStyleKey === 'footer.right'
-                      ? 'border-admin-primary bg-admin-primary-container/15'
-                      : 'border-dashed border-admin-border hover:border-admin-primary'
+                      ? 'border-amber-500 ring-2 ring-amber-400/40'
+                      : ''
                   }`}
                 >
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-admin-muted">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
                     Alt bilgi sag
                   </span>
-                  <p className="mt-1 line-clamp-2 text-admin-text">{settings.footerRight}</p>
+                  <p className="mt-1 line-clamp-2 text-neutral-800">{settings.footerRight}</p>
                 </button>
               </div>
             </div>
@@ -286,7 +327,7 @@ export default function StoreEditorCanvas({
         </div>
       </div>
       <p className="mx-auto mt-3 max-w-5xl text-center text-xs text-admin-muted">
-        Tikla → duzenle · Cift tikla → yaz · Linkler sadece canli sitede calisir
+        Header / Footer veya bolume tikla → sag paneli duzenle · Kaydet ile yayinla
       </p>
     </div>
   );

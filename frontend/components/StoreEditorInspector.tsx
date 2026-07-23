@@ -435,7 +435,11 @@ export default function StoreEditorInspector({
 
   if (selection.type === 'header' || selection.type === 'style') {
     return (
-      <InspectorShell title="Genel gorunum" subtitle="Marka & stil">
+      <InspectorShell
+        title="Genel gorunum"
+        subtitle="Marka & stil"
+        hint="Marka adi, logo ve yazi tipini buradan degistir. Canvas'ta Header'a da tiklayabilirsin."
+      >
         <div className="space-y-4">
           <Field label="Marka adi">
             <input

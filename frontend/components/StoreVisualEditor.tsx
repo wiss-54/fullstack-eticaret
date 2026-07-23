@@ -306,14 +306,36 @@ export default function StoreVisualEditor() {
             </button>
             <button
               type="button"
-              onClick={() => setSelection({ type: 'style' })}
+              onClick={() => setSelection({ type: 'header' })}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${
-                selection?.type === 'style' || selection?.type === 'header'
+                selection?.type === 'header'
                   ? 'border-r-4 border-admin-primary bg-admin-border/20 font-semibold text-admin-primary'
                   : 'text-admin-muted hover:bg-admin-border/10 hover:text-admin-text'
               }`}
             >
-              <span className="text-sm font-medium">Marka & yazi tipi</span>
+              <span className="text-sm font-medium">Header / Marka</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelection({ type: 'footer' })}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${
+                selection?.type === 'footer'
+                  ? 'border-r-4 border-admin-primary bg-admin-border/20 font-semibold text-admin-primary'
+                  : 'text-admin-muted hover:bg-admin-border/10 hover:text-admin-text'
+              }`}
+            >
+              <span className="text-sm font-medium">Footer / Alt bilgi</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelection({ type: 'style' })}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${
+                selection?.type === 'style'
+                  ? 'border-r-4 border-admin-primary bg-admin-border/20 font-semibold text-admin-primary'
+                  : 'text-admin-muted hover:bg-admin-border/10 hover:text-admin-text'
+              }`}
+            >
+              <span className="text-sm font-medium">Yazi tipi & stil</span>
             </button>
           </div>
 
