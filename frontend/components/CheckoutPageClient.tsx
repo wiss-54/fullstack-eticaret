@@ -96,7 +96,7 @@ export default function CheckoutPageClient() {
       }
 
       clearCart();
-      router.push(`/hesabim/siparis/${order.id}`);
+      router.push(`/hesabim/siparis/${encodeURIComponent(order.publicCode || String(order.id))}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Siparis olusturulamadi');
     } finally {

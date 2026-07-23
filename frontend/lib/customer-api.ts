@@ -226,6 +226,6 @@ export async function customerGetOrders() {
   return customerFetch<Order[]>('/api/orders');
 }
 
-export async function customerGetOrder(id: number) {
-  return customerFetch<Order>(`/api/orders/${id}`);
+export async function customerGetOrder(idOrCode: string | number) {
+  return customerFetch<Order>(`/api/orders/${encodeURIComponent(String(idOrCode))}`);
 }

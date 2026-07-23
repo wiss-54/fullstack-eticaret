@@ -30,6 +30,7 @@ describe('email service', () => {
     const { buildOrderConfirmationContent } = require('../services/email.service');
     const content = buildOrderConfirmationContent({
       id: 42,
+      publicCode: 'ES-A7K9M2QX',
       customerName: 'Test User',
       customerEmail: 'test@example.com',
       customerPhone: '05000000000',
@@ -49,9 +50,10 @@ describe('email service', () => {
       ],
     });
 
-    expect(content.subject).toContain('#42');
+    expect(content.subject).toContain('ES-A7K9M2QX');
     expect(content.text).toContain('Test User');
-    expect(content.html).toContain('Siparis #42');
+    expect(content.html).toContain('Siparis ES-A7K9M2QX');
+    expect(content.html).not.toContain('Siparis #42');
   });
 
   it('buildEmailVerificationContent dogrulama linki olusturur', () => {

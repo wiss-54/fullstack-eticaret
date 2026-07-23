@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { customerCompleteMockPayment, customerGetOrder } from '@/lib/customer-api';
+import { orderRef } from '@/lib/order-ref';
 import type { Order } from '@/lib/types';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
 
@@ -38,7 +39,9 @@ export default function MockCardPaymentClient() {
         const data = await customerGetOrder(orderId);
         if (cancelled) return;
         if (data.paymentStatus === 'paid') {
-          router.replace(`/odeme/basarili?orderId=${orderId}`);
+          router.replace(
+            `/odeme/basarili?orderCode=${encodeURIComponent(data.publicCode || String(orderId))}`,
+          );
           return;
         }
         setOrder(data);
@@ -61,10 +64,11 @@ export default function MockCardPaymentClient() {
     setError(null);
     try {
       await customerCompleteMockPayment({ orderId, token, success });
+      const code = encodeURIComponent(order?.publicCode || String(orderId));
       if (success) {
-        router.replace(`/odeme/basarili?orderId=${orderId}`);
+        router.replace(`/odeme/basarili?orderCode=${code}`);
       } else {
-        router.replace(`/odeme/basarisiz?orderId=${orderId}&reason=cancelled`);
+        router.replace(`/odeme/basarisiz?orderCode=${code}&reason=cancelled`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Odeme tamamlanamadi');
@@ -151,7 +155,7 @@ export default function MockCardPaymentClient() {
         {order ? (
           <div className="mt-6 space-y-3 rounded-lg bg-store-surface-low px-4 py-3">
             <div>
-              <p className="text-sm text-store-muted">Siparis #{order.id}</p>
+              <p className="text-sm text-store-muted">Siparis {orderRef(order)}</p>
               <p className="mt-1 text-2xl font-bold text-store-primary-container">
                 {formatPrice(order.total)}
               </p>
