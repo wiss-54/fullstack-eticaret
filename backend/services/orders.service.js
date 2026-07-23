@@ -40,10 +40,9 @@ class OrderError extends Error {
 
 function generateOrderPublicCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = crypto.randomBytes(8);
   let code = '';
   for (let i = 0; i < 8; i += 1) {
-    code += alphabet[bytes[i] % alphabet.length];
+    code += alphabet[crypto.randomInt(alphabet.length)];
   }
   return `ES-${code}`;
 }
