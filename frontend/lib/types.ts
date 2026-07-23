@@ -135,6 +135,7 @@ export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed' | 'cancelle
 
 export type Order = {
   id: number;
+  publicCode: string;
   userId: number;
   status: OrderStatus;
   paymentMethod: string;

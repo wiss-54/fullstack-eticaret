@@ -42,7 +42,7 @@ function buildBasket(order) {
   ]);
 
   if (items.length === 0) {
-    items.push([`Siparis #${order.id}`, Number(order.total).toFixed(2), 1]);
+    items.push([`Siparis ${order.publicCode || order.id}`, Number(order.total).toFixed(2), 1]);
   }
 
   return Buffer.from(JSON.stringify(items)).toString('base64');
@@ -79,12 +79,16 @@ function buildPaytrToken({
 
 async function initMockCheckout(order) {
   const token = crypto.randomBytes(16).toString('hex');
+  const orderCode = encodeURIComponent(order.publicCode || String(order.id));
   return {
     provider: 'mock',
     token,
     paymentPageUrl: `${getFrontendUrl()}/odeme/kart?orderId=${order.id}&token=${token}`,
     conversationId: `ORD${order.id}`,
     iframeToken: null,
+    orderCode: order.publicCode || String(order.id),
+    okUrl: `${getFrontendUrl()}/odeme/basarili?orderCode=${orderCode}`,
+    failUrl: `${getFrontendUrl()}/odeme/basarisiz?orderCode=${orderCode}`,
   };
 }
 
@@ -123,6 +127,7 @@ async function initPaytrCheckout(order, userIp) {
     merchantSalt,
   });
 
+  const orderCode = encodeURIComponent(order.publicCode || String(order.id));
   const body = new URLSearchParams({
     merchant_id: merchantId,
     user_ip: ip,
@@ -137,8 +142,8 @@ async function initPaytrCheckout(order, userIp) {
     user_name: String(order.customerName || 'Musteri').slice(0, 60),
     user_address: formatPaytrAddress(order),
     user_phone: String(order.customerPhone || '05000000000').slice(0, 20),
-    merchant_ok_url: `${getFrontendUrl()}/odeme/basarili?orderId=${order.id}`,
-    merchant_fail_url: `${getFrontendUrl()}/odeme/basarisiz?orderId=${order.id}`,
+    merchant_ok_url: `${getFrontendUrl()}/odeme/basarili?orderCode=${orderCode}`,
+    merchant_fail_url: `${getFrontendUrl()}/odeme/basarisiz?orderCode=${orderCode}`,
     timeout_limit: '30',
     currency,
     test_mode: testMode,

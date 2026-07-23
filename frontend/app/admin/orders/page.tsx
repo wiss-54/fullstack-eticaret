@@ -109,7 +109,8 @@ export default function AdminOrdersPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="font-semibold text-admin-text">
-                    Siparis #{order.id} · {order.customerName}
+                    Siparis {order.publicCode ? `${order.publicCode} · ` : ''}#{order.id} ·{' '}
+                    {order.customerName}
                   </p>
                   <p className="mt-1 text-sm text-admin-muted">
                     {order.customerEmail}

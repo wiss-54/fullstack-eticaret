@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import CheckoutProgress from '@/components/CheckoutProgress';
+import { orderDetailPath } from '@/lib/order-ref';
 
 export default function PaymentSuccessClient() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get('orderId');
+  const orderCode = searchParams.get('orderCode') ?? searchParams.get('orderId');
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-16 md:px-10">
@@ -21,18 +22,18 @@ export default function PaymentSuccessClient() {
         <p className="mt-2 text-store-muted">
           Bizi tercih ettiginiz icin tesekkur ederiz. Siparisiniz hazirlaniyor.
         </p>
-        {orderId ? (
+        {orderCode ? (
           <p className="mt-6 rounded-lg bg-store-surface-low px-4 py-3 text-sm">
             <span className="block text-xs font-semibold uppercase tracking-wider text-store-muted">
               Siparis Numarasi
             </span>
-            <span className="mt-1 block font-semibold text-store-primary">#{orderId}</span>
+            <span className="mt-1 block font-semibold text-store-primary">{orderCode}</span>
           </p>
         ) : null}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          {orderId ? (
+          {orderCode ? (
             <Link
-              href={`/hesabim/siparis/${orderId}`}
+              href={orderDetailPath(orderCode)}
               className="rounded-lg bg-store-primary-container px-5 py-3 text-center text-sm font-semibold text-store-on-primary transition hover:bg-store-primary"
             >
               Siparisi gor

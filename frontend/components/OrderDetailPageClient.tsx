@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import type { Order } from '@/lib/types';
 import { customerGetOrder } from '@/lib/customer-api';
 import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/order-status';
+import { orderRef } from '@/lib/order-ref';
 import { paymentMethodLabel, paymentStatusLabel } from '@/lib/payment-labels';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
 
@@ -28,7 +29,7 @@ const POLL_MS = 12_000;
 export default function OrderDetailPageClient() {
   const ready = useCustomerGuard();
   const params = useParams();
-  const orderId = Number(params.id);
+  const orderKey = String(params.id ?? '');
 
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +37,9 @@ export default function OrderDetailPageClient() {
 
   const loadOrder = useCallback(
     async (silent = false) => {
-      if (!Number.isInteger(orderId)) return;
+      if (!orderKey) return;
       try {
-        const data = await customerGetOrder(orderId);
+        const data = await customerGetOrder(orderKey);
         setOrder(data);
         setError(null);
       } catch (err) {
@@ -47,17 +48,17 @@ export default function OrderDetailPageClient() {
         }
       }
     },
-    [orderId],
+    [orderKey],
   );
 
   useEffect(() => {
-    if (!ready || !Number.isInteger(orderId)) return;
+    if (!ready || !orderKey) return;
 
     let cancelled = false;
 
     void (async () => {
       try {
-        const data = await customerGetOrder(orderId);
+        const data = await customerGetOrder(orderKey);
         if (!cancelled) setOrder(data);
       } catch (err) {
         if (!cancelled) {
@@ -71,10 +72,10 @@ export default function OrderDetailPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [ready, orderId]);
+  }, [ready, orderKey]);
 
   useEffect(() => {
-    if (!ready || !Number.isInteger(orderId)) return;
+    if (!ready || !orderKey) return;
 
     const onFocus = () => {
       void loadOrder(true);
@@ -100,7 +101,7 @@ export default function OrderDetailPageClient() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, orderId, loadOrder]);
+  }, [ready, orderKey, loadOrder]);
 
   if (!ready || loading) {
     return (
@@ -147,7 +148,7 @@ export default function OrderDetailPageClient() {
       <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-store-text">Siparis #{order.id}</h1>
+            <h1 className="text-2xl font-bold text-store-text">Siparis {orderRef(order)}</h1>
             <p className="mt-2 text-sm text-store-muted">{formatDate(order.createdAt)}</p>
           </div>
           <span

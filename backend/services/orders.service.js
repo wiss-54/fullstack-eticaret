@@ -1,10 +1,12 @@
 const { pool } = require('../db');
+const crypto = require('crypto');
 const { getProductById } = require('./products.service');
 const { syncProductStockFromVariants } = require('./product-variants.service');
 const { scheduleOrderConfirmationEmail } = require('./email.service');
 
 const ORDER_COLUMNS = `
   id,
+  public_code AS "publicCode",
   user_id AS "userId",
   status,
   payment_method AS "paymentMethod",
@@ -36,9 +38,19 @@ class OrderError extends Error {
   }
 }
 
+function generateOrderPublicCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i += 1) {
+    code += alphabet[crypto.randomInt(alphabet.length)];
+  }
+  return `ES-${code}`;
+}
+
 function mapOrderRow(row) {
   return {
     id: row.id,
+    publicCode: row.publicCode,
     userId: row.userId,
     status: row.status,
     paymentMethod: row.paymentMethod,
@@ -232,44 +244,63 @@ async function createOrder(user, payload) {
       shippingAddressLine,
     });
 
-    const orderResult = await client.query(
-      `
-        INSERT INTO orders (
-          user_id,
-          status,
-          payment_method,
-          payment_status,
-          stock_reserved,
-          customer_name,
-          customer_email,
-          customer_phone,
-          shipping_address,
-          shipping_city,
-          shipping_district,
-          shipping_address_line,
-          order_note,
-          subtotal,
-          total
-        )
-        VALUES ($1, 'pending', $2, 'unpaid', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING ${ORDER_COLUMNS}
-      `,
-      [
-        user.id,
-        paymentMethod,
-        reserveNow,
-        user.fullName,
-        user.email,
-        payload.customerPhone.trim(),
-        shippingAddress,
-        shippingCity,
-        shippingDistrict,
-        shippingAddressLine,
-        payload.orderNote?.trim() || null,
-        subtotal,
-        subtotal,
-      ],
-    );
+    let orderResult;
+    let attempts = 0;
+    while (attempts < 5) {
+      attempts += 1;
+      try {
+        orderResult = await client.query(
+          `
+            INSERT INTO orders (
+              user_id,
+              public_code,
+              status,
+              payment_method,
+              payment_status,
+              stock_reserved,
+              customer_name,
+              customer_email,
+              customer_phone,
+              shipping_address,
+              shipping_city,
+              shipping_district,
+              shipping_address_line,
+              order_note,
+              subtotal,
+              total
+            )
+            VALUES ($1, $2, 'pending', $3, 'unpaid', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            RETURNING ${ORDER_COLUMNS}
+          `,
+          [
+            user.id,
+            generateOrderPublicCode(),
+            paymentMethod,
+            reserveNow,
+            user.fullName,
+            user.email,
+            payload.customerPhone.trim(),
+            shippingAddress,
+            shippingCity,
+            shippingDistrict,
+            shippingAddressLine,
+            payload.orderNote?.trim() || null,
+            subtotal,
+            subtotal,
+          ],
+        );
+        break;
+      } catch (err) {
+        if (err && err.code === '23505' && attempts < 5) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!orderResult) {
+      throw new OrderError('Siparis kodu olusturulamadi', 500);
+    }
 
     const order = mapOrderRow(orderResult.rows[0]);
     const items = [];
@@ -409,6 +440,32 @@ async function getOrderById(orderId) {
   const order = mapOrderRow(result.rows[0]);
   const items = await getOrderItems(order.id);
   return { ...order, items };
+}
+
+async function getOrderByPublicCode(publicCode) {
+  const result = await pool.query(
+    `
+      SELECT ${ORDER_COLUMNS}
+      FROM orders
+      WHERE public_code = $1
+      LIMIT 1
+    `,
+    [publicCode],
+  );
+
+  if (result.rows.length === 0) return null;
+  const order = mapOrderRow(result.rows[0]);
+  const items = await getOrderItems(order.id);
+  return { ...order, items };
+}
+
+async function getOrderByIdOrPublicCode(idOrCode) {
+  const raw = String(idOrCode ?? '').trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) {
+    return getOrderById(Number(raw));
+  }
+  return getOrderByPublicCode(raw.toUpperCase());
 }
 
 async function updateOrderStatus(orderId, status) {
@@ -588,6 +645,8 @@ module.exports = {
   listOrdersByUserId,
   listAllOrders,
   getOrderById,
+  getOrderByPublicCode,
+  getOrderByIdOrPublicCode,
   updateOrderStatus,
   attachPaymentSession,
   markOrderPaid,
@@ -596,4 +655,5 @@ module.exports = {
   findOrderByProviderConversationId,
   isOnlinePaymentMethod,
   composeShippingAddress,
+  generateOrderPublicCode,
 };

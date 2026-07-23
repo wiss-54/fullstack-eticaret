@@ -62,7 +62,8 @@ function buildOrderConfirmationContent(order) {
     return `- ${item.productName}${variant} x${item.quantity} — ${formatPrice(item.lineTotal)}`;
   });
 
-  const orderUrl = `${getFrontendUrl()}/hesabim/siparis/${order.id}`;
+  const orderRef = order.publicCode || String(order.id);
+  const orderUrl = `${getFrontendUrl()}/hesabim/siparis/${encodeURIComponent(orderRef)}`;
   const paidNote =
     order.paymentMethod === 'paytr' && order.paymentStatus === 'paid'
       ? 'Odemeniz alindi.'
@@ -73,7 +74,7 @@ function buildOrderConfirmationContent(order) {
   const text = [
     `Merhaba ${order.customerName},`,
     '',
-    `Siparisiniz alindi. Siparis no: #${order.id}`,
+    `Siparisiniz alindi. Siparis no: ${orderRef}`,
     paidNote,
     '',
     'Urunler:',
@@ -95,7 +96,7 @@ function buildOrderConfirmationContent(order) {
   const html = `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1c1917;max-width:560px">
       <p>Merhaba <strong>${order.customerName}</strong>,</p>
-      <p>Siparisiniz alindi. <strong>Siparis #${order.id}</strong></p>
+      <p>Siparisiniz alindi. <strong>Siparis ${orderRef}</strong></p>
       <p>${paidNote}</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
         <tbody>
@@ -127,7 +128,7 @@ function buildOrderConfirmationContent(order) {
   `.trim();
 
   return {
-    subject: `Siparisiniz alindi #${order.id}`,
+    subject: `Siparisiniz alindi ${orderRef}`,
     text,
     html,
   };

@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { orderDetailPath } from '@/lib/order-ref';
 
 export default function PaymentFailClient() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get('orderId');
+  const orderCode = searchParams.get('orderCode') ?? searchParams.get('orderId');
   const reason = searchParams.get('reason');
 
   return (
@@ -31,9 +32,9 @@ export default function PaymentFailClient() {
           >
             Tekrar Dene
           </Link>
-          {orderId ? (
+          {orderCode ? (
             <Link
-              href={`/hesabim/siparis/${orderId}`}
+              href={orderDetailPath(orderCode)}
               className="rounded-lg border border-[#93000a]/30 bg-white/50 px-5 py-3 text-center text-sm font-semibold text-[#93000a] transition hover:bg-white"
             >
               Siparise git

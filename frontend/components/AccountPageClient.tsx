@@ -10,6 +10,7 @@ import {
   customerGetOrders,
 } from '@/lib/customer-api';
 import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/order-status';
+import { orderDetailPath, orderRef } from '@/lib/order-ref';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
 
 function formatPrice(price: number) {
@@ -167,11 +168,11 @@ export default function AccountPageClient() {
             {orders.map((order) => (
               <Link
                 key={order.id}
-                href={`/hesabim/siparis/${order.id}`}
+                href={orderDetailPath(order)}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-store-border p-4 transition hover:border-store-primary"
               >
                 <div>
-                  <p className="font-semibold text-store-text">Siparis #{order.id}</p>
+                  <p className="font-semibold text-store-text">Siparis {orderRef(order)}</p>
                   <p className="mt-1 text-sm text-store-muted">{formatDate(order.createdAt)}</p>
                   <span
                     className={`mt-2 inline-flex rounded px-2.5 py-1 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}

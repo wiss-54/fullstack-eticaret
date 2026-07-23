@@ -4,7 +4,7 @@ const { createOrderSchema } = require('../validation/orders.schemas');
 const {
   OrderError,
   createOrder,
-  getOrderById,
+  getOrderByIdOrPublicCode,
   listOrdersByUserId,
 } = require('../services/orders.service');
 const { getUserById } = require('../services/users.service');
@@ -49,14 +49,14 @@ router.get('/', requireCustomer, async (req, res) => {
   }
 });
 
-router.get('/:id', requireCustomer, async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) {
-    return res.status(400).json({ success: false, error: 'Gecersiz siparis id' });
+router.get('/:idOrCode', requireCustomer, async (req, res) => {
+  const idOrCode = String(req.params.idOrCode || '').trim();
+  if (!idOrCode) {
+    return res.status(400).json({ success: false, error: 'Gecersiz siparis kodu' });
   }
 
   try {
-    const order = await getOrderById(id);
+    const order = await getOrderByIdOrPublicCode(idOrCode);
     if (!order || order.userId !== req.user.id) {
       return res.status(404).json({ success: false, error: 'Siparis bulunamadi' });
     }
