@@ -200,7 +200,7 @@ export default function StoreSectionBlock({
     return (
       <section className="mx-auto w-full max-w-6xl px-6 py-10">
         <div
-          className={`${card} border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-950 ${
+              className={`${card} border border-store-border bg-store-surface p-8 ${
             section.align === 'center' ? 'text-center' : ''
           }`}
         >
@@ -209,7 +209,7 @@ export default function StoreSectionBlock({
             value={section.title}
             settings={settings}
             editor={editor}
-            className="text-2xl font-bold text-zinc-900 dark:text-zinc-50"
+            className="text-2xl font-bold text-store-text"
             as="h2"
           />
           <SectionText
@@ -217,7 +217,7 @@ export default function StoreSectionBlock({
             value={section.body}
             settings={settings}
             editor={editor}
-            className="mt-3 whitespace-pre-wrap leading-relaxed text-zinc-600 dark:text-zinc-400"
+            className="mt-3 whitespace-pre-wrap leading-relaxed text-store-muted"
             as="p"
           />
         </div>
@@ -295,14 +295,14 @@ export default function StoreSectionBlock({
     return (
       <section className="mx-auto w-full max-w-6xl px-6 py-10">
         <div
-          className={`${card} border border-zinc-200 bg-white p-10 text-center dark:border-zinc-800 dark:bg-zinc-950`}
+          className={`${card} border border-store-border bg-store-surface p-10 text-center`}
         >
           <SectionText
             styleKey={titleKey}
             value={section.title}
             settings={settings}
             editor={editor}
-            className="text-3xl font-bold text-zinc-900 dark:text-zinc-50"
+            className="text-3xl font-bold text-store-text"
             as="h2"
           />
           <SectionText
@@ -310,7 +310,7 @@ export default function StoreSectionBlock({
             value={section.body}
             settings={settings}
             editor={editor}
-            className="mx-auto mt-3 max-w-2xl text-zinc-600 dark:text-zinc-400"
+            className="mx-auto mt-3 max-w-2xl text-store-muted"
             as="p"
           />
           {editor ? (
