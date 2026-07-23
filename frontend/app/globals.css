@@ -90,20 +90,25 @@
 
 /* Storefront dark */
 [data-store-theme='dark'] {
-  --store-bg: #121214;
+  --store-bg: #0e0e10;
   --store-surface: #1b1b1e;
   --store-surface-low: #232326;
   --store-border: #47464a;
-  --store-text: #e4e1e6;
+  --store-text: #f0f1f1;
   --store-muted: #c8c6c9;
-  --store-accent-text: #d8c3ad;
+  --store-accent-text: #ffc174;
   --store-primary: #ffc174;
   --store-primary-container: #f59e0b;
   --store-on-primary: #2a1700;
   --store-inverse: #f0f1f1;
   --store-inverse-text: #1a1c1c;
-  --background: #121214;
-  --foreground: #e4e1e6;
+  --background: #0e0e10;
+  --foreground: #f0f1f1;
+}
+
+[data-store-theme='dark'] body {
+  background: var(--store-bg);
+  color: var(--store-text);
 }
 
 @media (prefers-color-scheme: dark) {

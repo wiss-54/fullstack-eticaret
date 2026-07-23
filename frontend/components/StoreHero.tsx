@@ -121,12 +121,12 @@ export default function StoreHero({ settings, editor }: StoreHeroProps) {
 
   const surfaceClass =
     settings.surfaceStyle === 'cool'
-      ? 'border-slate-200 bg-gradient-to-br from-slate-50 via-white to-sky-50'
+      ? 'border-store-border bg-gradient-to-br from-store-surface-low via-store-bg to-store-surface'
       : settings.surfaceStyle === 'soft'
-        ? 'border-store-border bg-gradient-to-br from-rose-50 via-store-bg to-amber-50/40'
+        ? 'border-store-border bg-gradient-to-br from-store-surface via-store-bg to-store-surface-low'
         : settings.surfaceStyle === 'contrast'
           ? 'border-store-border bg-gradient-to-br from-store-surface-low via-store-surface to-store-bg'
-          : 'border-store-border bg-gradient-to-br from-store-bg via-white to-[#fff8ef]';
+          : 'border-store-border bg-gradient-to-br from-store-bg via-store-surface to-store-surface-low';
 
   return (
     <section className={`relative overflow-hidden border-b ${surfaceClass}`}>
