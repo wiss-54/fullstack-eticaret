@@ -17,7 +17,6 @@ export default function StoreHeader({
   subtitle = 'EticaretShop',
   badge,
   logoUrl = null,
-  accentColor = '#855300',
 }: StoreHeaderProps) {
   const logoSrc = safeMediaUrl(logoUrl);
   const brand = subtitle || 'EticaretShop';
@@ -31,10 +30,7 @@ export default function StoreHeader({
             <img src={logoSrc} alt={brand} className="h-10 w-10 rounded object-cover" />
           ) : null}
           <div className="min-w-0">
-            <p
-              className="truncate text-xl font-bold tracking-tight md:text-2xl"
-              style={{ color: accentColor }}
-            >
+            <p className="truncate text-xl font-bold tracking-tight text-store-primary md:text-2xl">
               {brand}
             </p>
             {title && title !== brand ? (
@@ -54,10 +50,7 @@ export default function StoreHeader({
 
         <div className="flex items-center gap-2 sm:gap-3">
           {badge ? (
-            <span
-              className="hidden rounded px-3 py-1 text-xs font-semibold sm:inline"
-              style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
-            >
+            <span className="hidden rounded bg-store-surface-low px-3 py-1 text-xs font-semibold text-store-accent-text sm:inline">
               {badge}
             </span>
           ) : null}
