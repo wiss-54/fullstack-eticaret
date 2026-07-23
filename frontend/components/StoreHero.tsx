@@ -57,28 +57,24 @@ function HeroCta({
   label,
   href,
   variant,
-  accent,
   btnClass,
   preview,
 }: {
   label: string;
   href: string;
   variant: 'primary' | 'secondary';
-  accent: string;
   btnClass: string;
   preview?: boolean;
 }) {
   const className =
     variant === 'primary'
-      ? `${btnClass} px-8 py-4 text-sm font-semibold text-store-on-primary shadow-sm transition hover:opacity-90`
+      ? `${btnClass} bg-store-primary-container px-8 py-4 text-sm font-semibold text-store-on-primary shadow-sm transition hover:bg-store-primary hover:text-store-on-primary`
       : `${btnClass} bg-store-inverse px-8 py-4 text-sm font-semibold text-store-inverse-text shadow-sm transition hover:opacity-90`;
-  const style = variant === 'primary' ? { backgroundColor: accent } : undefined;
 
   if (preview) {
     return (
       <span
         className={`${className} cursor-default select-none`}
-        style={style}
         title="Canli sitede calisir"
         onClick={(e) => e.preventDefault()}
       >
@@ -88,7 +84,7 @@ function HeroCta({
   }
 
   return (
-    <a href={href} className={className} style={style}>
+    <a href={href} className={className}>
       {label}
     </a>
   );
@@ -204,7 +200,6 @@ export default function StoreHero({ settings, editor }: StoreHeroProps) {
                         label={settings.heroCtaLabel}
                         href={settings.heroCtaHref}
                         variant="primary"
-                        accent={accent}
                         btnClass={btn}
                         preview={preview}
                       />
@@ -214,7 +209,6 @@ export default function StoreHero({ settings, editor }: StoreHeroProps) {
                         label={settings.heroSecondaryCtaLabel}
                         href={settings.heroSecondaryCtaHref}
                         variant="secondary"
-                        accent={accent}
                         btnClass={btn}
                         preview={preview}
                       />

@@ -100,7 +100,7 @@ function ServiceCard({
         <span
           className={`rounded-full px-3 py-1 font-admin-mono text-xs font-semibold ${
             up
-              ? 'bg-emerald-500/15 text-emerald-400'
+              ? 'bg-emerald-500/15 text-emerald-700'
               : 'bg-admin-danger/15 text-admin-danger'
           }`}
         >
@@ -122,9 +122,9 @@ function ServiceCard({
           </div>
         </div>
         {check.statusCode !== undefined ? (
-          <p className="text-sm text-stone-600 dark:text-stone-400">HTTP {check.statusCode}</p>
+          <p className="text-sm text-admin-muted">HTTP {check.statusCode}</p>
         ) : null}
-        {check.error ? <p className="text-sm text-red-600 dark:text-red-300">{check.error}</p> : null}
+        {check.error ? <p className="text-sm text-admin-danger">{check.error}</p> : null}
       </div>
     </article>
   );
@@ -144,10 +144,10 @@ function MetricBar({
   return (
     <div>
       <div className="mb-1 flex justify-between text-sm">
-        <span className="text-stone-600 dark:text-stone-400">{label}</span>
-        <span className="font-medium text-stone-900 dark:text-stone-50">{value}</span>
+        <span className="text-admin-muted">{label}</span>
+        <span className="font-medium text-admin-text">{value}</span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
+      <div className="h-2.5 overflow-hidden rounded-full bg-admin-bg">
         <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.min(100, percent)}%` }} />
       </div>
     </div>
@@ -310,57 +310,57 @@ export default function MonitoringDashboard() {
         {status && health ? (
           <>
             <section
-              className={`rounded-3xl border p-6 shadow-sm ${
+              className={`rounded-xl border p-6 shadow-sm ${
                 health.tone === 'emerald'
-                  ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-white dark:border-emerald-900/40 dark:from-emerald-950/20 dark:to-stone-950'
+                  ? 'border-emerald-500/30 bg-admin-surface-low'
                   : health.tone === 'amber'
-                    ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-white dark:border-amber-900/40 dark:from-amber-950/20 dark:to-stone-950'
-                    : 'border-red-200 bg-gradient-to-r from-red-50 to-white dark:border-red-900/40 dark:from-red-950/20 dark:to-stone-950'
+                    ? 'border-admin-primary/40 bg-admin-surface-low'
+                    : 'border-admin-danger/40 bg-admin-surface-low'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm dark:bg-stone-900">
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-admin-bg shadow-sm">
                     <span
                       className={`absolute inline-flex h-4 w-4 animate-ping rounded-full opacity-40 ${
-                        autoRefresh ? 'bg-emerald-500' : 'bg-stone-400'
+                        autoRefresh ? 'bg-emerald-500' : 'bg-admin-muted'
                       }`}
                     />
                     <span
                       className={`relative inline-flex h-4 w-4 rounded-full ${
-                        autoRefresh ? 'bg-emerald-500' : 'bg-stone-400'
+                        autoRefresh ? 'bg-emerald-500' : 'bg-admin-muted'
                       }`}
                     />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
+                    <p className="font-admin-mono text-sm font-semibold uppercase tracking-[0.18em] text-admin-muted">
                       Genel Durum
                     </p>
-                    <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50">{health.label}</h2>
-                    <p className="text-sm text-stone-600 dark:text-stone-400">
+                    <h2 className="text-2xl font-bold text-admin-text">{health.label}</h2>
+                    <p className="text-sm text-admin-muted">
                       {countHealthy(status)}/5 servis saglikli
                       {lastUpdated ? ` · Son guncelleme ${formatAgo(lastUpdated)}` : ''}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
-                    <p className="text-xs text-stone-500">Urun</p>
-                    <p className="text-xl font-bold">{status.stats.productCount ?? '-'}</p>
+                  <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
+                    <p className="text-xs text-admin-muted">Urun</p>
+                    <p className="text-xl font-bold text-admin-text">{status.stats.productCount ?? '-'}</p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
-                    <p className="text-xs text-stone-500">Uptime</p>
-                    <p className="text-sm font-bold">
+                  <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
+                    <p className="text-xs text-admin-muted">Uptime</p>
+                    <p className="text-sm font-bold text-admin-text">
                       {formatUptime(status.services.backend.uptimeSeconds)}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
-                    <p className="text-xs text-stone-500">RAM</p>
-                    <p className="text-sm font-bold">{ramUsedPercent}% kullanim</p>
+                  <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
+                    <p className="text-xs text-admin-muted">RAM</p>
+                    <p className="text-sm font-bold text-admin-text">{ramUsedPercent}% kullanim</p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 px-4 py-3 text-center dark:bg-stone-900/80">
-                    <p className="text-xs text-stone-500">Commit</p>
-                    <p className="text-sm font-bold">{status.deploy?.commit?.slice(0, 7) ?? '-'}</p>
+                  <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
+                    <p className="text-xs text-admin-muted">Commit</p>
+                    <p className="text-sm font-bold text-admin-text">{status.deploy?.commit?.slice(0, 7) ?? '-'}</p>
                   </div>
                 </div>
               </div>
@@ -374,8 +374,8 @@ export default function MonitoringDashboard() {
             </section>
 
             <section className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-950 lg:col-span-2">
-                <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-50">Sunucu Metrikleri</h3>
+              <div className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm lg:col-span-2">
+                <h3 className="text-lg font-semibold text-admin-text">Sunucu Metrikleri</h3>
                 <div className="mt-5 space-y-5">
                   <MetricBar
                     label="RAM kullanimi"
@@ -389,15 +389,13 @@ export default function MonitoringDashboard() {
                     percent={Math.min(100, Math.round((status.services.backend.memoryMb / 512) * 100))}
                   />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-stone-200 p-4 dark:border-stone-800">
-                      <p className="text-sm text-stone-500">Hostname</p>
-                      <p className="mt-1 font-medium text-stone-900 dark:text-stone-50">
-                        {status.server.hostname}
-                      </p>
+                    <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                      <p className="text-sm text-admin-muted">Hostname</p>
+                      <p className="mt-1 font-medium text-admin-text">{status.server.hostname}</p>
                     </div>
-                    <div className="rounded-2xl border border-stone-200 p-4 dark:border-stone-800">
-                      <p className="text-sm text-stone-500">Load average</p>
-                      <p className="mt-1 font-medium text-stone-900 dark:text-stone-50">
+                    <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                      <p className="text-sm text-admin-muted">Load average</p>
+                      <p className="mt-1 font-medium text-admin-text">
                         {status.server.loadAverage.join(' · ')}
                       </p>
                     </div>
@@ -405,26 +403,26 @@ export default function MonitoringDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-950">
-                <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-50">Deploy & CI</h3>
+              <div className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-admin-text">Deploy & CI</h3>
                 <dl className="mt-5 space-y-4 text-sm">
                   <div>
-                    <dt className="text-stone-500">Son commit</dt>
-                    <dd className="mt-1 font-mono text-stone-900 dark:text-stone-50">
+                    <dt className="text-admin-muted">Son commit</dt>
+                    <dd className="mt-1 font-mono text-admin-text">
                       {status.deploy?.commit ?? 'Bilinmiyor'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-stone-500">Deploy zamani</dt>
-                    <dd className="mt-1 text-stone-900 dark:text-stone-50">
+                    <dt className="text-admin-muted">Deploy zamani</dt>
+                    <dd className="mt-1 text-admin-text">
                       {status.deploy?.deployedAt
                         ? new Date(status.deploy.deployedAt).toLocaleString('tr-TR')
                         : 'Bilinmiyor'}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-stone-500">Son kontrol</dt>
-                    <dd className="mt-1 text-stone-900 dark:text-stone-50">
+                    <dt className="text-admin-muted">Son kontrol</dt>
+                    <dd className="mt-1 text-admin-text">
                       {new Date(status.checkedAt).toLocaleString('tr-TR')}
                     </dd>
                   </div>
@@ -433,7 +431,7 @@ export default function MonitoringDashboard() {
                   href={status.links.githubActions}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-stone-300 px-4 py-3 text-sm font-medium text-stone-700 dark:border-stone-700 dark:text-stone-300"
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
                 >
                   GitHub Actions
                 </a>
