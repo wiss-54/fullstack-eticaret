@@ -27,6 +27,12 @@ type ProductVariantsEditorProps = {
   onSaved?: (axes: VariantAxis[], variants: ProductVariant[]) => void;
 };
 
+const fieldClass =
+  'rounded-xl border border-admin-border bg-admin-bg px-3 py-2 text-sm text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2';
+
+const cellFieldClass =
+  'rounded-lg border border-admin-border bg-admin-bg px-2 py-1 text-admin-text outline-none ring-admin-primary/30 focus:ring-2';
+
 function cartesian<T>(groups: T[][]): T[][] {
   if (groups.length === 0) return [[]];
   return groups.reduce<T[][]>(
@@ -149,29 +155,29 @@ export default function ProductVariantsEditor({
   }
 
   return (
-    <div className="mt-6 space-y-5 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-      <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-100">
-        <p className="font-semibold">iKas / Shopify tarzı varyant yönetimi</p>
-        <p className="mt-1 text-amber-900/80 dark:text-amber-200/80">
+    <div className="mt-6 space-y-5 border-t border-admin-border pt-6">
+      <div className="rounded-2xl border border-admin-primary/30 bg-admin-primary-container/15 p-4 text-sm text-admin-text">
+        <p className="font-semibold text-admin-primary">iKas / Shopify tarzı varyant yönetimi</p>
+        <p className="mt-1 text-admin-muted">
           Beden, renk gibi eksenleri tanımla; sistem kombinasyonları otomatik üretir. Her satır için
           ayrı stok, SKU ve fiyat girebilirsin.
         </p>
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">Varyant Eksenleri</h3>
+        <h3 className="font-semibold text-admin-text">Varyant Eksenleri</h3>
         <button
           type="button"
           disabled={axes.length >= 3}
           onClick={() => setAxes((current) => [...current, emptyAxis()])}
-          className="rounded-lg border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
+          className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary disabled:opacity-50"
         >
           Eksen Ekle (max 3)
         </button>
       </div>
 
       {axes.length === 0 ? (
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-admin-muted">
           Bu urun basit urun. Varyant icin en az bir eksen ekle (ornek: Beden).
         </p>
       ) : (
@@ -179,11 +185,11 @@ export default function ProductVariantsEditor({
           {axes.map((axis, axisIndex) => (
             <div
               key={`axis-${axisIndex}`}
-              className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+              className="rounded-xl border border-admin-border bg-admin-surface-low p-4"
             >
               <div className="grid gap-3 sm:grid-cols-[1fr_160px_auto]">
                 <input
-                  className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  className={fieldClass}
                   placeholder="Eksen adi (Beden, Renk...)"
                   value={axis.name}
                   onChange={(event) => {
@@ -193,7 +199,7 @@ export default function ProductVariantsEditor({
                   }}
                 />
                 <select
-                  className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  className={fieldClass}
                   value={axis.displayStyle}
                   onChange={(event) => {
                     const next = [...axes];
@@ -211,7 +217,7 @@ export default function ProductVariantsEditor({
                 <button
                   type="button"
                   onClick={() => setAxes((current) => current.filter((_, idx) => idx !== axisIndex))}
-                  className="text-sm text-red-600 dark:text-red-300"
+                  className="text-sm text-admin-danger"
                 >
                   Kaldir
                 </button>
@@ -221,7 +227,7 @@ export default function ProductVariantsEditor({
                 {axis.values.map((value, valueIndex) => (
                   <div key={`value-${valueIndex}`} className="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
                     <input
-                      className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                      className={fieldClass}
                       placeholder="Deger (S, M, Siyah...)"
                       value={value.label}
                       onChange={(event) => {
@@ -234,7 +240,7 @@ export default function ProductVariantsEditor({
                     />
                     {axis.displayStyle === 'color' ? (
                       <input
-                        className="rounded-xl border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                        className={fieldClass}
                         placeholder="#000000"
                         value={value.colorHex}
                         onChange={(event) => {
@@ -258,7 +264,7 @@ export default function ProductVariantsEditor({
                         };
                         setAxes(next);
                       }}
-                      className="text-sm text-red-600 dark:text-red-300"
+                      className="text-sm text-admin-danger"
                     >
                       Sil
                     </button>
@@ -274,7 +280,7 @@ export default function ProductVariantsEditor({
                     };
                     setAxes(next);
                   }}
-                  className="rounded-lg border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
+                  className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
                 >
                   Deger Ekle
                 </button>
@@ -288,40 +294,40 @@ export default function ProductVariantsEditor({
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h4 className="font-semibold text-zinc-900 dark:text-zinc-50">
+              <h4 className="font-semibold text-admin-text">
                 Varyant Matrisi ({combinationCount} kombinasyon)
               </h4>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-admin-muted">
                 {productName} icin her kombinasyona stok gir. Ornek: M + Siyah = 4 adet.
               </p>
             </div>
             <button
               type="button"
               onClick={regenerateRows}
-              className="rounded-lg border border-zinc-300 px-3 py-1 text-sm dark:border-zinc-700"
+              className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
             >
               Kombinasyonlari Yenile
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
-            <table className="min-w-full text-sm">
-              <thead className="bg-zinc-50 text-left dark:bg-zinc-900">
+          <div className="overflow-x-auto rounded-xl border border-admin-border">
+            <table className="min-w-full text-sm text-admin-text">
+              <thead className="bg-admin-surface-high text-left">
                 <tr>
                   {axes.map((axis) => (
-                    <th key={axis.name} className="px-4 py-3 font-medium">
+                    <th key={axis.name} className="px-4 py-3 font-medium text-admin-muted">
                       {axis.name || 'Eksen'}
                     </th>
                   ))}
-                  <th className="px-4 py-3 font-medium">Stok</th>
-                  <th className="px-4 py-3 font-medium">SKU</th>
-                  <th className="px-4 py-3 font-medium">Fiyat</th>
-                  <th className="px-4 py-3 font-medium">Aktif</th>
+                  <th className="px-4 py-3 font-medium text-admin-muted">Stok</th>
+                  <th className="px-4 py-3 font-medium text-admin-muted">SKU</th>
+                  <th className="px-4 py-3 font-medium text-admin-muted">Fiyat</th>
+                  <th className="px-4 py-3 font-medium text-admin-muted">Aktif</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, rowIndex) => (
-                  <tr key={row.valueLabels.join('|')} className="border-t border-zinc-200 dark:border-zinc-800">
+                  <tr key={row.valueLabels.join('|')} className="border-t border-admin-border">
                     {row.valueLabels.map((label) => (
                       <td key={label} className="px-4 py-3">
                         {label}
@@ -331,7 +337,7 @@ export default function ProductVariantsEditor({
                       <input
                         type="number"
                         min="0"
-                        className="w-24 rounded-lg border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+                        className={`w-24 ${cellFieldClass}`}
                         value={row.stock}
                         onChange={(event) => {
                           const next = [...rows];
@@ -342,7 +348,7 @@ export default function ProductVariantsEditor({
                     </td>
                     <td className="px-4 py-3">
                       <input
-                        className="w-36 rounded-lg border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+                        className={`w-36 ${cellFieldClass}`}
                         placeholder="SKU"
                         value={row.sku}
                         onChange={(event) => {
@@ -357,7 +363,7 @@ export default function ProductVariantsEditor({
                         type="number"
                         min="0"
                         step="0.01"
-                        className="w-28 rounded-lg border border-zinc-300 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-900"
+                        className={`w-28 ${cellFieldClass}`}
                         placeholder="Bos = ana fiyat"
                         value={row.price}
                         onChange={(event) => {
@@ -391,12 +397,12 @@ export default function ProductVariantsEditor({
           type="button"
           disabled={saving}
           onClick={() => void handleSave()}
-          className="rounded-xl bg-amber-800 px-4 py-3 text-sm font-medium text-white disabled:opacity-60 dark:bg-amber-500 dark:text-zinc-950"
+          className="rounded-xl bg-admin-primary-container px-4 py-3 text-sm font-medium text-admin-on-primary-container disabled:opacity-60"
         >
           {saving ? 'Kaydediliyor...' : 'Varyantlari Kaydet'}
         </button>
-        {message ? <p className="text-sm text-green-700 dark:text-green-300">{message}</p> : null}
-        {error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
+        {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+        {error ? <p className="text-sm text-admin-danger">{error}</p> : null}
       </div>
     </div>
   );

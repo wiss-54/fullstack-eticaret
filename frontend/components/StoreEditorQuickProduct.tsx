@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useState } from 'react';
 import type { Category, Product } from '@/lib/types';
@@ -11,7 +11,7 @@ type Props = {
 };
 
 const inputClass =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-amber-700/30 focus:ring-2 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-50';
+  'w-full rounded-lg border border-admin-border bg-admin-bg px-3 py-2 text-sm text-admin-text outline-none ring-admin-primary/30 focus:ring-2';
 
 export default function StoreEditorQuickProduct({ categories, onCreated }: Props) {
   const [name, setName] = useState('');
@@ -59,14 +59,14 @@ export default function StoreEditorQuickProduct({ categories, onCreated }: Props
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
       <div>
-        <p className="text-sm font-semibold text-stone-900 dark:text-stone-50">Yeni urun ekle</p>
-        <p className="mt-0.5 text-xs text-stone-500">
+        <p className="text-sm font-semibold text-admin-text">Yeni urun ekle</p>
+        <p className="mt-0.5 text-xs text-admin-muted">
           Kaydedince aninda vitrinde gorunur. Detayli varyant icin Urunler sayfasina git.
         </p>
       </div>
 
       <label className="block text-sm">
-        <span className="mb-1 block text-stone-500">Urun adi</span>
+        <span className="mb-1 block text-admin-muted">Urun adi</span>
         <input
           required
           className={inputClass}
@@ -77,7 +77,7 @@ export default function StoreEditorQuickProduct({ categories, onCreated }: Props
       </label>
 
       <label className="block text-sm">
-        <span className="mb-1 block text-stone-500">Kisa aciklama</span>
+        <span className="mb-1 block text-admin-muted">Kisa aciklama</span>
         <textarea
           className={`${inputClass} min-h-16`}
           value={description}
@@ -88,7 +88,7 @@ export default function StoreEditorQuickProduct({ categories, onCreated }: Props
 
       <div className="grid grid-cols-2 gap-2">
         <label className="block text-sm">
-          <span className="mb-1 block text-stone-500">Fiyat (TL)</span>
+          <span className="mb-1 block text-admin-muted">Fiyat (TL)</span>
           <input
             required
             type="number"
@@ -101,7 +101,7 @@ export default function StoreEditorQuickProduct({ categories, onCreated }: Props
           />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block text-stone-500">Stok</span>
+          <span className="mb-1 block text-admin-muted">Stok</span>
           <input
             type="number"
             min="0"
@@ -113,7 +113,7 @@ export default function StoreEditorQuickProduct({ categories, onCreated }: Props
       </div>
 
       <label className="block text-sm">
-        <span className="mb-1 block text-stone-500">Kategori</span>
+        <span className="mb-1 block text-admin-muted">Kategori</span>
         <select
           className={inputClass}
           value={categoryId}
@@ -137,13 +137,13 @@ export default function StoreEditorQuickProduct({ categories, onCreated }: Props
         }}
       />
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {ok ? <p className="text-sm text-emerald-700">Urun eklendi. Vitrin guncellendi.</p> : null}
+      {error ? <p className="text-sm text-admin-danger">{error}</p> : null}
+      {ok ? <p className="text-sm text-emerald-600">Urun eklendi. Vitrin guncellendi.</p> : null}
 
       <button
         type="submit"
         disabled={saving}
-        className="w-full rounded-lg bg-stone-900 px-3 py-2.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-amber-800"
+        className="w-full rounded-lg bg-admin-primary-container px-3 py-2.5 text-sm font-medium text-admin-on-primary-container disabled:opacity-60"
       >
         {saving ? 'Ekleniyor...' : 'Urunu vitrine ekle'}
       </button>
