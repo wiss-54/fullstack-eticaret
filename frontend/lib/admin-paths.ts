@@ -7,7 +7,6 @@ export function getAdminPaths(hostname?: string) {
   if (host === ADMIN_HOST) {
     return {
       dashboard: '/',
-      products: '/urunler',
       login: '/login',
       monitoring: '/monitoring',
       orders: '/siparisler',
@@ -18,7 +17,6 @@ export function getAdminPaths(hostname?: string) {
 
   return {
     dashboard: '/admin',
-    products: '/admin/products',
     login: '/admin/login',
     monitoring: '/admin/monitoring',
     orders: '/admin/orders',
