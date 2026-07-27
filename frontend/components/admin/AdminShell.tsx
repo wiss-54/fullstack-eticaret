@@ -7,7 +7,17 @@ import { getAdminPaths } from '@/lib/admin-paths';
 import { useAdminGuard } from '@/lib/use-admin-guard';
 import { AdminThemeProvider, useAdminTheme } from '@/components/admin/AdminThemeProvider';
 
-type IconName = 'bag' | 'products' | 'orders' | 'store' | 'monitor' | 'logout' | 'site' | 'theme' | 'collapse';
+type IconName =
+  | 'bag'
+  | 'dashboard'
+  | 'products'
+  | 'orders'
+  | 'store'
+  | 'monitor'
+  | 'logout'
+  | 'site'
+  | 'theme'
+  | 'collapse';
 
 function AdminIcon({ name, className = '' }: { name: IconName; className?: string }) {
   const common = `h-5 w-5 shrink-0 ${className}`;
@@ -17,6 +27,15 @@ function AdminIcon({ name, className = '' }: { name: IconName; className?: strin
         <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
           <path d="M6 8h12l-1 12H7L6 8Z" />
           <path d="M9 8V7a3 3 0 0 1 6 0v1" />
+        </svg>
+      );
+    case 'dashboard':
+      return (
+        <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path d="M4 4h7v7H4z" />
+          <path d="M13 4h7v5h-7z" />
+          <path d="M13 11h7v9h-7z" />
+          <path d="M4 13h7v7H4z" />
         </svg>
       );
     case 'products':
@@ -87,14 +106,16 @@ function AdminIcon({ name, className = '' }: { name: IconName; className?: strin
 const NAV = [
   {
     key: 'dashboard' as const,
+    label: 'Dashboard',
+    icon: 'dashboard' as const,
+    match: (p: string, paths: ReturnType<typeof getAdminPaths>) =>
+      p === paths.dashboard || p === '/admin' || p === '/',
+  },
+  {
+    key: 'products' as const,
     label: 'Urunler',
     icon: 'products' as const,
-    match: (p: string, paths: ReturnType<typeof getAdminPaths>) =>
-      p === paths.dashboard ||
-      p === '/admin' ||
-      p === '/' ||
-      p.includes('/products') ||
-      p.includes('/urunler'),
+    match: (p: string) => p.includes('/products') || p.includes('/urunler'),
   },
   {
     key: 'orders' as const,
