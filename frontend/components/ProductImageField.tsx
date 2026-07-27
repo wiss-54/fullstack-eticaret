@@ -30,7 +30,8 @@ export default function ProductImageField({
   const [showUrlField, setShowUrlField] = useState(false);
 
   const statusPath = uploadedPath ?? (serverImageUrl ? toSafeUploadPath(serverImageUrl) : null);
-  const previewSrc = safeMediaUrl(statusPath ?? value);
+  // Preview only from upload/server paths — never from the free-text URL input (CodeQL XSS).
+  const previewSrc = safeMediaUrl(statusPath ?? (serverImageUrl && !statusPath ? serverImageUrl : null));
 
   async function handleFileChange(file: File | null) {
     if (!file) return;
