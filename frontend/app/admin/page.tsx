@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Category, Product, ProductOption, ProductVariant, VariantAxis } from '@/lib/types';
 import {
@@ -18,6 +18,7 @@ import ProductImageField from '@/components/ProductImageField';
 import ProductOptionsEditor from '@/components/ProductOptionsEditor';
 import ProductVariantsEditor from '@/components/ProductVariantsEditor';
 import { getAdminPaths } from '@/lib/admin-paths';
+import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type ProductFormState = {
   name: string;
@@ -37,11 +38,40 @@ const emptyForm: ProductFormState = {
   categoryId: '',
 };
 
+const fieldClass =
+  'w-full rounded-lg border border-admin-border bg-admin-bg px-4 py-3 text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2';
+
 function formatPrice(price: number) {
   return new Intl.NumberFormat('tr-TR', {
     style: 'currency',
     currency: 'TRY',
   }).format(price);
+}
+
+function formatProductCode(id: number) {
+  return `#PROD-${String(id).padStart(3, '0')}`;
+}
+
+function stockBadge(stock: number) {
+  if (stock <= 0) {
+    return {
+      label: 'Tukendi',
+      className: 'border border-admin-danger/30 bg-admin-danger/15 text-admin-danger',
+      rowClassName: 'border-admin-danger/40 bg-admin-bg/80',
+    };
+  }
+  if (stock <= 5) {
+    return {
+      label: `Azaldi (${stock})`,
+      className: 'border border-admin-primary/25 bg-admin-primary-container/20 text-admin-primary',
+      rowClassName: 'border-admin-border bg-admin-bg',
+    };
+  }
+  return {
+    label: `Stokta (${stock})`,
+    className: 'border border-emerald-500/25 bg-emerald-500/15 text-emerald-600',
+    rowClassName: 'border-admin-border bg-admin-bg',
+  };
 }
 
 export default function AdminPage() {
@@ -59,6 +89,23 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [variantsEditorKey, setVariantsEditorKey] = useState(0);
   const [serverImageUrl, setServerImageUrl] = useState<string | null>(null);
+  const [productQuery, setProductQuery] = useState('');
+
+  const filteredProducts = useMemo(() => {
+    const q = productQuery.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((product) => {
+      const haystack = [
+        product.name,
+        product.description,
+        product.categoryName ?? '',
+        String(product.id),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [products, productQuery]);
 
   async function loadProducts() {
     setLoading(true);
@@ -199,43 +246,83 @@ export default function AdminPage() {
       />
 
       <div className="grid gap-6 xl:grid-cols-12">
-          <section className="relative overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm xl:col-span-5">
-            <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-admin-primary-container to-transparent opacity-50" />
-            <h2 className="text-lg font-semibold text-admin-text">
-              {editingId ? 'Urunu Duzenle' : 'Yeni Urun Ekle'}
-            </h2>
+        <section className="relative overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm xl:col-span-5">
+          <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-admin-primary-container to-transparent opacity-50" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full text-admin-primary">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="9" opacity="0.25" />
+                  <path d="M12 8v8M8 12h8" />
+                </svg>
+              </span>
+              <h2 className="text-lg font-semibold text-admin-text">
+                {editingId ? 'Urunu Duzenle' : 'Yeni Urun Ekle'}
+              </h2>
+            </div>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-admin-primary-container/20 text-admin-primary">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="19" cy="12" r="1.5" />
+              </svg>
+            </span>
+          </div>
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <ProductImageField
+              value={form.imageUrl}
+              serverImageUrl={serverImageUrl}
+              onChange={(imageUrl) => {
+                setForm({ ...form, imageUrl });
+                if (!imageUrl) setServerImageUrl(null);
+              }}
+            />
+
+            <label className="block space-y-1.5">
+              <span className="text-sm text-admin-muted">Urun Adi</span>
               <input
-                className="w-full rounded-lg border border-admin-border bg-admin-bg px-4 py-3 text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
-                placeholder="Urun adi"
+                className={fieldClass}
+                placeholder="Orn: Premium Kablosuz Kulaklik"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
               />
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-sm text-admin-muted">Aciklama</span>
               <textarea
-                className="min-h-24 w-full rounded-lg border border-admin-border bg-admin-bg px-4 py-3 text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
-                placeholder="Aciklama"
+                className={`${fieldClass} min-h-24`}
+                placeholder="Urun detaylarini giriniz..."
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 required
               />
+            </label>
+
+            <label className="block space-y-1.5">
+              <span className="text-sm text-admin-muted">Kategori</span>
               <select
-                className="w-full rounded-lg border border-admin-border bg-admin-bg px-4 py-3 text-admin-text outline-none ring-admin-primary/30 focus:ring-2"
+                className={fieldClass}
                 value={form.categoryId}
                 onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
               >
-                <option value="">Kategori sec (opsiyonel)</option>
+                <option value="">Kategori Seciniz</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
               </select>
-              <div className="grid gap-4 sm:grid-cols-2">
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-1.5">
+                <span className="text-sm text-admin-muted">Fiyat (₺)</span>
                 <input
-                  className="w-full rounded-lg border border-admin-border bg-admin-bg px-4 py-3 text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
-                  placeholder="Temel fiyat"
+                  className={fieldClass}
+                  placeholder="0.00"
                   type="number"
                   min="0"
                   step="0.01"
@@ -243,9 +330,12 @@ export default function AdminPage() {
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   required
                 />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-sm text-admin-muted">Stok Adedi</span>
                 <input
-                  className="w-full rounded-lg border border-admin-border bg-admin-bg px-4 py-3 text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
-                  placeholder="Stok"
+                  className={fieldClass}
+                  placeholder="0"
                   type="number"
                   min="0"
                   value={form.stock}
@@ -253,120 +343,200 @@ export default function AdminPage() {
                   required
                   disabled={editingProductType === 'variant'}
                 />
-              </div>
-              {editingProductType === 'variant' ? (
-                <p className="text-sm text-admin-primary">
-                  Varyantli urunlerde toplam stok, asagidaki matristeki satirlardan otomatik hesaplanir.
-                </p>
-              ) : null}
-              <ProductImageField
-                value={form.imageUrl}
-                serverImageUrl={serverImageUrl}
-                onChange={(imageUrl) => {
-                  setForm({ ...form, imageUrl });
-                  if (!imageUrl) setServerImageUrl(null);
-                }}
-              />
+              </label>
+            </div>
 
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-lg bg-admin-primary-container px-4 py-3 text-sm font-semibold text-admin-on-primary-container disabled:opacity-60"
-                >
-                  {saving ? 'Kaydediliyor...' : editingId ? 'Guncelle' : 'Ekle'}
-                </button>
-                {editingId ? (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="rounded-lg border border-admin-border px-4 py-3 text-sm text-admin-muted"
-                  >
-                    Iptal
-                  </button>
-                ) : null}
-              </div>
-            </form>
-
-            {editingId ? (
-              <>
-                <ProductVariantsEditor
-                  key={variantsEditorKey}
-                  productId={editingId}
-                  productName={form.name}
-                  initialAxes={editingAxes}
-                  initialVariants={editingVariants}
-                  onSaved={(axes, variants) => {
-                    setEditingAxes(axes);
-                    setEditingVariants(variants);
-                    setEditingProductType(variants.length > 0 ? 'variant' : 'simple');
-                    setVariantsEditorKey((current) => current + 1);
-                    void loadProducts();
-                  }}
-                />
-                <ProductOptionsEditor
-                  productId={editingId}
-                  initialOptions={editingOptions}
-                  onSaved={setEditingOptions}
-                />
-              </>
-            ) : null}
-          </section>
-
-          <section className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm xl:col-span-7">
-            <h2 className="text-lg font-semibold text-admin-text">Urun Listesi</h2>
-
-            {error ? (
-              <p className="mt-4 rounded-lg border border-admin-danger/40 bg-admin-bg px-4 py-3 text-sm text-admin-danger">
-                {error}
+            {editingProductType === 'variant' ? (
+              <p className="text-sm text-admin-primary">
+                Varyantli urunlerde toplam stok, asagidaki matristeki satirlardan otomatik hesaplanir.
               </p>
             ) : null}
 
-            {loading ? (
-              <p className="mt-4 text-admin-muted">Yukleniyor...</p>
-            ) : products.length === 0 ? (
-              <p className="mt-4 text-admin-muted">Henuz urun yok. API&apos;den gelen urunler burada listelenir.</p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                {products.map((product) => (
-                  <div
-                    key={product.id}
-                    className="flex items-start justify-between gap-4 rounded-lg border border-admin-border bg-admin-bg p-4"
-                  >
-                    <div>
-                      <p className="font-medium text-admin-text">{product.name}</p>
-                      <p className="mt-1 text-sm text-admin-muted">
-                        {formatPrice(product.price)} · Stok: {product.stock}
-                        {product.categoryName ? ` · ${product.categoryName}` : ''}
-                      </p>
-                      <p className="mt-1 font-admin-mono text-xs uppercase tracking-wide text-admin-primary">
-                        {product.productType === 'variant' ? 'Varyantli urun' : 'Basit urun'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void startEdit(product)}
-                        className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
-                      >
-                        Duzenle
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDelete(product.id)}
-                        className="rounded-lg border border-admin-danger/50 px-3 py-1 text-sm text-admin-danger"
-                      >
-                        Sil
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+            <div className="flex justify-end gap-3 border-t border-admin-border pt-3">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-lg px-4 py-3 text-sm font-medium text-admin-muted hover:text-admin-text"
+              >
+                Vazgec
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-admin-primary-container px-5 py-3 text-sm font-semibold text-admin-on-primary-container transition hover:brightness-105 disabled:opacity-60"
+              >
+                {saving ? 'Kaydediliyor...' : 'Kaydet'}
+              </button>
+            </div>
+          </form>
 
-        <CategoryManager />
+          {editingId ? (
+            <>
+              <ProductVariantsEditor
+                key={variantsEditorKey}
+                productId={editingId}
+                productName={form.name}
+                initialAxes={editingAxes}
+                initialVariants={editingVariants}
+                onSaved={(axes, variants) => {
+                  setEditingAxes(axes);
+                  setEditingVariants(variants);
+                  setEditingProductType(variants.length > 0 ? 'variant' : 'simple');
+                  setVariantsEditorKey((current) => current + 1);
+                  void loadProducts();
+                }}
+              />
+              <ProductOptionsEditor
+                productId={editingId}
+                initialOptions={editingOptions}
+                onSaved={setEditingOptions}
+              />
+            </>
+          ) : null}
+        </section>
+
+        <section className="flex min-h-[560px] flex-col overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low shadow-sm xl:col-span-7">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border bg-admin-bg/30 px-5 py-4">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-admin-surface-high text-admin-muted">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+                </svg>
+              </span>
+              <h2 className="text-lg font-semibold text-admin-text">Mevcut Urunler</h2>
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <label className="relative min-w-[220px] flex-1 sm:w-72">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3-3" />
+                  </svg>
+                </span>
+                <input
+                  className="w-full rounded-full border border-admin-border bg-admin-bg py-2 pl-9 pr-3 text-sm text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
+                  placeholder="Urun ara..."
+                  value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                aria-label="Filtre"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-admin-border bg-admin-bg text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M4 7h16" />
+                  <path d="M7 12h10" />
+                  <path d="M10 17h4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {error ? (
+            <p className="mx-5 mt-4 rounded-lg border border-admin-danger/40 bg-admin-bg px-4 py-3 text-sm text-admin-danger">
+              {error}
+            </p>
+          ) : null}
+
+          {loading ? (
+            <p className="px-5 pt-6 text-admin-muted">Yukleniyor...</p>
+          ) : filteredProducts.length === 0 ? (
+            <p className="px-5 pt-6 text-admin-muted">
+              {products.length === 0
+                ? 'Henuz urun yok. Soldan yeni urun ekleyebilirsin.'
+                : 'Aramaya uygun urun bulunamadi.'}
+            </p>
+          ) : (
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div className="space-y-3">
+                {filteredProducts.map((product) => {
+                  const badge = stockBadge(product.stock);
+                  const thumb = safeMediaUrl(product.imageUrl);
+                  return (
+                    <div
+                      key={product.id}
+                      className={`group flex items-center gap-3 rounded-lg border p-3 transition hover:border-admin-primary/40 hover:bg-admin-surface-high/40 sm:gap-4 ${badge.rowClassName}`}
+                    >
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-admin-border bg-admin-surface-high">
+                      {thumb ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={thumb}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-admin-muted">
+                          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                            <circle cx="9" cy="10" r="1.5" />
+                            <path d="m21 16-4.5-4.5L9 19" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="line-clamp-2 text-sm font-semibold leading-5 text-admin-text">{product.name}</p>
+                        {product.categoryName ? (
+                          <span className="rounded-full border border-admin-border bg-admin-surface-high px-2 py-0.5 text-[11px] font-medium text-admin-muted">
+                            {product.categoryName}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                        <span className="font-semibold text-admin-text">{formatPrice(product.price)}</span>
+                        <span className="font-admin-mono text-xs text-admin-muted">
+                          ID: {formatProductCode(product.id)}
+                        </span>
+                        <span className="font-admin-mono text-[10px] uppercase tracking-wide text-admin-primary">
+                          {product.productType === 'variant' ? 'Varyantli' : 'Basit'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`hidden shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold sm:inline-flex ${badge.className}`}
+                    >
+                      {badge.label}
+                    </span>
+
+                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => void startEdit(product)}
+                          className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text transition hover:border-admin-primary"
+                        >
+                          Duzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(product.id)}
+                          className="rounded-lg border border-admin-danger/50 px-3 py-1.5 text-sm text-admin-danger transition hover:bg-admin-danger/10"
+                        >
+                          Sil
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between border-t border-admin-border bg-admin-bg/30 px-5 py-4 text-sm text-admin-muted">
+            <p>
+              Toplam {products.length} Urun
+              {productQuery.trim() ? ` · Gosterilen ${filteredProducts.length}` : ''}
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <CategoryManager />
     </main>
   );
 }
