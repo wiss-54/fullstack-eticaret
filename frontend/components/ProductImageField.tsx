@@ -65,7 +65,7 @@ export default function ProductImageField({
         type="button"
         disabled={uploading}
         onClick={() => inputRef.current?.click()}
-        className={`group relative flex w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed px-4 py-8 transition disabled:opacity-60 ${
+        className={`group relative flex w-full flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed px-4 py-8 transition disabled:opacity-60 ${
           previewSrc
             ? 'border-admin-primary/40 bg-admin-bg'
             : 'border-admin-border bg-admin-bg hover:border-admin-primary hover:bg-admin-surface-high/40'
@@ -76,11 +76,11 @@ export default function ProductImageField({
           <img
             src={previewSrc}
             alt="Urun gorseli onizleme"
-            className="mb-3 h-28 w-full max-w-xs rounded-lg object-cover"
+            className="mb-3 h-28 w-full max-w-xs rounded-md object-cover"
           />
         ) : (
-          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-admin-surface-high text-admin-primary">
-            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <span className="mb-3 text-admin-muted transition-colors group-hover:text-admin-primary">
+            <svg className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M12 16V8" />
               <path d="M8.5 11.5 12 8l3.5 3.5" />
               <path d="M20 16.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1.5" />
@@ -95,7 +95,7 @@ export default function ProductImageField({
               ? 'Gorseli degistirmek icin tiklayin'
               : 'Gorsel Yuklemek icin Tiklayin'}
         </p>
-        <p className="mt-1 text-xs text-admin-muted">PNG, JPG, WEBP (Maks. 5MB)</p>
+        <p className="mt-1 text-[11px] text-admin-muted">PNG, JPG, WEBP (Maks. 5MB)</p>
       </button>
 
       <input

@@ -48,24 +48,28 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
+function formatProductCode(id: number) {
+  return `#PROD-${String(id).padStart(3, '0')}`;
+}
+
 function stockBadge(stock: number) {
   if (stock <= 0) {
     return {
       label: 'Tukendi',
-      className: 'bg-admin-danger/15 text-admin-danger ring-admin-danger/30',
-      rowClassName: 'border-admin-danger/40 bg-admin-danger/5',
+      className: 'border border-admin-danger/30 bg-admin-danger/15 text-admin-danger',
+      rowClassName: 'border-admin-danger/40 bg-admin-bg/80',
     };
   }
   if (stock <= 5) {
     return {
       label: `Azaldi (${stock})`,
-      className: 'bg-admin-primary-container/20 text-admin-primary ring-admin-primary/30',
+      className: 'border border-admin-primary/25 bg-admin-primary-container/20 text-admin-primary',
       rowClassName: 'border-admin-border bg-admin-bg',
     };
   }
   return {
     label: `Stokta (${stock})`,
-    className: 'bg-emerald-500/15 text-emerald-600 ring-emerald-500/30',
+    className: 'border border-emerald-500/25 bg-emerald-500/15 text-emerald-600',
     rowClassName: 'border-admin-border bg-admin-bg',
   };
 }
@@ -242,17 +246,27 @@ export default function AdminPage() {
       />
 
       <div className="grid gap-6 xl:grid-cols-12">
-        <section className="relative overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm xl:col-span-5">
+        <section className="relative overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm xl:col-span-5">
           <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-admin-primary-container to-transparent opacity-50" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full text-admin-primary">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="9" opacity="0.25" />
+                  <path d="M12 8v8M8 12h8" />
+                </svg>
+              </span>
+              <h2 className="text-lg font-semibold text-admin-text">
+                {editingId ? 'Urunu Duzenle' : 'Yeni Urun Ekle'}
+              </h2>
+            </div>
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-admin-primary-container/20 text-admin-primary">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="19" cy="12" r="1.5" />
               </svg>
             </span>
-            <h2 className="text-lg font-semibold text-admin-text">
-              {editingId ? 'Urunu Duzenle' : 'Yeni Urun Ekle'}
-            </h2>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -338,20 +352,18 @@ export default function AdminPage() {
               </p>
             ) : null}
 
-            <div className="flex justify-end gap-3 pt-2">
-              {editingId ? (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="rounded-lg px-4 py-3 text-sm font-medium text-admin-muted hover:text-admin-text"
-                >
-                  Vazgec
-                </button>
-              ) : null}
+            <div className="flex justify-end gap-3 border-t border-admin-border pt-3">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-lg px-4 py-3 text-sm font-medium text-admin-muted hover:text-admin-text"
+              >
+                Vazgec
+              </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-lg bg-admin-primary-container px-5 py-3 text-sm font-semibold text-admin-on-primary-container disabled:opacity-60"
+                className="rounded-lg bg-admin-primary-container px-5 py-3 text-sm font-semibold text-admin-on-primary-container transition hover:brightness-105 disabled:opacity-60"
               >
                 {saving ? 'Kaydediliyor...' : 'Kaydet'}
               </button>
@@ -383,57 +395,71 @@ export default function AdminPage() {
           ) : null}
         </section>
 
-        <section className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm xl:col-span-7">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <section className="flex min-h-[560px] flex-col overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low shadow-sm xl:col-span-7">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border bg-admin-bg/30 px-5 py-4">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-admin-surface-high text-admin-primary">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-admin-surface-high text-admin-muted">
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
                 </svg>
               </span>
               <h2 className="text-lg font-semibold text-admin-text">Mevcut Urunler</h2>
             </div>
-            <label className="relative min-w-[220px] flex-1 sm:max-w-xs">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <label className="relative min-w-[220px] flex-1 sm:w-72">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-admin-muted">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3-3" />
+                  </svg>
+                </span>
+                <input
+                  className="w-full rounded-full border border-admin-border bg-admin-bg py-2 pl-9 pr-3 text-sm text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
+                  placeholder="Urun ara..."
+                  value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                aria-label="Filtre"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-admin-border bg-admin-bg text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+              >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m20 20-3-3" />
+                  <path d="M4 7h16" />
+                  <path d="M7 12h10" />
+                  <path d="M10 17h4" />
                 </svg>
-              </span>
-              <input
-                className="w-full rounded-lg border border-admin-border bg-admin-bg py-2.5 pl-9 pr-3 text-sm text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2"
-                placeholder="Urun ara..."
-                value={productQuery}
-                onChange={(e) => setProductQuery(e.target.value)}
-              />
-            </label>
+              </button>
+            </div>
           </div>
 
           {error ? (
-            <p className="mt-4 rounded-lg border border-admin-danger/40 bg-admin-bg px-4 py-3 text-sm text-admin-danger">
+            <p className="mx-5 mt-4 rounded-lg border border-admin-danger/40 bg-admin-bg px-4 py-3 text-sm text-admin-danger">
               {error}
             </p>
           ) : null}
 
           {loading ? (
-            <p className="mt-6 text-admin-muted">Yukleniyor...</p>
+            <p className="px-5 pt-6 text-admin-muted">Yukleniyor...</p>
           ) : filteredProducts.length === 0 ? (
-            <p className="mt-6 text-admin-muted">
+            <p className="px-5 pt-6 text-admin-muted">
               {products.length === 0
                 ? 'Henuz urun yok. Soldan yeni urun ekleyebilirsin.'
                 : 'Aramaya uygun urun bulunamadi.'}
             </p>
           ) : (
-            <div className="mt-5 space-y-3">
-              {filteredProducts.map((product) => {
-                const badge = stockBadge(product.stock);
-                const thumb = safeMediaUrl(product.imageUrl);
-                return (
-                  <div
-                    key={product.id}
-                    className={`flex items-center gap-3 rounded-xl border p-3 sm:gap-4 sm:p-4 ${badge.rowClassName}`}
-                  >
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-admin-surface-high sm:h-16 sm:w-16">
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div className="space-y-3">
+                {filteredProducts.map((product) => {
+                  const badge = stockBadge(product.stock);
+                  const thumb = safeMediaUrl(product.imageUrl);
+                  return (
+                    <div
+                      key={product.id}
+                      className={`group flex items-center gap-3 rounded-lg border p-3 transition hover:border-admin-primary/40 hover:bg-admin-surface-high/40 sm:gap-4 ${badge.rowClassName}`}
+                    >
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-admin-border bg-admin-surface-high">
                       {thumb ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -454,17 +480,17 @@ export default function AdminPage() {
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate font-semibold text-admin-text">{product.name}</p>
+                        <p className="line-clamp-2 text-sm font-semibold leading-5 text-admin-text">{product.name}</p>
                         {product.categoryName ? (
-                          <span className="rounded-md bg-admin-surface-high px-2 py-0.5 text-[11px] font-medium text-admin-muted">
+                          <span className="rounded-full border border-admin-border bg-admin-surface-high px-2 py-0.5 text-[11px] font-medium text-admin-muted">
                             {product.categoryName}
                           </span>
                         ) : null}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                        <span className="font-medium text-admin-text">{formatPrice(product.price)}</span>
+                        <span className="font-semibold text-admin-text">{formatPrice(product.price)}</span>
                         <span className="font-admin-mono text-xs text-admin-muted">
-                          #{String(product.id).padStart(3, '0')}
+                          ID: {formatProductCode(product.id)}
                         </span>
                         <span className="font-admin-mono text-[10px] uppercase tracking-wide text-admin-primary">
                           {product.productType === 'variant' ? 'Varyantli' : 'Basit'}
@@ -473,34 +499,35 @@ export default function AdminPage() {
                     </div>
 
                     <span
-                      className={`hidden shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset sm:inline-flex ${badge.className}`}
+                      className={`hidden shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold sm:inline-flex ${badge.className}`}
                     >
                       {badge.label}
                     </span>
 
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => void startEdit(product)}
-                        className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary"
-                      >
-                        Duzenle
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDelete(product.id)}
-                        className="rounded-lg border border-admin-danger/50 px-3 py-1.5 text-sm text-admin-danger"
-                      >
-                        Sil
-                      </button>
+                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => void startEdit(product)}
+                          className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text transition hover:border-admin-primary"
+                        >
+                          Duzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(product.id)}
+                          className="rounded-lg border border-admin-danger/50 px-3 py-1.5 text-sm text-admin-danger transition hover:bg-admin-danger/10"
+                        >
+                          Sil
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          <div className="mt-5 flex items-center justify-between border-t border-admin-border pt-4 text-sm text-admin-muted">
+          <div className="flex items-center justify-between border-t border-admin-border bg-admin-bg/30 px-5 py-4 text-sm text-admin-muted">
             <p>
               Toplam {products.length} Urun
               {productQuery.trim() ? ` · Gosterilen ${filteredProducts.length}` : ''}
