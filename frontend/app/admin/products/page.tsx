@@ -319,7 +319,7 @@ export default function AdminPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1.5">
-                <span className="text-sm text-admin-muted">Fiyat (Ôé║)</span>
+                <span className="text-sm text-admin-muted">Fiyat (₺)</span>
                 <input
                   className={fieldClass}
                   placeholder="0.00"
@@ -530,7 +530,7 @@ export default function AdminPage() {
           <div className="flex items-center justify-between border-t border-admin-border bg-admin-bg/30 px-5 py-4 text-sm text-admin-muted">
             <p>
               Toplam {products.length} Urun
-              {productQuery.trim() ? ` ┬À Gosterilen ${filteredProducts.length}` : ''}
+              {productQuery.trim() ? ` · Gosterilen ${filteredProducts.length}` : ''}
             </p>
           </div>
         </section>
