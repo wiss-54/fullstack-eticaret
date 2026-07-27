@@ -21,10 +21,6 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL('/admin/orders', request.url));
     }
 
-    if (pathname === '/urunler') {
-      return NextResponse.rewrite(new URL('/admin/products', request.url));
-    }
-
     if (pathname === '/ayarlar') {
       return NextResponse.rewrite(new URL('/admin/settings', request.url));
     }
