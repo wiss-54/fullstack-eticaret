@@ -56,12 +56,11 @@ export default function AccountPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const initialTab: TabKey =
+  const tab: TabKey =
     tabParam === 'address' || tabParam === 'profile' || tabParam === 'orders'
       ? tabParam
       : 'orders';
 
-  const [tab, setTab] = useState<TabKey>(initialTab);
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -91,14 +90,6 @@ export default function AccountPageClient() {
       }
     }
   }, []);
-
-  useEffect(() => {
-    if (tabParam === 'address' || tabParam === 'profile' || tabParam === 'orders') {
-      setTab(tabParam);
-    } else if (!tabParam) {
-      setTab('orders');
-    }
-  }, [tabParam]);
 
   useEffect(() => {
     if (!ready) return;
@@ -164,7 +155,6 @@ export default function AccountPageClient() {
   }
 
   function selectTab(next: TabKey) {
-    setTab(next);
     const url = next === 'orders' ? '/hesabim' : `/hesabim?tab=${next}`;
     router.replace(url, { scroll: false });
   }
