@@ -140,7 +140,6 @@ export default function StoreEditorCanvas({
                 preview
                 title="Magazamiz"
                 subtitle={settings.brandName}
-                badge={`${products.length} urun`}
                 logoUrl={settings.logoUrl}
                 accentColor={settings.accentColor}
                 navItem1Label={settings.navItem1Label}

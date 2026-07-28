@@ -10,9 +10,25 @@ const DEFAULT_HERO_TEXT_ITEMS_ORDER = ['eyebrow', 'title', 'subtitle', 'ctas'];
 const DEFAULT_HERO_CTA_BUTTONS_ORDER = ['primary', 'secondary'];
 const DEFAULT_HERO_FEATURE_SIDE = 'right';
 const DEFAULT_NAV_ITEM_1_LABEL = 'Kategoriler';
-const DEFAULT_NAV_ITEM_1_HREF = '#urunler';
+const DEFAULT_NAV_ITEM_1_HREF = '#kategoriler';
 const DEFAULT_NAV_ITEM_2_LABEL = 'Koleksiyon';
 const DEFAULT_NAV_ITEM_2_HREF = '#urunler';
+
+function sameHashTarget(a, b) {
+  const left = String(a || '').replace(/^\//, '');
+  const right = String(b || '').replace(/^\//, '');
+  return Boolean(left) && left === right;
+}
+
+/** Eski kayitlarda iki link de #urunler ise kategoriler ayri hedefe alinir. */
+function normalizeNavItem1Href(href, otherHref) {
+  const value = href || DEFAULT_NAV_ITEM_1_HREF;
+  const other = otherHref || DEFAULT_NAV_ITEM_2_HREF;
+  if (sameHashTarget(value, '#urunler') && sameHashTarget(other, '#urunler')) {
+    return DEFAULT_NAV_ITEM_1_HREF;
+  }
+  return value;
+}
 
 function mapRow(row) {
   return {
@@ -47,7 +63,7 @@ function mapRow(row) {
     productsTitle: row.productsTitle,
     productsSubtitle: row.productsSubtitle,
     navItem1Label: row.navItem1Label || DEFAULT_NAV_ITEM_1_LABEL,
-    navItem1Href: row.navItem1Href || DEFAULT_NAV_ITEM_1_HREF,
+    navItem1Href: normalizeNavItem1Href(row.navItem1Href, row.navItem2Href),
     navItem2Label: row.navItem2Label || DEFAULT_NAV_ITEM_2_LABEL,
     navItem2Href: row.navItem2Href || DEFAULT_NAV_ITEM_2_HREF,
     footerLeft: row.footerLeft,

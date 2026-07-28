@@ -112,7 +112,7 @@ export default function StoreSectionBlock({
 
   if (section.type === 'products') {
     return (
-      <section id="urunler" className="mx-auto w-full max-w-7xl px-4 py-14 md:px-10">
+      <section id="urunler" className="mx-auto w-full max-w-7xl scroll-mt-24 px-4 py-14 md:px-10">
         <div className="mb-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <SectionText
@@ -157,11 +157,13 @@ export default function StoreSectionBlock({
           </div>
         ) : null}
 
-        <CategoryFilter
-          categories={categories}
-          activeCategoryId={activeCategoryId}
-          interactive={!editor}
-        />
+        <div id="kategoriler" className="scroll-mt-24">
+          <CategoryFilter
+            categories={categories}
+            activeCategoryId={activeCategoryId}
+            interactive={!editor}
+          />
+        </div>
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">

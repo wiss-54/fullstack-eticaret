@@ -38,7 +38,7 @@ const sampleSettings = {
   productsTitle: 'Urunler',
   productsSubtitle: 'Liste',
   navItem1Label: 'Kategoriler',
-  navItem1Href: '#urunler',
+  navItem1Href: '#kategoriler',
   navItem2Label: 'Koleksiyon',
   navItem2Href: '#urunler',
   footerLeft: 'Footer sol',

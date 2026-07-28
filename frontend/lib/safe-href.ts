@@ -1,27 +1,35 @@
 /**
  * Allow only relative paths, hash links, or http(s) URLs for <a href>.
  * Blocks javascript:, data:, and other schemes.
+ * Hash-only links become root hashes (e.g. #urunler -> /#urunler) so they work off the homepage.
  */
 export function safeHref(value: string | null | undefined, fallback = '#'): string {
-  if (!value) return fallback;
+  if (!value) return normalizeHashHref(fallback);
 
   const trimmed = value.trim();
-  if (!trimmed) return fallback;
+  if (!trimmed) return normalizeHashHref(fallback);
 
   if (trimmed.startsWith('#') || trimmed.startsWith('/')) {
     if (trimmed.includes('://') || trimmed.toLowerCase().includes('javascript:')) {
-      return fallback;
+      return normalizeHashHref(fallback);
     }
-    return trimmed;
+    return normalizeHashHref(trimmed);
   }
 
   try {
     const url = new URL(trimmed);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      return fallback;
+      return normalizeHashHref(fallback);
     }
     return url.toString();
   } catch {
-    return fallback;
+    return normalizeHashHref(fallback);
   }
+}
+
+function normalizeHashHref(href: string): string {
+  if (href.startsWith('#') && href.length > 1) {
+    return `/${href}`;
+  }
+  return href;
 }
