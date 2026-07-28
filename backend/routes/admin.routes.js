@@ -113,6 +113,12 @@ router.patch('/orders/:id/status', requireAdmin, async (req, res) => {
     res.json({ success: true, data: order });
   } catch (err) {
     console.error(err);
+    if (err?.code === '23514') {
+      return res.status(409).json({
+        success: false,
+        error: 'Siparis durumu veritabani tarafinda reddedildi. Migration gerekli olabilir.',
+      });
+    }
     res.status(500).json({ success: false, error: 'Siparis guncellenemedi' });
   }
 });
