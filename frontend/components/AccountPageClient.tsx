@@ -51,6 +51,10 @@ const POLL_MS = 12_000;
 const fieldClass =
   'w-full rounded-lg border border-store-border bg-store-bg px-4 py-3 text-store-text outline-none ring-store-primary/20 focus:ring-2';
 
+function sanitizePhone(value: string) {
+  return value.replace(/\D/g, '').slice(0, 11);
+}
+
 export default function AccountPageClient() {
   const ready = useCustomerGuard();
   const router = useRouter();
@@ -69,6 +73,7 @@ export default function AccountPageClient() {
   const [addressMessage, setAddressMessage] = useState<string | null>(null);
   const [editingAddress, setEditingAddress] = useState(false);
 
+  const [shippingFullName, setShippingFullName] = useState('');
   const [shippingCity, setShippingCity] = useState('');
   const [shippingDistrict, setShippingDistrict] = useState('');
   const [shippingAddressLine, setShippingAddressLine] = useState('');
@@ -105,10 +110,11 @@ export default function AccountPageClient() {
         if (!cancelled) {
           setUser(profile);
           setOrders(orderList);
+          setShippingFullName(profile.shippingFullName ?? profile.fullName ?? '');
           setShippingCity(profile.shippingCity ?? '');
           setShippingDistrict(profile.shippingDistrict ?? '');
           setShippingAddressLine(profile.shippingAddressLine ?? '');
-          setPhone(profile.phone ?? '');
+          setPhone(sanitizePhone(profile.phone ?? ''));
           if (!profile.shippingCity) setEditingAddress(true);
         }
       } catch (err) {
@@ -165,6 +171,7 @@ export default function AccountPageClient() {
     setAddressMessage(null);
     try {
       const updated = await customerSaveShippingAddress({
+        shippingFullName,
         phone,
         shippingCity,
         shippingDistrict,
@@ -337,25 +344,63 @@ export default function AccountPageClient() {
                 ) : null}
               </div>
 
-              {!editingAddress && hasAddress ? (
+              {hasAddress ? (
                 <div className="rounded-xl border border-store-border bg-store-bg p-4 text-sm text-store-muted">
-                  <p className="font-semibold text-store-text">{user?.fullName}</p>
-                  <p className="mt-2 whitespace-pre-wrap">
-                    {user?.shippingAddressLine}
-                    {'\n'}
-                    {user?.shippingDistrict} / {user?.shippingCity}
-                  </p>
-                  {user?.phone ? <p className="mt-2">{user.phone}</p> : null}
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-store-text">
+                        {user?.shippingFullName || user?.fullName}
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap">
+                        {user?.shippingAddressLine}
+                        {'\n'}
+                        {user?.shippingDistrict} / {user?.shippingCity}
+                      </p>
+                      {user?.phone ? <p className="mt-2">{user.phone}</p> : null}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingAddress(true);
+                        setShippingFullName(user?.shippingFullName ?? user?.fullName ?? '');
+                        setShippingCity(user?.shippingCity ?? '');
+                        setShippingDistrict(user?.shippingDistrict ?? '');
+                        setShippingAddressLine(user?.shippingAddressLine ?? '');
+                        setPhone(sanitizePhone(user?.phone ?? ''));
+                      }}
+                      className="rounded-lg border border-store-border px-3 py-2 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
+                    >
+                      Bilgileri Forma Doldur
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <form onSubmit={handleSaveAddress} className="grid gap-4 sm:grid-cols-2">
+              ) : null}
+
+              {editingAddress || !hasAddress ? (
+                <form onSubmit={handleSaveAddress} className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <label className="block sm:col-span-2">
+                    <span className="mb-1.5 block text-sm font-semibold text-store-text">
+                      Teslim Alacak Kisi
+                    </span>
+                    <input
+                      className={fieldClass}
+                      value={shippingFullName}
+                      onChange={(e) => setShippingFullName(e.target.value)}
+                      placeholder="Ad Soyad"
+                      maxLength={200}
+                      required
+                    />
+                  </label>
                   <label className="block sm:col-span-2">
                     <span className="mb-1.5 block text-sm font-semibold text-store-text">Telefon</span>
                     <input
                       className={fieldClass}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(sanitizePhone(e.target.value))}
                       placeholder="05XX XXX XX XX"
+                      inputMode="numeric"
+                      pattern="[0-9]{10,11}"
+                      maxLength={11}
                       required
                     />
                   </label>
@@ -419,10 +464,11 @@ export default function AccountPageClient() {
                         type="button"
                         onClick={() => {
                           setEditingAddress(false);
+                          setShippingFullName(user?.shippingFullName ?? user?.fullName ?? '');
                           setShippingCity(user?.shippingCity ?? '');
                           setShippingDistrict(user?.shippingDistrict ?? '');
                           setShippingAddressLine(user?.shippingAddressLine ?? '');
-                          setPhone(user?.phone ?? '');
+                          setPhone(sanitizePhone(user?.phone ?? ''));
                         }}
                         className="rounded-lg border border-store-border px-4 py-2.5 text-sm text-store-muted"
                       >
@@ -431,7 +477,7 @@ export default function AccountPageClient() {
                     ) : null}
                   </div>
                 </form>
-              )}
+              ) : null}
 
               {addressMessage ? (
                 <p className="mt-4 text-sm text-store-primary">{addressMessage}</p>

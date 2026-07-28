@@ -1,5 +1,10 @@
 const { z } = require('zod');
 
+const phoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{10,11}$/, 'Telefon numarasi 10 veya 11 haneli olmali');
+
 const selectedOptionSchema = z.object({
   optionId: z.number().int().positive(),
   label: z.string().trim().min(1).max(100),
@@ -16,10 +21,11 @@ const orderItemSchema = z.object({
 });
 
 const createOrderSchema = z.object({
+  customerName: z.string().trim().min(2).max(200),
   shippingCity: z.string().trim().min(2).max(100),
   shippingDistrict: z.string().trim().min(2).max(100),
   shippingAddressLine: z.string().trim().min(5).max(1000),
-  customerPhone: z.string().trim().min(10).max(30),
+  customerPhone: phoneSchema,
   orderNote: z.string().trim().max(1000).optional(),
   paymentMethod: z.enum(['manual', 'cod', 'paytr']).optional(),
   items: z.array(orderItemSchema).min(1).max(50),
