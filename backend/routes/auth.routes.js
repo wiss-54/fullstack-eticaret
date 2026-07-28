@@ -1,12 +1,13 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { registerSchema, loginSchema } = require('../validation/auth.schemas');
+const { registerSchema, loginSchema, shippingAddressSchema } = require('../validation/auth.schemas');
 const {
   createUser,
   verifyUserCredentials,
   getUserById,
   verifyEmailByToken,
   resendVerificationEmail,
+  updateUserShippingAddress,
 } = require('../services/users.service');
 const { requireCustomer } = require('../middleware/auth.middleware');
 
@@ -148,6 +149,28 @@ router.get('/me', requireCustomer, async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, error: 'Kullanici bilgisi alinamadi' });
+  }
+});
+
+router.patch('/me/shipping-address', requireCustomer, async (req, res) => {
+  const parsed = shippingAddressSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: 'Gecersiz adres bilgisi',
+      details: parsed.error.issues,
+    });
+  }
+
+  try {
+    const user = await updateUserShippingAddress(req.user.id, parsed.data);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'Kullanici bulunamadi' });
+    }
+    return res.json({ success: true, data: user });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: 'Adres kaydedilemedi' });
   }
 });
 

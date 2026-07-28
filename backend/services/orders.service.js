@@ -164,6 +164,31 @@ async function reserveStock(client, { productId, variantId, quantity }) {
   }
 }
 
+async function releaseStock(client, { productId, variantId, quantity }) {
+  if (variantId) {
+    await client.query(
+      `
+        UPDATE product_variants
+        SET stock = stock + $1
+        WHERE id = $2
+          AND product_id = $3
+      `,
+      [quantity, variantId, productId],
+    );
+    await syncProductStockFromVariants(productId, client);
+    return;
+  }
+
+  await client.query(
+    `
+      UPDATE products
+      SET stock = stock + $1, updated_at = NOW()
+      WHERE id = $2
+    `,
+    [quantity, productId],
+  );
+}
+
 async function buildOrderLine(client, item) {
   const product = await getProductById(item.productId);
   if (!product) {
@@ -469,20 +494,69 @@ async function getOrderByIdOrPublicCode(idOrCode) {
 }
 
 async function updateOrderStatus(orderId, status) {
-  const result = await pool.query(
-    `
-      UPDATE orders
-      SET status = $1, updated_at = NOW()
-      WHERE id = $2
-      RETURNING ${ORDER_COLUMNS}
-    `,
-    [status, orderId],
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  if (result.rows.length === 0) return null;
-  const order = mapOrderRow(result.rows[0]);
-  const items = await getOrderItems(order.id);
-  return { ...order, items };
+    const currentResult = await client.query(
+      `
+        SELECT ${ORDER_COLUMNS}
+        FROM orders
+        WHERE id = $1
+        FOR UPDATE
+      `,
+      [orderId],
+    );
+
+    if (currentResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    const current = mapOrderRow(currentResult.rows[0]);
+    const previousStatus = current.status;
+    const shouldReleaseStock =
+      status === 'cancelled' &&
+      previousStatus !== 'cancelled' &&
+      Boolean(current.stockReserved);
+
+    if (shouldReleaseStock) {
+      const items = await getOrderItems(orderId, client);
+      for (const item of items) {
+        await releaseStock(client, {
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        });
+      }
+    }
+
+    const result = await client.query(
+      `
+        UPDATE orders
+        SET
+          status = $1,
+          stock_reserved = CASE
+            WHEN $1 = 'cancelled' AND stock_reserved = true THEN false
+            ELSE stock_reserved
+          END,
+          updated_at = NOW()
+        WHERE id = $2
+        RETURNING ${ORDER_COLUMNS}
+      `,
+      [status, orderId],
+    );
+
+    await client.query('COMMIT');
+    const order = mapOrderRow(result.rows[0]);
+    const items = await getOrderItems(order.id);
+    return { ...order, items };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function attachPaymentSession(orderId, session) {

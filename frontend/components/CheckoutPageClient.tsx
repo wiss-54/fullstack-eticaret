@@ -1,12 +1,18 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/components/CartProvider';
 import CheckoutProgress from '@/components/CheckoutProgress';
-import { customerCreateOrder, customerInitPayment } from '@/lib/customer-api';
+import {
+  customerCreateOrder,
+  customerGetMe,
+  customerInitPayment,
+  customerSaveShippingAddress,
+} from '@/lib/customer-api';
 import { TR_CITIES, getDistrictsForCity } from '@/lib/tr-locations';
+import type { User } from '@/lib/types';
 import { useCustomerGuard } from '@/lib/use-customer-guard';
 
 function formatPrice(price: number) {
@@ -28,21 +34,53 @@ export default function CheckoutPageClient() {
   const router = useRouter();
   const { items, total, clearCart } = useCart();
 
+  const [profile, setProfile] = useState<User | null>(null);
   const [shippingCity, setShippingCity] = useState('');
   const [shippingDistrict, setShippingDistrict] = useState('');
   const [shippingAddressLine, setShippingAddressLine] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [orderNote, setOrderNote] = useState('');
+  const [saveAddress, setSaveAddress] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('paytr');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const districts = useMemo(
     () => (shippingCity ? getDistrictsForCity(shippingCity) : []),
     [shippingCity],
   );
 
-  if (!ready) {
+  const hasSavedAddress = Boolean(
+    profile?.shippingCity && profile?.shippingDistrict && profile?.shippingAddressLine,
+  );
+
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const me = await customerGetMe();
+        if (cancelled) return;
+        setProfile(me);
+        if (me.phone) setCustomerPhone(me.phone);
+        if (me.shippingCity) setShippingCity(me.shippingCity);
+        if (me.shippingDistrict) setShippingDistrict(me.shippingDistrict);
+        if (me.shippingAddressLine) setShippingAddressLine(me.shippingAddressLine);
+      } catch {
+        if (!cancelled) setProfile(null);
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready]);
+
+  if (!ready || profileLoading) {
     return (
       <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
         <p className="text-store-muted">Yukleniyor...</p>
@@ -72,6 +110,15 @@ export default function CheckoutPageClient() {
     setError(null);
 
     try {
+      if (saveAddress) {
+        await customerSaveShippingAddress({
+          phone: customerPhone,
+          shippingCity,
+          shippingDistrict,
+          shippingAddressLine,
+        });
+      }
+
       const order = await customerCreateOrder({
         shippingCity,
         shippingDistrict,
@@ -112,6 +159,10 @@ export default function CheckoutPageClient() {
       ? 'Odemeyi Yap'
       : 'Siparisi Onayla';
 
+  const nameParts = (profile?.fullName || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ');
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
       <CheckoutProgress active="checkout" />
@@ -125,12 +176,39 @@ export default function CheckoutPageClient() {
       <div className="flex flex-col gap-8 lg:flex-row">
         <form id="checkout-form" onSubmit={handleSubmit} className="flex-1 space-y-4">
           <section className="rounded-xl bg-store-surface p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
-            <h2 className="mb-6 text-xl font-semibold text-store-text">Teslimat Adresi</h2>
-            <p className="mb-4 text-sm text-store-muted">
-              Adres PayTR odemesine iletilir; kargo icin il / ilce ayri saklanir.
-            </p>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-xl font-semibold text-store-text">Teslimat Adresi</h2>
+              {hasSavedAddress ? (
+                <span className="rounded-full bg-store-surface-low px-3 py-1 text-xs font-semibold text-store-primary">
+                  Kayitli Adres
+                </span>
+              ) : null}
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className={labelClass}>Ad</span>
+                <input className={fieldClass} value={firstName} readOnly />
+              </label>
+              <label className="block">
+                <span className={labelClass}>Soyad</span>
+                <input className={fieldClass} value={lastName} readOnly />
+              </label>
+              <label className="block">
+                <span className={labelClass}>Telefon</span>
+                <input
+                  className={fieldClass}
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="05XX XXX XX XX"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className={labelClass}>E-posta</span>
+                <input className={fieldClass} value={profile?.email || ''} readOnly />
+              </label>
+
               <label className="block">
                 <span className={labelClass}>Il</span>
                 <select
@@ -180,15 +258,16 @@ export default function CheckoutPageClient() {
                 />
               </label>
 
-              <label className="block sm:col-span-2">
-                <span className={labelClass}>Telefon</span>
+              <label className="flex items-center gap-2 sm:col-span-2">
                 <input
-                  className={fieldClass}
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="05XX XXX XX XX"
-                  required
+                  type="checkbox"
+                  checked={saveAddress}
+                  onChange={(e) => setSaveAddress(e.target.checked)}
+                  className="h-4 w-4 rounded border-store-border text-store-primary"
                 />
+                <span className="text-sm text-store-text">
+                  Bu adresi sonraki siparisler icin kaydet
+                </span>
               </label>
 
               <label className="block sm:col-span-2">
@@ -227,8 +306,12 @@ export default function CheckoutPageClient() {
               ))}
             </div>
             {paymentMethod === 'paytr' ? (
-              <p className="mt-4 rounded-lg bg-store-surface-low p-3 text-center text-sm text-store-primary">
-                256-bit SSL ile guvenli kart odemesi (PayTR)
+              <p className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-store-surface-low p-3 text-center text-sm text-store-primary">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                256-bit SSL ile guvenli kart odemesi (PayTR / 3D Secure)
               </p>
             ) : (
               <p className="mt-4 text-sm text-store-muted">
@@ -240,7 +323,9 @@ export default function CheckoutPageClient() {
           </section>
 
           {error ? (
-            <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+            <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+              {error}
+            </p>
           ) : null}
 
           <button
@@ -276,6 +361,10 @@ export default function CheckoutPageClient() {
             <div className="flex justify-between">
               <span>Ara Toplam</span>
               <span className="font-medium text-store-text">{formatPrice(total)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Kargo</span>
+              <span className="font-medium text-store-primary">Ucretsiz</span>
             </div>
           </div>
           <div className="mb-6 flex items-center justify-between">
