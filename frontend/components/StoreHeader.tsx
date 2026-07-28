@@ -25,15 +25,15 @@ export default function StoreHeader({
   badge,
   logoUrl = null,
   navItem1Label = 'Kategoriler',
-  navItem1Href = '#urunler',
+  navItem1Href = '/#kategoriler',
   navItem2Label = 'Koleksiyon',
-  navItem2Href = '#urunler',
+  navItem2Href = '/#urunler',
   preview = false,
 }: StoreHeaderProps) {
   const logoSrc = safeMediaUrl(logoUrl);
   const brand = subtitle || 'EticaretShop';
-  const link1Href = safeHref(navItem1Href, '#urunler');
-  const link2Href = safeHref(navItem2Href, '#urunler');
+  const link1Href = safeHref(navItem1Href, '/#kategoriler');
+  const link2Href = safeHref(navItem2Href, '/#urunler');
 
   const brandBlock = (
     <>

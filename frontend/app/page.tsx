@@ -35,9 +35,9 @@ const FALLBACK_SETTINGS: StoreSettings = {
   productsSubtitle:
     'Varyantli urunlerde beden/renk bazli stok, kategoriler ve kisisellestirme alanlari desteklenir.',
   navItem1Label: 'Kategoriler',
-  navItem1Href: '#urunler',
+  navItem1Href: '/#kategoriler',
   navItem2Label: 'Koleksiyon',
-  navItem2Href: '#urunler',
+  navItem2Href: '/#urunler',
   footerLeft: 'EticaretShop. Tum haklari saklidir.',
   footerRight: 'Guvenli odeme ve kisisellestirme altyapisi gelistiriliyor.',
   sections: [
@@ -81,7 +81,6 @@ export default async function Home({ searchParams }: HomeProps) {
       <StoreHeader
         title="Magazamiz"
         subtitle={settings.brandName}
-        badge={`${products.length} urun`}
         logoUrl={settings.logoUrl}
         accentColor={settings.accentColor}
         navItem1Label={settings.navItem1Label}

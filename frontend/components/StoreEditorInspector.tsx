@@ -464,7 +464,7 @@ export default function StoreEditorInspector({
                   className={inputClass}
                   value={settings.navItem1Href}
                   onChange={(e) => patch('navItem1Href', e.target.value)}
-                  placeholder="#urunler"
+                  placeholder="/#kategoriler"
                 />
               </Field>
               <Field label="2. link yazisi">
@@ -480,7 +480,7 @@ export default function StoreEditorInspector({
                   className={inputClass}
                   value={settings.navItem2Href}
                   onChange={(e) => patch('navItem2Href', e.target.value)}
-                  placeholder="#urunler"
+                  placeholder="/#urunler"
                 />
               </Field>
             </div>
