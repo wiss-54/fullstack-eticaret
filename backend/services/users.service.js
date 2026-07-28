@@ -12,6 +12,9 @@ function mapUserRow(row) {
     fullName: row.fullName,
     phone: row.phone,
     emailVerified: row.emailVerified,
+    shippingCity: row.shippingCity ?? null,
+    shippingDistrict: row.shippingDistrict ?? null,
+    shippingAddressLine: row.shippingAddressLine ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -55,6 +58,9 @@ async function getUserById(id) {
         full_name AS "fullName",
         phone,
         email_verified AS "emailVerified",
+        shipping_city AS "shippingCity",
+        shipping_district AS "shippingDistrict",
+        shipping_address_line AS "shippingAddressLine",
         created_at AS "createdAt",
         updated_at AS "updatedAt"
       FROM users
@@ -62,6 +68,42 @@ async function getUserById(id) {
       LIMIT 1
     `,
     [id],
+  );
+
+  if (result.rows.length === 0) return null;
+  return mapUserRow(result.rows[0]);
+}
+
+async function updateUserShippingAddress(userId, payload) {
+  const result = await pool.query(
+    `
+      UPDATE users
+      SET
+        phone = COALESCE($2, phone),
+        shipping_city = $3,
+        shipping_district = $4,
+        shipping_address_line = $5,
+        updated_at = NOW()
+      WHERE id = $1
+      RETURNING
+        id,
+        email,
+        full_name AS "fullName",
+        phone,
+        email_verified AS "emailVerified",
+        shipping_city AS "shippingCity",
+        shipping_district AS "shippingDistrict",
+        shipping_address_line AS "shippingAddressLine",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+    `,
+    [
+      userId,
+      payload.phone?.trim() || null,
+      payload.shippingCity.trim(),
+      payload.shippingDistrict.trim(),
+      payload.shippingAddressLine.trim(),
+    ],
   );
 
   if (result.rows.length === 0) return null;
@@ -191,4 +233,5 @@ module.exports = {
   verifyUserCredentials,
   verifyEmailByToken,
   resendVerificationEmail,
+  updateUserShippingAddress,
 };

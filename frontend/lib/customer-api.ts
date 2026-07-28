@@ -173,6 +173,18 @@ export async function customerGetMe() {
   return customerFetch<User>('/api/auth/me');
 }
 
+export async function customerSaveShippingAddress(input: {
+  phone?: string;
+  shippingCity: string;
+  shippingDistrict: string;
+  shippingAddressLine: string;
+}) {
+  return customerFetch<User>('/api/auth/me/shipping-address', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export type CreateOrderInput = {
   shippingCity: string;
   shippingDistrict: string;

@@ -12,7 +12,15 @@ const loginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
+const shippingAddressSchema = z.object({
+  phone: z.string().trim().min(10).max(30).optional(),
+  shippingCity: z.string().trim().min(2).max(100),
+  shippingDistrict: z.string().trim().min(2).max(100),
+  shippingAddressLine: z.string().trim().min(5).max(500),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
+  shippingAddressSchema,
 };

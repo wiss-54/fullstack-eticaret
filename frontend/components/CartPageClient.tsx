@@ -172,6 +172,12 @@ export default function CartPageClient() {
             Alisverisi Tamamla
             <span aria-hidden>→</span>
           </Link>
+          <Link
+            href="/"
+            className="mt-3 block text-center text-sm font-semibold text-store-primary transition hover:underline"
+          >
+            Alisverise Devam Et
+          </Link>
           <button
             type="button"
             onClick={clearCart}
@@ -179,12 +185,6 @@ export default function CartPageClient() {
           >
             Sepeti Temizle
           </button>
-          <Link
-            href="/"
-            className="mt-3 block text-center text-sm text-store-muted transition hover:text-store-primary"
-          >
-            Alisverise devam et
-          </Link>
           <p className="mt-4 flex items-center justify-center gap-1 text-xs text-store-muted">
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="11" width="18" height="11" rx="2" />
