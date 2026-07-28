@@ -302,7 +302,7 @@ async function createOrder(user, payload) {
             generateOrderPublicCode(),
             paymentMethod,
             reserveNow,
-            user.fullName,
+            payload.customerName.trim(),
             user.email,
             payload.customerPhone.trim(),
             shippingAddress,

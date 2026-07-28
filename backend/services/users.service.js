@@ -12,6 +12,7 @@ function mapUserRow(row) {
     fullName: row.fullName,
     phone: row.phone,
     emailVerified: row.emailVerified,
+    shippingFullName: row.shippingFullName ?? null,
     shippingCity: row.shippingCity ?? null,
     shippingDistrict: row.shippingDistrict ?? null,
     shippingAddressLine: row.shippingAddressLine ?? null,
@@ -58,6 +59,7 @@ async function getUserById(id) {
         full_name AS "fullName",
         phone,
         email_verified AS "emailVerified",
+        shipping_full_name AS "shippingFullName",
         shipping_city AS "shippingCity",
         shipping_district AS "shippingDistrict",
         shipping_address_line AS "shippingAddressLine",
@@ -80,9 +82,10 @@ async function updateUserShippingAddress(userId, payload) {
       UPDATE users
       SET
         phone = COALESCE($2, phone),
-        shipping_city = $3,
-        shipping_district = $4,
-        shipping_address_line = $5,
+        shipping_full_name = $3,
+        shipping_city = $4,
+        shipping_district = $5,
+        shipping_address_line = $6,
         updated_at = NOW()
       WHERE id = $1
       RETURNING
@@ -91,6 +94,7 @@ async function updateUserShippingAddress(userId, payload) {
         full_name AS "fullName",
         phone,
         email_verified AS "emailVerified",
+        shipping_full_name AS "shippingFullName",
         shipping_city AS "shippingCity",
         shipping_district AS "shippingDistrict",
         shipping_address_line AS "shippingAddressLine",
@@ -100,6 +104,7 @@ async function updateUserShippingAddress(userId, payload) {
     [
       userId,
       payload.phone?.trim() || null,
+      payload.shippingFullName.trim(),
       payload.shippingCity.trim(),
       payload.shippingDistrict.trim(),
       payload.shippingAddressLine.trim(),

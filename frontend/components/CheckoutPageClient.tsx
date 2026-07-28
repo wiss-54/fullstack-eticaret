@@ -29,12 +29,17 @@ const fieldClass =
 
 const labelClass = 'mb-2 block text-sm font-semibold text-store-text';
 
+function sanitizePhone(value: string) {
+  return value.replace(/\D/g, '').slice(0, 11);
+}
+
 export default function CheckoutPageClient() {
   const ready = useCustomerGuard('/giris?return=/odeme');
   const router = useRouter();
   const { items, total, clearCart } = useCart();
 
   const [profile, setProfile] = useState<User | null>(null);
+  const [customerName, setCustomerName] = useState('');
   const [shippingCity, setShippingCity] = useState('');
   const [shippingDistrict, setShippingDistrict] = useState('');
   const [shippingAddressLine, setShippingAddressLine] = useState('');
@@ -64,7 +69,8 @@ export default function CheckoutPageClient() {
         const me = await customerGetMe();
         if (cancelled) return;
         setProfile(me);
-        if (me.phone) setCustomerPhone(me.phone);
+        setCustomerName(me.shippingFullName ?? me.fullName ?? '');
+        if (me.phone) setCustomerPhone(sanitizePhone(me.phone));
         if (me.shippingCity) setShippingCity(me.shippingCity);
         if (me.shippingDistrict) setShippingDistrict(me.shippingDistrict);
         if (me.shippingAddressLine) setShippingAddressLine(me.shippingAddressLine);
@@ -112,6 +118,7 @@ export default function CheckoutPageClient() {
     try {
       if (saveAddress) {
         await customerSaveShippingAddress({
+          shippingFullName: customerName,
           phone: customerPhone,
           shippingCity,
           shippingDistrict,
@@ -120,6 +127,7 @@ export default function CheckoutPageClient() {
       }
 
       const order = await customerCreateOrder({
+        customerName,
         shippingCity,
         shippingDistrict,
         shippingAddressLine,
@@ -159,10 +167,6 @@ export default function CheckoutPageClient() {
       ? 'Odemeyi Yap'
       : 'Siparisi Onayla';
 
-  const nameParts = (profile?.fullName || '').trim().split(/\s+/);
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ');
-
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 md:px-10">
       <CheckoutProgress active="checkout" />
@@ -185,22 +189,72 @@ export default function CheckoutPageClient() {
               ) : null}
             </div>
 
+            {hasSavedAddress ? (
+              <div className="mb-5 rounded-xl border border-store-border bg-store-bg p-4 text-sm text-store-muted">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-store-text">
+                      {profile?.shippingFullName || profile?.fullName}
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap">
+                      {profile?.shippingAddressLine}
+                      {'\n'}
+                      {profile?.shippingDistrict} / {profile?.shippingCity}
+                    </p>
+                    {profile?.phone ? <p className="mt-2">{profile.phone}</p> : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomerName(profile?.shippingFullName ?? profile?.fullName ?? '');
+                        setCustomerPhone(sanitizePhone(profile?.phone ?? ''));
+                        setShippingCity(profile?.shippingCity ?? '');
+                        setShippingDistrict(profile?.shippingDistrict ?? '');
+                        setShippingAddressLine(profile?.shippingAddressLine ?? '');
+                      }}
+                      className="rounded-lg border border-store-border px-3 py-2 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
+                    >
+                      Kayitli Adresi Doldur
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShippingCity('');
+                        setShippingDistrict('');
+                        setShippingAddressLine('');
+                      }}
+                      className="rounded-lg border border-store-border px-3 py-2 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
+                    >
+                      Yeni Adres Gir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className={labelClass}>Ad</span>
-                <input className={fieldClass} value={firstName} readOnly />
-              </label>
-              <label className="block">
-                <span className={labelClass}>Soyad</span>
-                <input className={fieldClass} value={lastName} readOnly />
+              <label className="block sm:col-span-2">
+                <span className={labelClass}>Teslim Alacak Kisi</span>
+                <input
+                  className={fieldClass}
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Ad Soyad"
+                  maxLength={200}
+                  required
+                />
               </label>
               <label className="block">
                 <span className={labelClass}>Telefon</span>
                 <input
                   className={fieldClass}
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={(e) => setCustomerPhone(sanitizePhone(e.target.value))}
                   placeholder="05XX XXX XX XX"
+                  inputMode="numeric"
+                  pattern="[0-9]{10,11}"
+                  maxLength={11}
                   required
                 />
               </label>

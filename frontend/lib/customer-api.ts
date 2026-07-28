@@ -174,6 +174,7 @@ export async function customerGetMe() {
 }
 
 export async function customerSaveShippingAddress(input: {
+  shippingFullName: string;
   phone?: string;
   shippingCity: string;
   shippingDistrict: string;
@@ -186,6 +187,7 @@ export async function customerSaveShippingAddress(input: {
 }
 
 export type CreateOrderInput = {
+  customerName: string;
   shippingCity: string;
   shippingDistrict: string;
   shippingAddressLine: string;

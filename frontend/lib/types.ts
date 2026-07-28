@@ -110,6 +110,7 @@ export type User = {
   fullName: string;
   phone: string | null;
   emailVerified: boolean;
+  shippingFullName?: string | null;
   shippingCity?: string | null;
   shippingDistrict?: string | null;
   shippingAddressLine?: string | null;
