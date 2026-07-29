@@ -33,6 +33,38 @@ const fieldClass =
 const cellFieldClass =
   'rounded-lg border border-admin-border bg-admin-bg px-2 py-1 text-admin-text outline-none ring-admin-primary/30 focus:ring-2';
 
+const DISPLAY_STYLES: {
+  value: DraftAxis['displayStyle'];
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: 'color',
+    label: 'Renk secimi',
+    hint: 'Musteri renk kutusundan secer (ornek: Siyah, Beyaz)',
+  },
+  {
+    value: 'button',
+    label: 'Beden / secenek butonu',
+    hint: 'Musteri butonlardan secer (ornek: S, M, L)',
+  },
+  {
+    value: 'list',
+    label: 'Liste',
+    hint: 'Acilir listeden secer',
+  },
+];
+
+const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const COLOR_PRESETS: { label: string; colorHex: string }[] = [
+  { label: 'Siyah', colorHex: '#111111' },
+  { label: 'Beyaz', colorHex: '#FFFFFF' },
+  { label: 'Kirmizi', colorHex: '#DC2626' },
+  { label: 'Mavi', colorHex: '#2563EB' },
+  { label: 'Yesil', colorHex: '#16A34A' },
+  { label: 'Gri', colorHex: '#6B7280' },
+];
+
 function cartesian<T>(groups: T[][]): T[][] {
   if (groups.length === 0) return [[]];
   return groups.reduce<T[][]>(
@@ -112,10 +144,10 @@ function toPayload(axes: DraftAxis[], rows: DraftRow[]) {
   return { axes: payloadAxes, variants };
 }
 
-const emptyAxis = (): DraftAxis => ({
-  name: '',
-  displayStyle: 'button',
-  values: [{ label: '', colorHex: '' }],
+const emptyAxis = (style: DraftAxis['displayStyle'] = 'button'): DraftAxis => ({
+  name: style === 'color' ? 'Renk' : style === 'button' ? 'Beden' : '',
+  displayStyle: style,
+  values: [{ label: '', colorHex: style === 'color' ? '#111111' : '' }],
 });
 
 export default function ProductVariantsEditor({
@@ -126,15 +158,56 @@ export default function ProductVariantsEditor({
   onSaved,
 }: ProductVariantsEditorProps) {
   const [axes, setAxes] = useState<DraftAxis[]>(() => toDraftAxes(initialAxes));
-  const [rows, setRows] = useState<DraftRow[]>(() => buildRowsFromAxes(toDraftAxes(initialAxes), initialVariants));
+  const [rows, setRows] = useState<DraftRow[]>(() =>
+    buildRowsFromAxes(toDraftAxes(initialAxes), initialVariants),
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const combinationCount = useMemo(() => rows.length, [rows]);
 
+  function updateAxis(axisIndex: number, nextAxis: DraftAxis) {
+    setAxes((current) => {
+      const next = [...current];
+      next[axisIndex] = nextAxis;
+      return next;
+    });
+  }
+
   function regenerateRows() {
     setRows(buildRowsFromAxes(axes, []));
+  }
+
+  function addPresetAxis(style: DraftAxis['displayStyle']) {
+    if (axes.length >= 3) return;
+    const already = axes.some(
+      (axis) =>
+        axis.displayStyle === style ||
+        axis.name.trim().toLowerCase() === (style === 'color' ? 'renk' : 'beden'),
+    );
+    if (already) {
+      setError(
+        style === 'color'
+          ? 'Renk secenegi zaten ekli.'
+          : 'Beden secenegi zaten ekli.',
+      );
+      return;
+    }
+    setError(null);
+    setAxes((current) => [...current, emptyAxis(style)]);
+  }
+
+  function addValuePreset(axisIndex: number, label: string, colorHex = '') {
+    const axis = axes[axisIndex];
+    if (!axis) return;
+    if (axis.values.some((value) => value.label.trim().toLowerCase() === label.toLowerCase())) {
+      return;
+    }
+    updateAxis(axisIndex, {
+      ...axis,
+      values: [...axis.values.filter((value) => value.label.trim()), { label, colorHex }],
+    });
   }
 
   async function handleSave() {
@@ -144,6 +217,12 @@ export default function ProductVariantsEditor({
 
     try {
       const payload = toPayload(axes, rows);
+      if (payload.axes.length === 0) {
+        throw new Error('En az bir secenek (Renk veya Beden) ve deger ekle.');
+      }
+      if (payload.variants.length === 0) {
+        throw new Error('Once "Kombinasyonlari Olustur" ile stok satirlarini uret.');
+      }
       const saved = await adminSaveProductVariants(productId, payload);
       setMessage('Varyantlar kaydedildi');
       onSaved?.(saved.variantAxes ?? [], saved.variants ?? []);
@@ -157,166 +236,274 @@ export default function ProductVariantsEditor({
   return (
     <div className="mt-6 space-y-5 border-t border-admin-border pt-6">
       <div className="rounded-2xl border border-admin-primary/30 bg-admin-primary-container/15 p-4 text-sm text-admin-text">
-        <p className="font-semibold text-admin-primary">iKas / Shopify tarzı varyant yönetimi</p>
-        <p className="mt-1 text-admin-muted">
-          Beden, renk gibi eksenleri tanımla; sistem kombinasyonları otomatik üretir. Her satır için
-          ayrı stok, SKU ve fiyat girebilirsin.
-        </p>
+        <p className="font-semibold text-admin-primary">Varyantlar (Renk / Beden)</p>
+        <ol className="mt-2 list-decimal space-y-1 pl-4 text-admin-muted">
+          <li>Renk veya beden gibi secenek ekle</li>
+          <li>Her secenek icin degerleri yaz (S, M, L veya Siyah, Beyaz...)</li>
+          <li>Kombinasyonlari olustur, her satira stok gir</li>
+          <li>Varyantlari kaydet</li>
+        </ol>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-admin-text">Varyant Eksenleri</h3>
-        <button
-          type="button"
-          disabled={axes.length >= 3}
-          onClick={() => setAxes((current) => [...current, emptyAxis()])}
-          className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary disabled:opacity-50"
-        >
-          Eksen Ekle (max 3)
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-admin-text">1) Secenekler</h3>
+          <p className="text-sm text-admin-muted">Musterinin urun sayfasinda sececegi alanlar</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={axes.length >= 3}
+            onClick={() => addPresetAxis('color')}
+            className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary disabled:opacity-50"
+          >
+            + Renk ekle
+          </button>
+          <button
+            type="button"
+            disabled={axes.length >= 3}
+            onClick={() => addPresetAxis('button')}
+            className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary disabled:opacity-50"
+          >
+            + Beden ekle
+          </button>
+          <button
+            type="button"
+            disabled={axes.length >= 3}
+            onClick={() => setAxes((current) => [...current, emptyAxis('list')])}
+            className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-muted hover:border-admin-primary disabled:opacity-50"
+          >
+            + Ozel secenek
+          </button>
+        </div>
       </div>
 
       {axes.length === 0 ? (
-        <p className="text-sm text-admin-muted">
-          Bu urun basit urun. Varyant icin en az bir eksen ekle (ornek: Beden).
-        </p>
+        <div className="rounded-xl border border-dashed border-admin-border bg-admin-bg px-4 py-6 text-center">
+          <p className="text-sm text-admin-muted">
+            Henuz secenek yok. Hizli baslamak icin <strong className="text-admin-text">Renk</strong>{' '}
+            veya <strong className="text-admin-text">Beden</strong> ekle.
+          </p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {axes.map((axis, axisIndex) => (
-            <div
-              key={`axis-${axisIndex}`}
-              className="rounded-xl border border-admin-border bg-admin-surface-low p-4"
-            >
-              <div className="grid gap-3 sm:grid-cols-[1fr_160px_auto]">
-                <input
-                  className={fieldClass}
-                  placeholder="Eksen adi (Beden, Renk...)"
-                  value={axis.name}
-                  onChange={(event) => {
-                    const next = [...axes];
-                    next[axisIndex] = { ...axis, name: event.target.value };
-                    setAxes(next);
-                  }}
-                />
-                <select
-                  className={fieldClass}
-                  value={axis.displayStyle}
-                  onChange={(event) => {
-                    const next = [...axes];
-                    next[axisIndex] = {
-                      ...axis,
-                      displayStyle: event.target.value as DraftAxis['displayStyle'],
-                    };
-                    setAxes(next);
-                  }}
-                >
-                  <option value="button">Buton (Shopify beden stili)</option>
-                  <option value="color">Renk swatch (iKas renk stili)</option>
-                  <option value="list">Liste</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setAxes((current) => current.filter((_, idx) => idx !== axisIndex))}
-                  className="text-sm text-admin-danger"
-                >
-                  Kaldir
-                </button>
-              </div>
+          {axes.map((axis, axisIndex) => {
+            const styleMeta =
+              DISPLAY_STYLES.find((item) => item.value === axis.displayStyle) ?? DISPLAY_STYLES[1];
+            return (
+              <div
+                key={`axis-${axisIndex}`}
+                className="rounded-xl border border-admin-border bg-admin-surface-low p-4"
+              >
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-admin-muted">
+                      Secenek {axisIndex + 1}
+                    </p>
+                    <p className="mt-1 text-sm text-admin-muted">{styleMeta.hint}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAxes((current) => current.filter((_, idx) => idx !== axisIndex))}
+                    className="text-sm text-admin-danger"
+                  >
+                    Kaldir
+                  </button>
+                </div>
 
-              <div className="mt-3 space-y-2">
-                {axis.values.map((value, valueIndex) => (
-                  <div key={`value-${valueIndex}`} className="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1.5">
+                    <span className="text-sm text-admin-muted">Secenek adi</span>
                     <input
                       className={fieldClass}
-                      placeholder="Deger (S, M, Siyah...)"
-                      value={value.label}
-                      onChange={(event) => {
-                        const next = [...axes];
-                        const values = [...axis.values];
-                        values[valueIndex] = { ...value, label: event.target.value };
-                        next[axisIndex] = { ...axis, values };
-                        setAxes(next);
-                      }}
+                      placeholder="Orn: Renk, Beden, Materyal"
+                      value={axis.name}
+                      onChange={(event) =>
+                        updateAxis(axisIndex, { ...axis, name: event.target.value })
+                      }
                     />
-                    {axis.displayStyle === 'color' ? (
+                  </label>
+                  <label className="block space-y-1.5">
+                    <span className="text-sm text-admin-muted">Musteriye nasil gosterilsin?</span>
+                    <select
+                      className={fieldClass}
+                      value={axis.displayStyle}
+                      onChange={(event) => {
+                        const displayStyle = event.target.value as DraftAxis['displayStyle'];
+                        updateAxis(axisIndex, {
+                          ...axis,
+                          displayStyle,
+                          name:
+                            axis.name.trim() ||
+                            (displayStyle === 'color'
+                              ? 'Renk'
+                              : displayStyle === 'button'
+                                ? 'Beden'
+                                : axis.name),
+                        });
+                      }}
+                    >
+                      {DISPLAY_STYLES.map((style) => (
+                        <option key={style.value} value={style.value}>
+                          {style.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium text-admin-text">Degerler</p>
+
+                  {axis.displayStyle === 'button' ? (
+                    <div className="flex flex-wrap gap-2">
+                      {SIZE_PRESETS.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => addValuePreset(axisIndex, size)}
+                          className="rounded-lg border border-admin-border px-2.5 py-1 text-xs text-admin-muted hover:border-admin-primary hover:text-admin-primary"
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {axis.displayStyle === 'color' ? (
+                    <div className="flex flex-wrap gap-2">
+                      {COLOR_PRESETS.map((color) => (
+                        <button
+                          key={color.label}
+                          type="button"
+                          onClick={() => addValuePreset(axisIndex, color.label, color.colorHex)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-admin-border px-2.5 py-1 text-xs text-admin-muted hover:border-admin-primary hover:text-admin-primary"
+                        >
+                          <span
+                            className="h-3.5 w-3.5 rounded-full border border-admin-border"
+                            style={{ backgroundColor: color.colorHex }}
+                          />
+                          {color.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {axis.values.map((value, valueIndex) => (
+                    <div
+                      key={`value-${valueIndex}`}
+                      className="grid gap-2 sm:grid-cols-[1fr_auto_auto]"
+                    >
                       <input
                         className={fieldClass}
-                        placeholder="#000000"
-                        value={value.colorHex}
+                        placeholder={
+                          axis.displayStyle === 'color'
+                            ? 'Renk adi (Siyah)'
+                            : axis.displayStyle === 'button'
+                              ? 'Beden (M)'
+                              : 'Deger'
+                        }
+                        value={value.label}
                         onChange={(event) => {
-                          const next = [...axes];
                           const values = [...axis.values];
-                          values[valueIndex] = { ...value, colorHex: event.target.value };
-                          next[axisIndex] = { ...axis, values };
-                          setAxes(next);
+                          values[valueIndex] = { ...value, label: event.target.value };
+                          updateAxis(axisIndex, { ...axis, values });
                         }}
                       />
-                    ) : (
-                      <div />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = [...axes];
-                        next[axisIndex] = {
-                          ...axis,
-                          values: axis.values.filter((_, idx) => idx !== valueIndex),
-                        };
-                        setAxes(next);
-                      }}
-                      className="text-sm text-admin-danger"
-                    >
-                      Sil
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = [...axes];
-                    next[axisIndex] = {
-                      ...axis,
-                      values: [...axis.values, { label: '', colorHex: '' }],
-                    };
-                    setAxes(next);
-                  }}
-                  className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
-                >
-                  Deger Ekle
-                </button>
+                      {axis.displayStyle === 'color' ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            className="h-10 w-12 cursor-pointer rounded-lg border border-admin-border bg-admin-bg"
+                            value={value.colorHex || '#111111'}
+                            onChange={(event) => {
+                              const values = [...axis.values];
+                              values[valueIndex] = { ...value, colorHex: event.target.value };
+                              updateAxis(axisIndex, { ...axis, values });
+                            }}
+                            title="Renk sec"
+                          />
+                          <input
+                            className={`${fieldClass} w-28`}
+                            placeholder="#111111"
+                            value={value.colorHex}
+                            onChange={(event) => {
+                              const values = [...axis.values];
+                              values[valueIndex] = { ...value, colorHex: event.target.value };
+                              updateAxis(axisIndex, { ...axis, values });
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateAxis(axisIndex, {
+                            ...axis,
+                            values: axis.values.filter((_, idx) => idx !== valueIndex),
+                          })
+                        }
+                        className="text-sm text-admin-danger"
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateAxis(axisIndex, {
+                        ...axis,
+                        values: [
+                          ...axis.values,
+                          {
+                            label: '',
+                            colorHex: axis.displayStyle === 'color' ? '#111111' : '',
+                          },
+                        ],
+                      })
+                    }
+                    className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
+                  >
+                    Deger ekle
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-admin-text">2) Stok matrisi</h3>
+          <p className="text-sm text-admin-muted">
+            Ornek: M + Siyah icin ayri stok. Bos fiyat = ana urun fiyati.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={regenerateRows}
+          className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary"
+        >
+          Kombinasyonlari Olustur / Yenile
+        </button>
+      </div>
+
       {rows.length > 0 ? (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h4 className="font-semibold text-admin-text">
-                Varyant Matrisi ({combinationCount} kombinasyon)
-              </h4>
-              <p className="text-sm text-admin-muted">
-                {productName} icin her kombinasyona stok gir. Ornek: M + Siyah = 4 adet.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={regenerateRows}
-              className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
-            >
-              Kombinasyonlari Yenile
-            </button>
-          </div>
-
+          <p className="text-sm text-admin-muted">
+            {productName || 'Urun'} icin {combinationCount} kombinasyon
+          </p>
           <div className="overflow-x-auto rounded-xl border border-admin-border">
             <table className="min-w-full text-sm text-admin-text">
               <thead className="bg-admin-surface-high text-left">
                 <tr>
-                  {axes.map((axis) => (
-                    <th key={axis.name} className="px-4 py-3 font-medium text-admin-muted">
-                      {axis.name || 'Eksen'}
+                  {axes.map((axis, index) => (
+                    <th key={`${axis.name}-${index}`} className="px-4 py-3 font-medium text-admin-muted">
+                      {axis.name || `Secenek ${index + 1}`}
                     </th>
                   ))}
                   <th className="px-4 py-3 font-medium text-admin-muted">Stok</th>
@@ -328,8 +515,8 @@ export default function ProductVariantsEditor({
               <tbody>
                 {rows.map((row, rowIndex) => (
                   <tr key={row.valueLabels.join('|')} className="border-t border-admin-border">
-                    {row.valueLabels.map((label) => (
-                      <td key={label} className="px-4 py-3">
+                    {row.valueLabels.map((label, labelIndex) => (
+                      <td key={`${label}-${labelIndex}`} className="px-4 py-3">
                         {label}
                       </td>
                     ))}
@@ -390,7 +577,11 @@ export default function ProductVariantsEditor({
             </table>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <p className="rounded-xl border border-dashed border-admin-border bg-admin-bg px-4 py-5 text-sm text-admin-muted">
+          Secenek ve degerleri girdikten sonra &quot;Kombinasyonlari Olustur&quot;a bas.
+        </p>
+      )}
 
       <div className="flex flex-col gap-2">
         <button
@@ -399,7 +590,7 @@ export default function ProductVariantsEditor({
           onClick={() => void handleSave()}
           className="rounded-xl bg-admin-primary-container px-4 py-3 text-sm font-medium text-admin-on-primary-container disabled:opacity-60"
         >
-          {saving ? 'Kaydediliyor...' : 'Varyantlari Kaydet'}
+          {saving ? 'Kaydediliyor...' : '3) Varyantlari Kaydet'}
         </button>
         {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
         {error ? <p className="text-sm text-admin-danger">{error}</p> : null}

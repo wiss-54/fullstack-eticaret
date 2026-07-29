@@ -1,4 +1,5 @@
 import type { Order, User } from './types';
+import { formatApiValidationError } from './api-validation';
 import { getApiBaseUrl } from './config';
 
 const TOKEN_KEY = 'customer_token';
@@ -17,6 +18,7 @@ type ApiResponse<T> = {
   token?: string;
   message?: string;
   code?: string;
+  details?: unknown;
 };
 
 export function getCustomerToken(): string | null {
@@ -90,7 +92,9 @@ export async function customerRegister(input: {
 
   const json: ApiResponse<User> = await response.json();
   if (!response.ok || !json.success) {
-    throw new Error(json.error ?? 'Kayit basarisiz');
+    throw new Error(
+      formatApiValidationError(json.details) ?? json.error ?? 'Kayit basarisiz',
+    );
   }
 
   // Yeni kayit dogrulama bekler; eski oturum tokenini temizle

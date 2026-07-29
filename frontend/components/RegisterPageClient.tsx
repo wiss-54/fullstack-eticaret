@@ -8,6 +8,7 @@ import {
   customerResendVerificationEmail,
   validateCustomerSession,
 } from '@/lib/customer-api';
+import { sanitizePhone, validatePhoneOptional } from '@/lib/phone';
 
 const fieldClass =
   'w-full rounded-lg border border-store-border bg-store-surface px-4 py-3 text-store-text outline-none transition focus:border-store-primary-container focus:ring-2 focus:ring-store-primary-container/20';
@@ -51,12 +52,20 @@ export default function RegisterPageClient() {
       return;
     }
 
+    const normalizedPhone = sanitizePhone(phone);
+    const phoneError = validatePhoneOptional(normalizedPhone);
+    if (phoneError) {
+      setError(phoneError);
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await customerRegister({
-        fullName,
-        email,
+        fullName: fullName.trim(),
+        email: email.trim(),
         password,
-        phone: phone.trim() || undefined,
+        phone: normalizedPhone || undefined,
       });
       setSuccessEmail(result.user.email);
       setSuccessMessage(result.message);
@@ -157,9 +166,16 @@ export default function RegisterPageClient() {
             <input
               className={fieldClass}
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(sanitizePhone(e.target.value))}
               autoComplete="tel"
+              inputMode="numeric"
+              pattern="[0-9]{10,11}"
+              maxLength={11}
+              placeholder="05XXXXXXXXX"
             />
+            <p className="mt-1.5 text-xs text-store-muted">
+              Opsiyonel. 10 veya 11 haneli, sadece rakam.
+            </p>
           </label>
 
           <label className="block">

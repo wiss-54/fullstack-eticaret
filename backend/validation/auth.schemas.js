@@ -3,13 +3,18 @@ const { z } = require('zod');
 const phoneSchema = z
   .string()
   .trim()
-  .regex(/^\d{10,11}$/, 'Telefon numarasi 10 veya 11 haneli olmali');
+  .regex(/^\d{10,11}$/, 'Telefon numarasi 10 veya 11 haneli olmali (ornek: 05XXXXXXXXX).');
+
+const optionalPhoneSchema = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  phoneSchema.optional(),
+);
 
 const registerSchema = z.object({
-  email: z.string().trim().email().max(255),
-  password: z.string().min(8).max(200),
-  fullName: z.string().trim().min(2).max(200),
-  phone: phoneSchema.optional(),
+  email: z.string().trim().email('Gecerli bir e-posta adresi girin.').max(255),
+  password: z.string().min(8, 'Sifre en az 8 karakter olmali.').max(200),
+  fullName: z.string().trim().min(2, 'Ad soyad en az 2 karakter olmali.').max(200),
+  phone: optionalPhoneSchema,
 });
 
 const loginSchema = z.object({
@@ -18,8 +23,8 @@ const loginSchema = z.object({
 });
 
 const shippingAddressSchema = z.object({
-  shippingFullName: z.string().trim().min(2).max(200),
-  phone: phoneSchema.optional(),
+  shippingFullName: z.string().trim().min(2, 'Ad soyad en az 2 karakter olmali.').max(200),
+  phone: optionalPhoneSchema,
   shippingCity: z.string().trim().min(2).max(100),
   shippingDistrict: z.string().trim().min(2).max(100),
   shippingAddressLine: z.string().trim().min(5).max(500),

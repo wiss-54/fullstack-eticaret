@@ -201,23 +201,31 @@ export default function AdminPage() {
     setError(null);
 
     const imageUrl = form.imageUrl.trim();
+    const wantsVariants = editingProductType === 'variant';
     const payload = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: Number(form.price),
-      stock: Math.floor(Number(form.stock)),
+      stock: wantsVariants ? 0 : Math.floor(Number(form.stock)),
       categoryId: form.categoryId ? Number(form.categoryId) : null,
       imageUrl: imageUrl || null,
+      productType: wantsVariants ? ('variant' as const) : ('simple' as const),
     };
 
     try {
       if (editingId) {
         await adminUpdateProduct(editingId, payload);
+        await loadProducts();
       } else {
-        await adminCreateProduct(payload);
+        const created = await adminCreateProduct(payload);
+        await loadProducts();
+        if (wantsVariants) {
+          await startEdit(created);
+          setVariantsEditorKey((current) => current + 1);
+        } else {
+          resetForm();
+        }
       }
-      resetForm();
-      await loadProducts();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kayit basarisiz');
     } finally {
@@ -317,6 +325,36 @@ export default function AdminPage() {
               </select>
             </label>
 
+            <div className="space-y-2">
+              <span className="text-sm text-admin-muted">Urun Tipi</span>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProductType('simple')}
+                  className={`rounded-xl border px-4 py-3 text-left transition ${
+                    editingProductType === 'simple'
+                      ? 'border-admin-primary bg-admin-primary-container/20 text-admin-text'
+                      : 'border-admin-border bg-admin-bg text-admin-muted hover:border-admin-primary'
+                  }`}
+                >
+                  <p className="text-sm font-semibold">Basit urun</p>
+                  <p className="mt-1 text-xs opacity-80">Tek fiyat, tek stok. Varyant yok.</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingProductType('variant')}
+                  className={`rounded-xl border px-4 py-3 text-left transition ${
+                    editingProductType === 'variant'
+                      ? 'border-admin-primary bg-admin-primary-container/20 text-admin-text'
+                      : 'border-admin-border bg-admin-bg text-admin-muted hover:border-admin-primary'
+                  }`}
+                >
+                  <p className="text-sm font-semibold">Varyantli urun</p>
+                  <p className="mt-1 text-xs opacity-80">Renk, beden vb. secenek + ayri stok.</p>
+                </button>
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1.5">
                 <span className="text-sm text-admin-muted">Fiyat (₺)</span>
@@ -332,7 +370,9 @@ export default function AdminPage() {
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="text-sm text-admin-muted">Stok Adedi</span>
+                <span className="text-sm text-admin-muted">
+                  {editingProductType === 'variant' ? 'Stok (varyantlardan)' : 'Stok Adedi'}
+                </span>
                 <input
                   className={fieldClass}
                   placeholder="0"
@@ -340,15 +380,17 @@ export default function AdminPage() {
                   min="0"
                   value={form.stock}
                   onChange={(e) => setForm({ ...form, stock: e.target.value })}
-                  required
+                  required={editingProductType !== 'variant'}
                   disabled={editingProductType === 'variant'}
                 />
               </label>
             </div>
 
             {editingProductType === 'variant' ? (
-              <p className="text-sm text-admin-primary">
-                Varyantli urunlerde toplam stok, asagidaki matristeki satirlardan otomatik hesaplanir.
+              <p className="rounded-lg border border-admin-primary/25 bg-admin-primary-container/10 px-3 py-2 text-sm text-admin-primary">
+                {editingId
+                  ? 'Asagidan renk/beden seceneklerini ekle, kombinasyon olustur ve stok gir.'
+                  : 'Kaydetten sonra renk/beden varyantlarini burada hemen ekleyebilirsin.'}
               </p>
             ) : null}
 

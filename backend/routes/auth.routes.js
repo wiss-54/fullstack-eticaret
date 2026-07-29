@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { registerSchema, loginSchema, shippingAddressSchema } = require('../validation/auth.schemas');
+const { formatZodError } = require('../lib/format-zod-error');
 const {
   createUser,
   verifyUserCredentials,
@@ -26,7 +27,7 @@ router.post('/register', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({
       success: false,
-      error: 'Gecersiz kayit bilgisi',
+      error: formatZodError(parsed.error.issues, 'Gecersiz kayit bilgisi'),
       details: parsed.error.issues,
     });
   }
@@ -57,7 +58,7 @@ router.post('/login', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({
       success: false,
-      error: 'Gecersiz giris bilgisi',
+      error: formatZodError(parsed.error.issues, 'Gecersiz giris bilgisi'),
       details: parsed.error.issues,
     });
   }
@@ -157,7 +158,7 @@ router.patch('/me/shipping-address', requireCustomer, async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({
       success: false,
-      error: 'Gecersiz adres bilgisi',
+      error: formatZodError(parsed.error.issues, 'Gecersiz adres bilgisi'),
       details: parsed.error.issues,
     });
   }
