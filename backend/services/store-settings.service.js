@@ -68,6 +68,11 @@ function mapRow(row) {
     navItem2Href: row.navItem2Href || DEFAULT_NAV_ITEM_2_HREF,
     footerLeft: row.footerLeft,
     footerRight: row.footerRight,
+    currencyCode: row.currencyCode || 'TRY',
+    currencyDecimals:
+      typeof row.currencyDecimals === 'number' && Number.isFinite(row.currencyDecimals)
+        ? Math.min(4, Math.max(0, Math.floor(row.currencyDecimals)))
+        : 2,
     textStyles:
       row.textStyles && typeof row.textStyles === 'object' && !Array.isArray(row.textStyles)
         ? row.textStyles
@@ -108,6 +113,8 @@ const SELECT_SQL = `
     nav_item_2_href AS "navItem2Href",
     footer_left AS "footerLeft",
     footer_right AS "footerRight",
+    COALESCE(currency_code, 'TRY') AS "currencyCode",
+    COALESCE(currency_decimals, 2) AS "currencyDecimals",
     text_styles AS "textStyles",
     sections,
     updated_at AS "updatedAt"
@@ -171,8 +178,10 @@ async function updateStoreSettings(input) {
         nav_item_2_href = $27,
         footer_left = $28,
         footer_right = $29,
-        text_styles = $30::jsonb,
-        sections = $31::jsonb,
+        currency_code = $30,
+        currency_decimals = $31,
+        text_styles = $32::jsonb,
+        sections = $33::jsonb,
         updated_at = NOW()
       WHERE id = 1
       RETURNING
@@ -205,6 +214,8 @@ async function updateStoreSettings(input) {
         nav_item_2_href AS "navItem2Href",
         footer_left AS "footerLeft",
         footer_right AS "footerRight",
+        COALESCE(currency_code, 'TRY') AS "currencyCode",
+        COALESCE(currency_decimals, 2) AS "currencyDecimals",
         text_styles AS "textStyles",
         sections,
         updated_at AS "updatedAt"
@@ -239,6 +250,8 @@ async function updateStoreSettings(input) {
       input.navItem2Href || DEFAULT_NAV_ITEM_2_HREF,
       input.footerLeft,
       input.footerRight,
+      (input.currencyCode || 'TRY').toUpperCase(),
+      typeof input.currencyDecimals === 'number' ? input.currencyDecimals : 2,
       JSON.stringify(input.textStyles ?? {}),
       JSON.stringify(input.sections ?? DEFAULT_SECTIONS),
     ],
@@ -272,6 +285,8 @@ async function applyThemePreset(themeId) {
     navItem2Href: current.navItem2Href,
     footerLeft: current.footerLeft,
     footerRight: current.footerRight,
+    currencyCode: current.currencyCode,
+    currencyDecimals: current.currencyDecimals,
   });
 }
 

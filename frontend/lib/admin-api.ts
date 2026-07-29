@@ -107,7 +107,7 @@ export async function adminLogin(username: string, password: string) {
 }
 
 export async function adminGetProducts(): Promise<Product[]> {
-  return adminFetch<Product[]>('/api/products');
+  return adminFetch<Product[]>('/api/products?limit=500');
 }
 
 export async function adminGetProduct(id: number): Promise<Product> {
@@ -120,8 +120,10 @@ export type ProductInput = {
   price: number;
   stock: number;
   imageUrl?: string | null;
+  imageUrls?: string[];
   categoryId?: number | null;
   productType?: 'simple' | 'variant';
+  sortOrder?: number;
 };
 
 export type CategoryInput = {
@@ -200,6 +202,13 @@ export async function adminDeleteProduct(id: number) {
   if (!response.ok || !json.success) {
     throw new Error(json.error ?? 'Silme basarisiz');
   }
+}
+
+export async function adminReorderProducts(productIds: number[]): Promise<Product[]> {
+  return adminFetch<Product[]>('/api/products/reorder', {
+    method: 'PUT',
+    body: JSON.stringify({ productIds }),
+  });
 }
 
 export async function adminSaveProductOptions(

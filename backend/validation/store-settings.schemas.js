@@ -135,6 +135,15 @@ const storeSettingsUpdateSchema = z.object({
   navItem2Href: storeHrefSchema,
   footerLeft: z.string().trim().min(1).max(500),
   footerRight: z.string().trim().min(1).max(500),
+  currencyCode: z
+    .string()
+    .trim()
+    .length(3)
+    .regex(/^[A-Za-z]{3}$/, 'Para birimi 3 harf olmali (ornegin TRY)')
+    .transform((value) => value.toUpperCase())
+    .optional()
+    .default('TRY'),
+  currencyDecimals: z.number().int().min(0).max(4).optional().default(2),
   textStyles: z.record(z.string().max(80), textStyleSchema).optional(),
   sections: z.array(sectionSchema).min(1).max(20),
 });

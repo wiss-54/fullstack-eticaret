@@ -1,22 +1,24 @@
 import Link from 'next/link';
 import type { Product } from '@/lib/types';
+import { formatStorePrice } from '@/lib/format-price';
 import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type ProductCardProps = {
   product: Product;
   /** false = editor onizleme; link calismaz */
   interactive?: boolean;
+  currencyCode?: string;
+  currencyDecimals?: number;
 };
 
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-  }).format(price);
-}
-
-export default function ProductCard({ product, interactive = true }: ProductCardProps) {
-  const imageSrc = safeMediaUrl(product.imageUrl);
+export default function ProductCard({
+  product,
+  interactive = true,
+  currencyCode = 'TRY',
+  currencyDecimals = 2,
+}: ProductCardProps) {
+  const cover = product.imageUrls?.[0] ?? product.imageUrl;
+  const imageSrc = safeMediaUrl(cover);
 
   const body = (
     <article className="flex h-full flex-col overflow-hidden rounded-lg bg-store-surface shadow-[0px_4px_20px_rgba(0,0,0,0.04)] transition-shadow duration-300 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
@@ -31,9 +33,6 @@ export default function ProductCard({ product, interactive = true }: ProductCard
         ) : (
           <span className="text-sm">Gorsel yok</span>
         )}
-        <span className="absolute left-3 top-3 rounded bg-store-inverse px-2 py-1 text-xs font-medium text-store-inverse-text">
-          Stok: {product.stock}
-        </span>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         {product.categoryName ? (
@@ -44,7 +43,9 @@ export default function ProductCard({ product, interactive = true }: ProductCard
         <h2 className="text-base font-semibold text-store-text">{product.name}</h2>
         <p className="line-clamp-2 text-sm leading-relaxed text-store-muted">{product.description}</p>
         <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-          <span className="text-lg font-bold text-store-primary">{formatPrice(product.price)}</span>
+          <span className="text-lg font-bold text-store-primary">
+            {formatStorePrice(product.price, { currencyCode, currencyDecimals })}
+          </span>
           <span className="text-xs font-semibold text-store-muted transition group-hover:text-store-primary">
             Incele
           </span>

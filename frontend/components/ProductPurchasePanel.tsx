@@ -4,17 +4,13 @@ import { useMemo, useState } from 'react';
 import type { Product, ProductOption, ProductVariant, VariantAxis } from '@/lib/types';
 import { useCart } from '@/components/CartProvider';
 import type { SelectedOption } from '@/lib/cart';
+import { formatStorePrice } from '@/lib/format-price';
 
 type ProductPurchasePanelProps = {
   product: Product;
+  currencyCode?: string;
+  currencyDecimals?: number;
 };
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-  }).format(price);
-}
 
 function findVariant(
   variants: ProductVariant[],
@@ -58,7 +54,11 @@ function getAvailableValueIds(
   return available;
 }
 
-export default function ProductPurchasePanel({ product }: ProductPurchasePanelProps) {
+export default function ProductPurchasePanel({
+  product,
+  currencyCode = 'TRY',
+  currencyDecimals = 2,
+}: ProductPurchasePanelProps) {
   const { addItem } = useCart();
   const variantAxes = useMemo(() => product.variantAxes ?? [], [product.variantAxes]);
   const variants = useMemo(() => product.variants ?? [], [product.variants]);
@@ -158,8 +158,7 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
   return (
     <div className="space-y-5">
       {hasVariants ? (
-        <div className="space-y-4 rounded-xl border border-store-border bg-store-surface-low p-5">
-          <p className="text-sm font-semibold text-store-accent-text">Varyant Sec</p>
+        <div className="space-y-4">
           {variantAxes.map((axis) => (
             <VariantAxisPicker
               key={axis.id}
@@ -172,19 +171,11 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
               }
             />
           ))}
-          {selectedVariant ? (
-            <p className="text-sm text-store-muted">
-              Secilen: {selectedVariant.selections.map((selection) => selection.label).join(' / ')} · Stok:{' '}
-              {selectedVariant.stock}
-              {selectedVariant.sku ? ` · SKU: ${selectedVariant.sku}` : ''}
-            </p>
-          ) : null}
         </div>
       ) : null}
 
       {textOptions.length > 0 ? (
-        <div className="space-y-4 rounded-xl border border-store-border p-5">
-          <p className="text-sm font-semibold text-store-text">Kisilestirme</p>
+        <div className="space-y-4">
           {textOptions.map((option) => (
             <TextOptionField
               key={option.id}
@@ -207,7 +198,9 @@ export default function ProductPurchasePanel({ product }: ProductPurchasePanelPr
         />
       </label>
 
-      <p className="text-2xl font-bold text-store-primary-container">{formatPrice(unitPrice)}</p>
+      <p className="text-2xl font-bold text-store-primary-container">
+        {formatStorePrice(unitPrice, { currencyCode, currencyDecimals })}
+      </p>
 
       <div className="flex flex-col gap-2">
         <button

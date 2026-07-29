@@ -1,17 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import ProductImageGallery from '@/components/ProductImageGallery';
 import ProductPurchasePanel from '@/components/ProductPurchasePanel';
 import StoreFooter from '@/components/StoreFooter';
 import StoreHeader from '@/components/StoreHeader';
-import { getProduct } from '@/lib/api';
-import { safeMediaUrl } from '@/lib/safe-media-url';
-
-function formatPrice(price: number) {
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-  }).format(price);
-}
+import { getProduct, getStoreSettings } from '@/lib/api';
+import { formatStorePrice } from '@/lib/format-price';
 
 type ProductPageProps = {
   params: Promise<{ id: string }>;
@@ -28,8 +22,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   let product;
+  let settings;
   try {
-    product = await getProduct(productId);
+    [product, settings] = await Promise.all([getProduct(productId), getStoreSettings()]);
   } catch {
     throw new Error('Ürün yüklenemedi');
   }
@@ -38,44 +33,38 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  const hasOptions = (product.options?.length ?? 0) > 0;
-  const imageSrc = safeMediaUrl(product.imageUrl);
+  const images =
+    product.imageUrls && product.imageUrls.length > 0
+      ? product.imageUrls
+      : product.imageUrl
+        ? [product.imageUrl]
+        : [];
 
   return (
     <div className="flex min-h-full flex-col bg-store-bg">
-      <StoreHeader title={product.name} badge={`Stok: ${product.stock}`} />
+      <StoreHeader title={product.name} />
 
       <main className="mx-auto grid w-full max-w-7xl flex-1 gap-8 px-4 py-10 md:px-10 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-lg bg-store-surface shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
-          <div className="flex min-h-96 items-center justify-center bg-store-surface-low">
-            {imageSrc ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageSrc}
-                alt={product.name}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="text-sm text-store-muted">Gorsel yok</span>
-            )}
-          </div>
-        </div>
+        <ProductImageGallery images={images} alt={product.name} />
 
         <section className="rounded-lg bg-store-surface p-8 shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-store-accent-text">
             Urun detayi
           </p>
-          <p className="mt-3 text-3xl font-bold text-store-primary">{formatPrice(product.price)}</p>
+          <p className="mt-3 text-3xl font-bold text-store-primary">
+            {formatStorePrice(product.price, {
+              currencyCode: settings.currencyCode,
+              currencyDecimals: settings.currencyDecimals,
+            })}
+          </p>
           <p className="mt-4 leading-relaxed text-store-muted">{product.description}</p>
 
-          {hasOptions ? (
-            <p className="mt-4 text-sm text-store-accent-text">
-              Bu urun kisisellestirme secenekleri iceriyor.
-            </p>
-          ) : null}
-
           <div className="mt-8 space-y-4">
-            <ProductPurchasePanel product={product} />
+            <ProductPurchasePanel
+              product={product}
+              currencyCode={settings.currencyCode}
+              currencyDecimals={settings.currencyDecimals}
+            />
             <Link
               href="/"
               className="inline-block rounded border border-store-border px-5 py-3 text-sm text-store-muted transition hover:border-store-primary hover:text-store-primary"
@@ -86,7 +75,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </section>
       </main>
 
-      <StoreFooter />
+      <StoreFooter
+        brandName={settings.brandName}
+        leftText={settings.footerLeft}
+        rightText={settings.footerRight}
+      />
     </div>
   );
 }

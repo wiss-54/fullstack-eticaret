@@ -198,7 +198,13 @@ export default function StoreSectionBlock({
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} interactive={!editor} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                interactive={!editor}
+                currencyCode={settings.currencyCode}
+                currencyDecimals={settings.currencyDecimals}
+              />
             ))}
           </div>
         )}

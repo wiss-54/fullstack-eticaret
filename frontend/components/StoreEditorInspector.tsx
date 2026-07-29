@@ -8,7 +8,7 @@ import {
   isMultilineTextKey,
   setTextValue,
 } from '@/lib/editor-selection';
-import { adminUpdateCategory } from '@/lib/admin-api';
+import { adminReorderProducts, adminUpdateCategory } from '@/lib/admin-api';
 import ProductImageField from '@/components/ProductImageField';
 import StoreEditorQuickProduct from '@/components/StoreEditorQuickProduct';
 import StoreTextStyleFields from '@/components/StoreTextStyleFields';
@@ -24,6 +24,7 @@ type Props = {
   onChange: (next: StoreSettings) => void;
   onServerLogoUrl: (value: string | null) => void;
   onProductCreated: (product: Product) => void;
+  onProductsChange?: (next: Product[]) => void;
   onRemoveSection?: (id: string) => void;
   onCategoriesChange?: (next: Category[]) => void;
 };
@@ -363,9 +364,33 @@ export default function StoreEditorInspector({
   onChange,
   onServerLogoUrl,
   onProductCreated,
+  onProductsChange,
   onRemoveSection,
   onCategoriesChange,
 }: Props) {
+  const [reorderingProducts, setReorderingProducts] = useState(false);
+
+  async function moveProduct(productId: number, direction: -1 | 1) {
+    if (!onProductsChange || reorderingProducts) return;
+    const index = products.findIndex((product) => product.id === productId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= products.length) return;
+
+    const next = [...products];
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item);
+    onProductsChange(next);
+    setReorderingProducts(true);
+    try {
+      const saved = await adminReorderProducts(next.map((product) => product.id));
+      onProductsChange(saved);
+    } catch {
+      // Keep optimistic order; admin products page is source of truth if this fails.
+    } finally {
+      setReorderingProducts(false);
+    }
+  }
+
   function patch<K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) {
     onChange({ ...settings, [key]: value });
   }
@@ -566,7 +591,7 @@ export default function StoreEditorInspector({
 
   if (selection.type === 'footer') {
     return (
-      <InspectorShell title="Alt bilgi" hint="Sol ve sag metinleri buradan duzenle.">
+      <InspectorShell title="Alt bilgi" hint="Metinler ve fiyat gosterimi (kur / kurus).">
         <div className="space-y-4">
           <Field label="Sol metin">
             <textarea
@@ -584,6 +609,52 @@ export default function StoreEditorInspector({
             />
           </Field>
           <StoreTextStyleFields settings={settings} styleKey="footer.right" onChange={onChange} />
+          <div className="border-t border-admin-border pt-4">
+            <p className="mb-3 text-sm font-medium text-admin-text">Fiyat / kur ayari</p>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {(['TRY', 'USD', 'EUR'] as const).map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => patch('currencyCode', code)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                    (settings.currencyCode || 'TRY') === code
+                      ? 'border-admin-primary bg-admin-primary-container/20 text-admin-primary'
+                      : 'border-admin-border text-admin-muted hover:border-admin-primary'
+                  }`}
+                >
+                  {code}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Para birimi (ISO)">
+                <input
+                  className={inputClass}
+                  value={settings.currencyCode || 'TRY'}
+                  maxLength={3}
+                  onChange={(e) => patch('currencyCode', e.target.value.toUpperCase())}
+                  placeholder="TRY"
+                />
+              </Field>
+              <Field label="Kurus / ondalik basamak">
+                <select
+                  className={inputClass}
+                  value={settings.currencyDecimals ?? 2}
+                  onChange={(e) => patch('currencyDecimals', Number(e.target.value))}
+                >
+                  <option value={0}>0 (1.000)</option>
+                  <option value={1}>1 (1.000,0)</option>
+                  <option value={2}>2 (1.000,00)</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+                </select>
+              </Field>
+            </div>
+            <p className="mt-2 text-xs text-admin-muted">
+              Footer panelinden magaza fiyatlarinin kurunu ve kurus sayisini degistirirsin.
+            </p>
+          </div>
         </div>
       </InspectorShell>
     );
@@ -591,20 +662,42 @@ export default function StoreEditorInspector({
 
   if (selection.type === 'product') {
     return (
-      <InspectorShell title="Urun ekle" subtitle="Hizli islem">
+      <InspectorShell title="Urun ekle" subtitle="Hizli islem" hint="Vitrin sirasini ↑↓ ile degistir.">
         <div className="space-y-4">
           <StoreEditorQuickProduct categories={categories} onCreated={onProductCreated} />
-          <div className="border-t border-admin-border pt-4 ">
+          <div className="border-t border-admin-border pt-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-admin-muted">
               Vitrindeki urunler ({products.length})
             </p>
             <ul className="space-y-1 text-sm">
-              {products.slice(0, 12).map((product) => (
+              {products.slice(0, 24).map((product, index) => (
                 <li
                   key={product.id}
-                  className="truncate rounded-lg bg-admin-surface-low px-2 py-1.5 text-admin-text bg-admin-surface-high "
+                  className="flex items-center gap-2 rounded-lg bg-admin-surface-high px-2 py-1.5 text-admin-text"
                 >
-                  {product.name}
+                  <div className="flex shrink-0 flex-col gap-0.5">
+                    <button
+                      type="button"
+                      disabled={!onProductsChange || reorderingProducts || index === 0}
+                      onClick={() => void moveProduct(product.id, -1)}
+                      className="rounded px-1 text-[10px] text-admin-muted hover:text-admin-text disabled:opacity-30"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      disabled={
+                        !onProductsChange ||
+                        reorderingProducts ||
+                        index >= Math.min(products.length, 24) - 1
+                      }
+                      onClick={() => void moveProduct(product.id, 1)}
+                      className="rounded px-1 text-[10px] text-admin-muted hover:text-admin-text disabled:opacity-30"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                  <span className="min-w-0 truncate">{product.name}</span>
                 </li>
               ))}
             </ul>

@@ -102,18 +102,19 @@ export default function ProductOptionsEditor({
   return (
     <div className="mt-6 space-y-4 border-t border-admin-border pt-6">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-admin-text">Urun Secenekleri</h3>
+        <h3 className="font-semibold text-admin-text">Metin alanlari (opsiyonel)</h3>
         <button
           type="button"
           onClick={() => setDraft((current) => [...current, emptyOption()])}
           className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
         >
-          Secenek Ekle
+          Alan Ekle
         </button>
       </div>
 
       <p className="text-sm text-admin-muted">
-        Kisilestirme alanlari (metin). Beden/renk stoklari icin yukaridaki Varyant Matrisi bolumunu kullan.
+        Beden/renk stogu icin <strong className="text-admin-text">Urun Secenekleri (Varyant)</strong>{' '}
+        bolumunu kullan. Burasi sadece ekstra metin alani icindir.
       </p>
 
       {draft.length === 0 ? (
