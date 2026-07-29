@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   productCreateSchema,
   productUpdateSchema,
+  productReorderSchema,
 } = require('../validation/products.schemas');
 const {
   listProducts,
@@ -11,6 +12,7 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  reorderProducts,
 } = require('../services/products.service');
 const {
   listOptionsByProductId,
@@ -36,6 +38,25 @@ router.get('/', async (req, res) => {
     const offset = parsePositiveInt(req.query.offset) ?? 0;
     const categoryId = parsePositiveInt(req.query.categoryId);
     const products = await listProducts(limit, offset, categoryId || null);
+    res.json({ success: true, data: products });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Unexpected server error' });
+  }
+});
+
+router.put('/reorder', requireAdmin, async (req, res) => {
+  const parsed = productReorderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid product reorder payload',
+      details: parsed.error.issues,
+    });
+  }
+
+  try {
+    const products = await reorderProducts(parsed.data.productIds);
     res.json({ success: true, data: products });
   } catch (err) {
     console.error(err);

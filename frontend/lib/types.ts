@@ -89,9 +89,11 @@ export type Product = {
   price: number;
   stock: number;
   imageUrl: string | null;
+  imageUrls?: string[];
   categoryId: number | null;
   categoryName: string | null;
   productType: 'simple' | 'variant';
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
   options?: ProductOption[];
@@ -246,6 +248,8 @@ export type StoreSettings = {
   navItem2Href: string;
   footerLeft: string;
   footerRight: string;
+  currencyCode: string;
+  currencyDecimals: number;
   textStyles?: StoreTextStyles;
   sections: StoreSection[];
   updatedAt?: string;

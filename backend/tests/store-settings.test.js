@@ -43,6 +43,8 @@ const sampleSettings = {
   navItem2Href: '#urunler',
   footerLeft: 'Footer sol',
   footerRight: 'Footer sag',
+  currencyCode: 'TRY',
+  currencyDecimals: 2,
   sections: [
     { id: 'hero', type: 'hero', enabled: true },
     { id: 'products', type: 'products', enabled: true },

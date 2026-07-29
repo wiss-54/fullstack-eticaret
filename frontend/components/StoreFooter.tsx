@@ -6,7 +6,7 @@ type StoreFooterProps = {
 
 export default function StoreFooter({
   leftText = 'EticaretShop. Tum haklari saklidir.',
-  rightText = 'Guvenli odeme ve kisisellestirme altyapisi gelistiriliyor.',
+  rightText = 'Guvenli odeme altyapisi.',
   brandName = 'EticaretShop',
 }: StoreFooterProps) {
   const left = leftText.includes(brandName)

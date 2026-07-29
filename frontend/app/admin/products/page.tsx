@@ -2,20 +2,20 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Category, Product, ProductOption, ProductVariant, VariantAxis } from '@/lib/types';
 import {
   adminCreateProduct,
   adminDeleteProduct,
   adminGetCategories,
   adminGetProduct,
   adminGetProducts,
+  adminReorderProducts,
   adminUpdateProduct,
   getAdminToken,
 } from '@/lib/admin-api';
 import { AdminPageHeader } from '@/components/admin/AdminShell';
 import CategoryManager from '@/components/CategoryManager';
-import ProductImageField from '@/components/ProductImageField';
-import ProductOptionsEditor from '@/components/ProductOptionsEditor';
+import type { Category, Product, ProductVariant, VariantAxis } from '@/lib/types';
+import ProductImagesField from '@/components/ProductImagesField';
 import ProductVariantsEditor from '@/components/ProductVariantsEditor';
 import { getAdminPaths } from '@/lib/admin-paths';
 import { safeMediaUrl } from '@/lib/safe-media-url';
@@ -25,7 +25,7 @@ type ProductFormState = {
   description: string;
   price: string;
   stock: string;
-  imageUrl: string;
+  imageUrls: string[];
   categoryId: string;
 };
 
@@ -34,7 +34,7 @@ const emptyForm: ProductFormState = {
   description: '',
   price: '',
   stock: '',
-  imageUrl: '',
+  imageUrls: [],
   categoryId: '',
 };
 
@@ -80,7 +80,6 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState<ProductFormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingOptions, setEditingOptions] = useState<ProductOption[]>([]);
   const [editingAxes, setEditingAxes] = useState<VariantAxis[]>([]);
   const [editingVariants, setEditingVariants] = useState<ProductVariant[]>([]);
   const [editingProductType, setEditingProductType] = useState<'simple' | 'variant'>('simple');
@@ -88,8 +87,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [variantsEditorKey, setVariantsEditorKey] = useState(0);
-  const [serverImageUrl, setServerImageUrl] = useState<string | null>(null);
   const [productQuery, setProductQuery] = useState('');
+  const [reordering, setReordering] = useState(false);
 
   const filteredProducts = useMemo(() => {
     const q = productQuery.trim().toLowerCase();
@@ -156,29 +155,39 @@ export default function AdminPage() {
 
   async function startEdit(product: Product) {
     setEditingId(product.id);
-    setServerImageUrl(product.imageUrl);
+    const initialImages =
+      product.imageUrls && product.imageUrls.length > 0
+        ? product.imageUrls
+        : product.imageUrl
+          ? [product.imageUrl]
+          : [];
     setForm({
       name: product.name,
       description: product.description,
       price: String(product.price),
       stock: String(product.stock),
-      imageUrl: product.imageUrl ?? '',
+      imageUrls: initialImages,
       categoryId: product.categoryId ? String(product.categoryId) : '',
     });
 
     try {
       const fullProduct = await adminGetProduct(product.id);
-      setEditingOptions(fullProduct.options ?? []);
       setEditingAxes(fullProduct.variantAxes ?? []);
       setEditingVariants(fullProduct.variants ?? []);
       setEditingProductType(fullProduct.productType ?? 'simple');
+      const fullImages =
+        fullProduct.imageUrls && fullProduct.imageUrls.length > 0
+          ? fullProduct.imageUrls
+          : fullProduct.imageUrl
+            ? [fullProduct.imageUrl]
+            : [];
       setForm((current) => ({
         ...current,
         stock: String(fullProduct.stock),
         categoryId: fullProduct.categoryId ? String(fullProduct.categoryId) : '',
+        imageUrls: fullImages,
       }));
     } catch {
-      setEditingOptions([]);
       setEditingAxes([]);
       setEditingVariants([]);
       setEditingProductType('simple');
@@ -187,12 +196,33 @@ export default function AdminPage() {
 
   function resetForm() {
     setEditingId(null);
-    setServerImageUrl(null);
-    setEditingOptions([]);
     setEditingAxes([]);
     setEditingVariants([]);
     setEditingProductType('simple');
     setForm(emptyForm);
+  }
+
+  async function moveProduct(productId: number, direction: -1 | 1) {
+    if (productQuery.trim() || reordering) return;
+    const index = products.findIndex((product) => product.id === productId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= products.length) return;
+
+    const next = [...products];
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item);
+    setProducts(next);
+    setReordering(true);
+    setError(null);
+    try {
+      const saved = await adminReorderProducts(next.map((product) => product.id));
+      setProducts(saved);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Siralama kaydedilemedi');
+      await loadProducts();
+    } finally {
+      setReordering(false);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -200,7 +230,7 @@ export default function AdminPage() {
     setSaving(true);
     setError(null);
 
-    const imageUrl = form.imageUrl.trim();
+    const imageUrls = form.imageUrls.map((url) => url.trim()).filter(Boolean);
     const wantsVariants = editingProductType === 'variant';
     const payload = {
       name: form.name.trim(),
@@ -208,7 +238,8 @@ export default function AdminPage() {
       price: Number(form.price),
       stock: wantsVariants ? 0 : Math.floor(Number(form.stock)),
       categoryId: form.categoryId ? Number(form.categoryId) : null,
-      imageUrl: imageUrl || null,
+      imageUrl: imageUrls[0] ?? null,
+      imageUrls,
       productType: wantsVariants ? ('variant' as const) : ('simple' as const),
     };
 
@@ -278,13 +309,9 @@ export default function AdminPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <ProductImageField
-              value={form.imageUrl}
-              serverImageUrl={serverImageUrl}
-              onChange={(imageUrl) => {
-                setForm({ ...form, imageUrl });
-                if (!imageUrl) setServerImageUrl(null);
-              }}
+            <ProductImagesField
+              values={form.imageUrls}
+              onChange={(imageUrls) => setForm({ ...form, imageUrls })}
             />
 
             <label className="block space-y-1.5">
@@ -413,27 +440,20 @@ export default function AdminPage() {
           </form>
 
           {editingId ? (
-            <>
-              <ProductVariantsEditor
-                key={variantsEditorKey}
-                productId={editingId}
-                productName={form.name}
-                initialAxes={editingAxes}
-                initialVariants={editingVariants}
-                onSaved={(axes, variants) => {
-                  setEditingAxes(axes);
-                  setEditingVariants(variants);
-                  setEditingProductType(variants.length > 0 ? 'variant' : 'simple');
-                  setVariantsEditorKey((current) => current + 1);
-                  void loadProducts();
-                }}
-              />
-              <ProductOptionsEditor
-                productId={editingId}
-                initialOptions={editingOptions}
-                onSaved={setEditingOptions}
-              />
-            </>
+            <ProductVariantsEditor
+              key={variantsEditorKey}
+              productId={editingId}
+              productName={form.name}
+              initialAxes={editingAxes}
+              initialVariants={editingVariants}
+              onSaved={(axes, variants) => {
+                setEditingAxes(axes);
+                setEditingVariants(variants);
+                setEditingProductType(variants.length > 0 ? 'variant' : 'simple');
+                setVariantsEditorKey((current) => current + 1);
+                void loadProducts();
+              }}
+            />
           ) : null}
         </section>
 
@@ -493,14 +513,35 @@ export default function AdminPage() {
           ) : (
             <div className="flex-1 overflow-y-auto px-5 py-4">
               <div className="space-y-3">
-                {filteredProducts.map((product) => {
+                {filteredProducts.map((product, index) => {
                   const badge = stockBadge(product.stock);
-                  const thumb = safeMediaUrl(product.imageUrl);
+                  const thumb = safeMediaUrl(product.imageUrls?.[0] ?? product.imageUrl);
+                  const canReorder = !productQuery.trim();
                   return (
                     <div
                       key={product.id}
                       className={`group flex items-center gap-3 rounded-lg border p-3 transition hover:border-admin-primary/40 hover:bg-admin-surface-high/40 sm:gap-4 ${badge.rowClassName}`}
                     >
+                    <div className="flex shrink-0 flex-col gap-1">
+                      <button
+                        type="button"
+                        disabled={!canReorder || reordering || index === 0}
+                        onClick={() => void moveProduct(product.id, -1)}
+                        className="rounded border border-admin-border px-1.5 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
+                        title="Yukari tasi"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canReorder || reordering || index === filteredProducts.length - 1}
+                        onClick={() => void moveProduct(product.id, 1)}
+                        className="rounded border border-admin-border px-1.5 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
+                        title="Asagi tasi"
+                      >
+                        ↓
+                      </button>
+                    </div>
                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-admin-border bg-admin-surface-high">
                       {thumb ? (
                         // eslint-disable-next-line @next/next/no-img-element

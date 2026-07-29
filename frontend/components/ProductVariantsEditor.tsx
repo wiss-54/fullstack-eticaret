@@ -209,6 +209,17 @@ export default function ProductVariantsEditor({
     });
   }
 
+  function moveValue(axisIndex: number, valueIndex: number, direction: -1 | 1) {
+    const axis = axes[axisIndex];
+    if (!axis) return;
+    const target = valueIndex + direction;
+    if (target < 0 || target >= axis.values.length) return;
+    const values = [...axis.values];
+    const [item] = values.splice(valueIndex, 1);
+    values.splice(target, 0, item);
+    updateAxis(axisIndex, { ...axis, values });
+  }
+
   async function handleSave() {
     setSaving(true);
     setError(null);
@@ -238,7 +249,7 @@ export default function ProductVariantsEditor({
   return (
     <div className="mt-6 space-y-5 border-t border-admin-border pt-6">
       <div className="rounded-2xl border border-admin-primary/30 bg-admin-primary-container/15 p-4 text-sm text-admin-text">
-        <p className="font-semibold text-admin-primary">Varyantlar — tek secenek turu</p>
+        <p className="font-semibold text-admin-primary">Urun Secenekleri (Varyant)</p>
         <ol className="mt-2 list-decimal space-y-1 pl-4 text-admin-muted">
           <li>
             Urun tipine gore bir tur sec: tisort icin <strong className="text-admin-text">Beden</strong>,
@@ -246,7 +257,7 @@ export default function ProductVariantsEditor({
           </li>
           <li>Degerleri yaz (S, M, L veya Siyah, Beyaz...)</li>
           <li>Stok satirlarini olustur, her satira stok gir</li>
-          <li>Varyantlari kaydet</li>
+          <li>Kaydet — musteri urun sayfasinda sadece bu secenekleri gorur</li>
         </ol>
         <p className="mt-2 text-xs text-admin-muted">
           Renk x beden kombinasyonu yok. Hem renk hem beden lazimsa ayri urun olarak ac.
@@ -406,7 +417,7 @@ export default function ProductVariantsEditor({
                   {axis.values.map((value, valueIndex) => (
                     <div
                       key={`value-${valueIndex}`}
-                      className="grid gap-2 sm:grid-cols-[1fr_auto_auto]"
+                      className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
                     >
                       <input
                         className={fieldClass}
@@ -451,6 +462,26 @@ export default function ProductVariantsEditor({
                       ) : (
                         <div />
                       )}
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          disabled={valueIndex === 0}
+                          onClick={() => moveValue(axisIndex, valueIndex, -1)}
+                          className="rounded border border-admin-border px-2 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
+                          title="Yukari"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          disabled={valueIndex === axis.values.length - 1}
+                          onClick={() => moveValue(axisIndex, valueIndex, 1)}
+                          className="rounded border border-admin-border px-2 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
+                          title="Asagi"
+                        >
+                          ↓
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() =>

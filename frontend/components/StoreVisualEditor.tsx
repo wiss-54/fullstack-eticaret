@@ -432,6 +432,7 @@ export default function StoreVisualEditor() {
             onChange={updateSettings}
             onServerLogoUrl={setServerLogoUrl}
             onProductCreated={handleProductCreated}
+            onProductsChange={setProducts}
             onRemoveSection={removeSection}
             onCategoriesChange={setCategories}
           />

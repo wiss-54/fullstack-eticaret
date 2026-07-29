@@ -28,8 +28,9 @@ export async function getStoreSettings(): Promise<StoreSettings> {
 }
 
 export async function getProducts(categoryId?: number): Promise<Product[]> {
-  const query = categoryId ? `?categoryId=${categoryId}` : '';
-  const response = await fetch(`${getApiBaseUrl()}/api/products${query}`, {
+  const params = new URLSearchParams({ limit: '100' });
+  if (categoryId) params.set('categoryId', String(categoryId));
+  const response = await fetch(`${getApiBaseUrl()}/api/products?${params.toString()}`, {
     cache: 'no-store',
   });
 
