@@ -1,22 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { ProductVariant, VariantAxis, VariantAxisInput, VariantRowInput } from '@/lib/types';
 import { adminSaveProductVariants } from '@/lib/admin-api';
 
-type DraftValue = { label: string; colorHex: string };
-type DraftAxis = {
-  name: string;
-  displayStyle: 'list' | 'button' | 'color';
-  values: DraftValue[];
-};
-
-type DraftRow = {
-  valueLabels: string[];
+type DraftValue = {
+  label: string;
+  colorHex: string;
   stock: string;
   sku: string;
   price: string;
   isActive: boolean;
+};
+
+type DraftAxis = {
+  name: string;
+  displayStyle: 'list' | 'button' | 'color';
+  values: DraftValue[];
 };
 
 type ProductVariantsEditorProps = {
@@ -29,9 +29,6 @@ type ProductVariantsEditorProps = {
 
 const fieldClass =
   'rounded-xl border border-admin-border bg-admin-bg px-3 py-2 text-sm text-admin-text outline-none ring-admin-primary/30 placeholder:text-admin-muted focus:ring-2';
-
-const cellFieldClass =
-  'rounded-lg border border-admin-border bg-admin-bg px-2 py-1 text-admin-text outline-none ring-admin-primary/30 focus:ring-2';
 
 const DISPLAY_STYLES: {
   value: DraftAxis['displayStyle'];
@@ -65,57 +62,45 @@ const COLOR_PRESETS: { label: string; colorHex: string }[] = [
   { label: 'Gri', colorHex: '#6B7280' },
 ];
 
-function cartesian<T>(groups: T[][]): T[][] {
-  if (groups.length === 0) return [[]];
-  return groups.reduce<T[][]>(
-    (acc, group) => acc.flatMap((prefix) => group.map((item) => [...prefix, item])),
-    [[]],
-  );
+function emptyValue(style: DraftAxis['displayStyle'], label = '', colorHex = ''): DraftValue {
+  return {
+    label,
+    colorHex: colorHex || (style === 'color' ? '#111111' : ''),
+    stock: '0',
+    sku: '',
+    price: '',
+    isActive: true,
+  };
 }
 
-function toDraftAxes(axes: VariantAxis[]): DraftAxis[] {
+function stockFromVariants(label: string, variants: ProductVariant[]): Partial<DraftValue> {
+  const key = label.trim().toLowerCase();
+  const match = variants.find((variant) =>
+    variant.selections.some((selection) => selection.label.trim().toLowerCase() === key),
+  );
+  if (!match) return {};
+  return {
+    stock: String(match.stock ?? 0),
+    sku: match.sku ?? '',
+    price: match.price != null ? String(match.price) : '',
+    isActive: match.isActive ?? true,
+  };
+}
+
+function toDraftAxes(axes: VariantAxis[], variants: ProductVariant[]): DraftAxis[] {
   return axes.map((axis) => ({
     name: axis.name,
     displayStyle: axis.displayStyle,
     values: axis.values.map((value) => ({
+      ...emptyValue(axis.displayStyle, value.label, value.colorHex ?? ''),
+      ...stockFromVariants(value.label, variants),
       label: value.label,
-      colorHex: value.colorHex ?? '',
+      colorHex: value.colorHex ?? (axis.displayStyle === 'color' ? '#111111' : ''),
     })),
   }));
 }
 
-function buildRowsFromAxes(axes: DraftAxis[], existing: ProductVariant[]): DraftRow[] {
-  const cleanedAxes = axes
-    .map((axis) => ({
-      ...axis,
-      values: axis.values.filter((value) => value.label.trim()),
-    }))
-    .filter((axis) => axis.name.trim() && axis.values.length > 0);
-
-  if (cleanedAxes.length === 0) return [];
-
-  const combos = cartesian(cleanedAxes.map((axis) => axis.values.map((value) => value.label)));
-  const existingByKey = new Map(
-    existing.map((variant) => [
-      variant.selections.map((selection) => selection.label.trim().toLowerCase()).join('|'),
-      variant,
-    ]),
-  );
-
-  return combos.map((labels) => {
-    const key = labels.map((label) => label.trim().toLowerCase()).join('|');
-    const match = existingByKey.get(key);
-    return {
-      valueLabels: labels,
-      stock: String(match?.stock ?? 0),
-      sku: match?.sku ?? '',
-      price: match?.price != null ? String(match.price) : '',
-      isActive: match?.isActive ?? true,
-    };
-  });
-}
-
-function toPayload(axes: DraftAxis[], rows: DraftRow[]) {
+function toPayload(axes: DraftAxis[]) {
   const payloadAxes: VariantAxisInput[] = axes
     .filter((axis) => axis.name.trim())
     .map((axis, index) => ({
@@ -132,14 +117,21 @@ function toPayload(axes: DraftAxis[], rows: DraftRow[]) {
     }))
     .filter((axis) => axis.values.length > 0);
 
-  const variants: VariantRowInput[] = rows.map((row, index) => ({
-    valueLabels: row.valueLabels,
-    stock: Number(row.stock || 0),
-    sku: row.sku.trim() || null,
-    price: row.price.trim() ? Number(row.price) : null,
-    isActive: row.isActive,
-    sortOrder: index,
-  }));
+  const variants: VariantRowInput[] = [];
+  for (const axis of axes) {
+    for (const [index, value] of axis.values.entries()) {
+      const label = value.label.trim();
+      if (!label) continue;
+      variants.push({
+        valueLabels: [label],
+        stock: Math.max(0, Math.floor(Number(value.stock || 0))),
+        sku: value.sku.trim() || null,
+        price: value.price.trim() ? Number(value.price) : null,
+        isActive: value.isActive,
+        sortOrder: index,
+      });
+    }
+  }
 
   return { axes: payloadAxes, variants };
 }
@@ -147,7 +139,7 @@ function toPayload(axes: DraftAxis[], rows: DraftRow[]) {
 const emptyAxis = (style: DraftAxis['displayStyle'] = 'button'): DraftAxis => ({
   name: style === 'color' ? 'Renk' : style === 'button' ? 'Beden' : '',
   displayStyle: style,
-  values: [{ label: '', colorHex: style === 'color' ? '#111111' : '' }],
+  values: [emptyValue(style)],
 });
 
 export default function ProductVariantsEditor({
@@ -157,15 +149,10 @@ export default function ProductVariantsEditor({
   initialVariants,
   onSaved,
 }: ProductVariantsEditorProps) {
-  const [axes, setAxes] = useState<DraftAxis[]>(() => toDraftAxes(initialAxes));
-  const [rows, setRows] = useState<DraftRow[]>(() =>
-    buildRowsFromAxes(toDraftAxes(initialAxes), initialVariants),
-  );
+  const [axes, setAxes] = useState<DraftAxis[]>(() => toDraftAxes(initialAxes, initialVariants));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const combinationCount = useMemo(() => rows.length, [rows]);
 
   function updateAxis(axisIndex: number, nextAxis: DraftAxis) {
     setAxes((current) => {
@@ -175,8 +162,12 @@ export default function ProductVariantsEditor({
     });
   }
 
-  function regenerateRows() {
-    setRows(buildRowsFromAxes(axes, []));
+  function updateValue(axisIndex: number, valueIndex: number, patch: Partial<DraftValue>) {
+    const axis = axes[axisIndex];
+    if (!axis) return;
+    const values = [...axis.values];
+    values[valueIndex] = { ...values[valueIndex], ...patch };
+    updateAxis(axisIndex, { ...axis, values });
   }
 
   function addPresetAxis(style: DraftAxis['displayStyle']) {
@@ -205,7 +196,10 @@ export default function ProductVariantsEditor({
     }
     updateAxis(axisIndex, {
       ...axis,
-      values: [...axis.values.filter((value) => value.label.trim()), { label, colorHex }],
+      values: [
+        ...axis.values.filter((value) => value.label.trim()),
+        emptyValue(axis.displayStyle, label, colorHex),
+      ],
     });
   }
 
@@ -226,18 +220,27 @@ export default function ProductVariantsEditor({
     setMessage(null);
 
     try {
-      const payload = toPayload(axes, rows);
+      const payload = toPayload(axes);
       if (payload.axes.length === 0) {
-        throw new Error('Bir secenek turu sec (Renk veya Beden) ve deger ekle.');
+        throw new Error('Bir secenek turu sec (Renk veya Beden) ve en az bir deger ekle.');
       }
       if (payload.axes.length > 1) {
         throw new Error('Sadece bir secenek turu olabilir. Fazla secenekleri sil.');
       }
       if (payload.variants.length === 0) {
-        throw new Error('Once "Stok satirlarini olustur" ile satirlari uret.');
+        throw new Error('En az bir deger yaz (ornegin S, M) ve stok gir.');
       }
+
+      const labels = payload.variants.map((row) => row.valueLabels[0]?.toLowerCase());
+      if (new Set(labels).size !== labels.length) {
+        throw new Error('Ayni deger iki kez eklenemez (ornegin iki tane M).');
+      }
+
       const saved = await adminSaveProductVariants(productId, payload);
-      setMessage('Varyantlar kaydedildi');
+      setAxes(toDraftAxes(saved.variantAxes ?? [], saved.variants ?? []));
+      setMessage(
+        `${productName || 'Urun'} icin ${saved.variants?.length ?? 0} varyant kaydedildi. Her beden/renk ayri stokta.`,
+      );
       onSaved?.(saved.variantAxes ?? [], saved.variants ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Varyantlar kaydedilemedi');
@@ -246,34 +249,40 @@ export default function ProductVariantsEditor({
     }
   }
 
+  const filledCount = axes.reduce(
+    (sum, axis) => sum + axis.values.filter((value) => value.label.trim()).length,
+    0,
+  );
+
   return (
     <div className="mt-6 space-y-5 border-t border-admin-border pt-6">
       <div className="rounded-2xl border border-admin-primary/30 bg-admin-primary-container/15 p-4 text-sm text-admin-text">
         <p className="font-semibold text-admin-primary">Urun Secenekleri (Varyant)</p>
         <ol className="mt-2 list-decimal space-y-1 pl-4 text-admin-muted">
           <li>
-            Urun tipine gore bir tur sec: tisort icin <strong className="text-admin-text">Beden</strong>,
-            saat icin <strong className="text-admin-text">Renk</strong>
+            Tek tur sec: tisort → <strong className="text-admin-text">Beden</strong>, saat →{' '}
+            <strong className="text-admin-text">Renk</strong>
           </li>
-          <li>Degerleri yaz (S, M, L veya Siyah, Beyaz...)</li>
-          <li>Stok satirlarini olustur, her satira stok gir</li>
-          <li>Kaydet — musteri urun sayfasinda sadece bu secenekleri gorur</li>
+          <li>
+            Her degerin yanina <strong className="text-admin-text">ayri stok</strong> yaz (M=10, S=10
+            gibi)
+          </li>
+          <li>
+            <strong className="text-admin-text">Varyantlari Kaydet</strong> — tek tikla kaydolur
+          </li>
         </ol>
-        <p className="mt-2 text-xs text-admin-muted">
-          Renk x beden kombinasyonu yok. Hem renk hem beden lazimsa ayri urun olarak ac.
-        </p>
       </div>
 
       {axes.length > 1 ? (
         <div className="rounded-xl border border-admin-danger/40 bg-admin-danger/10 px-4 py-3 text-sm text-admin-danger">
-          Bu urunde birden fazla secenek turu var. Fazlalari silip tek tur birak (ornegin sadece Beden).
+          Bu urunde birden fazla secenek turu var. Fazlalari silip tek tur birak.
         </div>
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-admin-text">1) Secenek turu</h3>
-          <p className="text-sm text-admin-muted">Urun basina sadece bir tur (Renk veya Beden)</p>
+          <h3 className="font-semibold text-admin-text">Secenek turu</h3>
+          <p className="text-sm text-admin-muted">Urun basina sadece bir tur</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -323,7 +332,7 @@ export default function ProductVariantsEditor({
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-admin-muted">
-                      Secenek {axisIndex + 1}
+                      {axis.name || 'Secenek'}
                     </p>
                     <p className="mt-1 text-sm text-admin-muted">{styleMeta.hint}</p>
                   </div>
@@ -341,7 +350,7 @@ export default function ProductVariantsEditor({
                     <span className="text-sm text-admin-muted">Secenek adi</span>
                     <input
                       className={fieldClass}
-                      placeholder="Orn: Renk, Beden, Materyal"
+                      placeholder="Orn: Renk, Beden"
                       value={axis.name}
                       onChange={(event) =>
                         updateAxis(axisIndex, { ...axis, name: event.target.value })
@@ -377,142 +386,194 @@ export default function ProductVariantsEditor({
                   </label>
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-admin-text">Degerler</p>
-
-                  {axis.displayStyle === 'button' ? (
-                    <div className="flex flex-wrap gap-2">
-                      {SIZE_PRESETS.map((size) => (
-                        <button
-                          key={size}
-                          type="button"
-                          onClick={() => addValuePreset(axisIndex, size)}
-                          className="rounded-lg border border-admin-border px-2.5 py-1 text-xs text-admin-muted hover:border-admin-primary hover:text-admin-primary"
-                        >
-                          {size}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {axis.displayStyle === 'color' ? (
-                    <div className="flex flex-wrap gap-2">
-                      {COLOR_PRESETS.map((color) => (
-                        <button
-                          key={color.label}
-                          type="button"
-                          onClick={() => addValuePreset(axisIndex, color.label, color.colorHex)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-admin-border px-2.5 py-1 text-xs text-admin-muted hover:border-admin-primary hover:text-admin-primary"
-                        >
-                          <span
-                            className="h-3.5 w-3.5 rounded-full border border-admin-border"
-                            style={{ backgroundColor: color.colorHex }}
-                          />
-                          {color.label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {axis.values.map((value, valueIndex) => (
-                    <div
-                      key={`value-${valueIndex}`}
-                      className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
-                    >
-                      <input
-                        className={fieldClass}
-                        placeholder={
-                          axis.displayStyle === 'color'
-                            ? 'Renk adi (Siyah)'
-                            : axis.displayStyle === 'button'
-                              ? 'Beden (M)'
-                              : 'Deger'
-                        }
-                        value={value.label}
-                        onChange={(event) => {
-                          const values = [...axis.values];
-                          values[valueIndex] = { ...value, label: event.target.value };
-                          updateAxis(axisIndex, { ...axis, values });
-                        }}
-                      />
-                      {axis.displayStyle === 'color' ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            className="h-10 w-12 cursor-pointer rounded-lg border border-admin-border bg-admin-bg"
-                            value={value.colorHex || '#111111'}
-                            onChange={(event) => {
-                              const values = [...axis.values];
-                              values[valueIndex] = { ...value, colorHex: event.target.value };
-                              updateAxis(axisIndex, { ...axis, values });
-                            }}
-                            title="Renk sec"
-                          />
-                          <input
-                            className={`${fieldClass} w-28`}
-                            placeholder="#111111"
-                            value={value.colorHex}
-                            onChange={(event) => {
-                              const values = [...axis.values];
-                              values[valueIndex] = { ...value, colorHex: event.target.value };
-                              updateAxis(axisIndex, { ...axis, values });
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div />
-                      )}
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          disabled={valueIndex === 0}
-                          onClick={() => moveValue(axisIndex, valueIndex, -1)}
-                          className="rounded border border-admin-border px-2 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
-                          title="Yukari"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          disabled={valueIndex === axis.values.length - 1}
-                          onClick={() => moveValue(axisIndex, valueIndex, 1)}
-                          className="rounded border border-admin-border px-2 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
-                          title="Asagi"
-                        >
-                          ↓
-                        </button>
+                <div className="mt-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-admin-text">
+                      Degerler + stok ({axis.values.filter((v) => v.label.trim()).length})
+                    </p>
+                    {axis.displayStyle === 'button' ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {SIZE_PRESETS.map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => addValuePreset(axisIndex, size)}
+                            className="rounded-lg border border-admin-border px-2 py-0.5 text-xs text-admin-muted hover:border-admin-primary hover:text-admin-primary"
+                          >
+                            +{size}
+                          </button>
+                        ))}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateAxis(axisIndex, {
-                            ...axis,
-                            values: axis.values.filter((_, idx) => idx !== valueIndex),
-                          })
-                        }
-                        className="text-sm text-admin-danger"
-                      >
-                        Sil
-                      </button>
-                    </div>
-                  ))}
+                    ) : null}
+                    {axis.displayStyle === 'color' ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {COLOR_PRESETS.map((color) => (
+                          <button
+                            key={color.label}
+                            type="button"
+                            onClick={() =>
+                              addValuePreset(axisIndex, color.label, color.colorHex)
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-admin-border px-2 py-0.5 text-xs text-admin-muted hover:border-admin-primary hover:text-admin-primary"
+                          >
+                            <span
+                              className="h-3 w-3 rounded-full border border-admin-border"
+                              style={{ backgroundColor: color.colorHex }}
+                            />
+                            +{color.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="overflow-x-auto rounded-xl border border-admin-border">
+                    <table className="min-w-full text-sm text-admin-text">
+                      <thead className="bg-admin-surface-high text-left">
+                        <tr>
+                          <th className="px-3 py-2 font-medium text-admin-muted">Deger</th>
+                          {axis.displayStyle === 'color' ? (
+                            <th className="px-3 py-2 font-medium text-admin-muted">Renk</th>
+                          ) : null}
+                          <th className="px-3 py-2 font-medium text-admin-muted">Stok</th>
+                          <th className="px-3 py-2 font-medium text-admin-muted">SKU</th>
+                          <th className="px-3 py-2 font-medium text-admin-muted">Fiyat</th>
+                          <th className="px-3 py-2 font-medium text-admin-muted">Aktif</th>
+                          <th className="px-3 py-2 font-medium text-admin-muted">Sira</th>
+                          <th className="px-3 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {axis.values.map((value, valueIndex) => (
+                          <tr key={`value-${valueIndex}`} className="border-t border-admin-border">
+                            <td className="px-3 py-2">
+                              <input
+                                className={`${fieldClass} min-w-[5rem]`}
+                                placeholder={
+                                  axis.displayStyle === 'color'
+                                    ? 'Siyah'
+                                    : axis.displayStyle === 'button'
+                                      ? 'M'
+                                      : 'Deger'
+                                }
+                                value={value.label}
+                                onChange={(event) =>
+                                  updateValue(axisIndex, valueIndex, { label: event.target.value })
+                                }
+                              />
+                            </td>
+                            {axis.displayStyle === 'color' ? (
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    className="h-9 w-10 cursor-pointer rounded-lg border border-admin-border bg-admin-bg"
+                                    value={value.colorHex || '#111111'}
+                                    onChange={(event) =>
+                                      updateValue(axisIndex, valueIndex, {
+                                        colorHex: event.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+                              </td>
+                            ) : null}
+                            <td className="px-3 py-2">
+                              <input
+                                type="number"
+                                min="0"
+                                className={`${fieldClass} w-24`}
+                                value={value.stock}
+                                onChange={(event) =>
+                                  updateValue(axisIndex, valueIndex, { stock: event.target.value })
+                                }
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                className={`${fieldClass} w-28`}
+                                placeholder="SKU"
+                                value={value.sku}
+                                onChange={(event) =>
+                                  updateValue(axisIndex, valueIndex, { sku: event.target.value })
+                                }
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className={`${fieldClass} w-28`}
+                                placeholder="Ana fiyat"
+                                value={value.price}
+                                onChange={(event) =>
+                                  updateValue(axisIndex, valueIndex, { price: event.target.value })
+                                }
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                type="checkbox"
+                                checked={value.isActive}
+                                onChange={(event) =>
+                                  updateValue(axisIndex, valueIndex, {
+                                    isActive: event.target.checked,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex gap-1">
+                                <button
+                                  type="button"
+                                  disabled={valueIndex === 0}
+                                  onClick={() => moveValue(axisIndex, valueIndex, -1)}
+                                  className="rounded border border-admin-border px-2 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={valueIndex === axis.values.length - 1}
+                                  onClick={() => moveValue(axisIndex, valueIndex, 1)}
+                                  className="rounded border border-admin-border px-2 text-xs text-admin-muted hover:text-admin-text disabled:opacity-30"
+                                >
+                                  ↓
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateAxis(axisIndex, {
+                                    ...axis,
+                                    values: axis.values.filter((_, idx) => idx !== valueIndex),
+                                  })
+                                }
+                                className="text-sm text-admin-danger"
+                              >
+                                Sil
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() =>
                       updateAxis(axisIndex, {
                         ...axis,
-                        values: [
-                          ...axis.values,
-                          {
-                            label: '',
-                            colorHex: axis.displayStyle === 'color' ? '#111111' : '',
-                          },
-                        ],
+                        values: [...axis.values, emptyValue(axis.displayStyle)],
                       })
                     }
-                    className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary"
+                    className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary"
                   >
-                    Deger ekle
+                    Deger satiri ekle
                   </button>
                 </div>
               </div>
@@ -521,121 +582,14 @@ export default function ProductVariantsEditor({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-admin-text">2) Stok satirlari</h3>
-          <p className="text-sm text-admin-muted">
-            Her deger icin ayri stok. Bos fiyat = ana urun fiyati.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={regenerateRows}
-          className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary"
-        >
-          Stok satirlarini olustur / yenile
-        </button>
-      </div>
-
-      {rows.length > 0 ? (
-        <div className="space-y-3">
-          <p className="text-sm text-admin-muted">
-            {productName || 'Urun'} icin {combinationCount} varyant satiri
-          </p>
-          <div className="overflow-x-auto rounded-xl border border-admin-border">
-            <table className="min-w-full text-sm text-admin-text">
-              <thead className="bg-admin-surface-high text-left">
-                <tr>
-                  {axes.map((axis, index) => (
-                    <th key={`${axis.name}-${index}`} className="px-4 py-3 font-medium text-admin-muted">
-                      {axis.name || `Secenek ${index + 1}`}
-                    </th>
-                  ))}
-                  <th className="px-4 py-3 font-medium text-admin-muted">Stok</th>
-                  <th className="px-4 py-3 font-medium text-admin-muted">SKU</th>
-                  <th className="px-4 py-3 font-medium text-admin-muted">Fiyat</th>
-                  <th className="px-4 py-3 font-medium text-admin-muted">Aktif</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, rowIndex) => (
-                  <tr key={row.valueLabels.join('|')} className="border-t border-admin-border">
-                    {row.valueLabels.map((label, labelIndex) => (
-                      <td key={`${label}-${labelIndex}`} className="px-4 py-3">
-                        {label}
-                      </td>
-                    ))}
-                    <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        min="0"
-                        className={`w-24 ${cellFieldClass}`}
-                        value={row.stock}
-                        onChange={(event) => {
-                          const next = [...rows];
-                          next[rowIndex] = { ...row, stock: event.target.value };
-                          setRows(next);
-                        }}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        className={`w-36 ${cellFieldClass}`}
-                        placeholder="SKU"
-                        value={row.sku}
-                        onChange={(event) => {
-                          const next = [...rows];
-                          next[rowIndex] = { ...row, sku: event.target.value };
-                          setRows(next);
-                        }}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className={`w-28 ${cellFieldClass}`}
-                        placeholder="Bos = ana fiyat"
-                        value={row.price}
-                        onChange={(event) => {
-                          const next = [...rows];
-                          next[rowIndex] = { ...row, price: event.target.value };
-                          setRows(next);
-                        }}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={row.isActive}
-                        onChange={(event) => {
-                          const next = [...rows];
-                          next[rowIndex] = { ...row, isActive: event.target.checked };
-                          setRows(next);
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        <p className="rounded-xl border border-dashed border-admin-border bg-admin-bg px-4 py-5 text-sm text-admin-muted">
-          Secenek ve degerleri girdikten sonra &quot;Stok satirlarini olustur&quot;a bas.
-        </p>
-      )}
-
       <div className="flex flex-col gap-2">
         <button
           type="button"
-          disabled={saving}
+          disabled={saving || filledCount === 0}
           onClick={() => void handleSave()}
           className="rounded-xl bg-admin-primary-container px-4 py-3 text-sm font-medium text-admin-on-primary-container disabled:opacity-60"
         >
-          {saving ? 'Kaydediliyor...' : '3) Varyantlari Kaydet'}
+          {saving ? 'Kaydediliyor...' : `Varyantlari Kaydet (${filledCount} deger)`}
         </button>
         {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
         {error ? <p className="text-sm text-admin-danger">{error}</p> : null}

@@ -86,7 +86,6 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [variantsEditorKey, setVariantsEditorKey] = useState(0);
   const [productQuery, setProductQuery] = useState('');
   const [reordering, setReordering] = useState(false);
 
@@ -441,7 +440,7 @@ export default function AdminPage() {
 
           {editingId ? (
             <ProductVariantsEditor
-              key={variantsEditorKey}
+              key={editingId}
               productId={editingId}
               productName={form.name}
               initialAxes={editingAxes}
@@ -450,7 +449,6 @@ export default function AdminPage() {
                 setEditingAxes(axes);
                 setEditingVariants(variants);
                 setEditingProductType(variants.length > 0 ? 'variant' : 'simple');
-                setVariantsEditorKey((current) => current + 1);
                 void loadProducts();
               }}
             />

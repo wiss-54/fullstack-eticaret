@@ -24,7 +24,7 @@ type CartContextValue = {
   items: CartItem[];
   itemCount: number;
   total: number;
-  addItem: (input: AddCartItemInput) => void;
+  addItem: (input: AddCartItemInput) => { added: number; reason?: 'out_of_stock' | 'limit_reached' };
   setQuantity: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clearCart: () => void;
@@ -57,9 +57,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     writeCart({ items, updatedAt: new Date().toISOString() });
   }, [items, ready]);
 
-  const addItem = useCallback((input: AddCartItemInput) => {
-    setItems((current) => addItemToCart(current, input));
-  }, []);
+  const addItem = useCallback(
+    (input: AddCartItemInput) => {
+      const next = addItemToCart(items, input);
+      setItems(next.items);
+      return { added: next.added, reason: next.reason };
+    },
+    [items],
+  );
 
   const setQuantity = useCallback((lineId: string, quantity: number) => {
     setItems((current) => updateItemQuantity(current, lineId, quantity));

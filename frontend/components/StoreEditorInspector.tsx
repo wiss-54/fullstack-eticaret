@@ -590,27 +590,24 @@ export default function StoreEditorInspector({
   }
 
   if (selection.type === 'footer') {
+    const leftLen = settings.footerLeft?.length ?? 0;
+    const rightLen = settings.footerRight?.length ?? 0;
+    const decimals = settings.currencyDecimals ?? 2;
+    const previewPrice = new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: (settings.currencyCode || 'TRY').toUpperCase(),
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(1250);
+
     return (
-      <InspectorShell title="Alt bilgi" hint="Metinler ve fiyat gosterimi (kur / kurus).">
+      <InspectorShell
+        title="Alt bilgi"
+        hint="Sol/sag metin karakter sayisi, kur ve kurus basamagini buradan ayarla. Kaydet ile yayinla."
+      >
         <div className="space-y-4">
-          <Field label="Sol metin">
-            <textarea
-              className={`${inputClass} min-h-20`}
-              value={settings.footerLeft}
-              onChange={(e) => patch('footerLeft', e.target.value)}
-            />
-          </Field>
-          <StoreTextStyleFields settings={settings} styleKey="footer.left" onChange={onChange} />
-          <Field label="Sag metin">
-            <textarea
-              className={`${inputClass} min-h-20`}
-              value={settings.footerRight}
-              onChange={(e) => patch('footerRight', e.target.value)}
-            />
-          </Field>
-          <StoreTextStyleFields settings={settings} styleKey="footer.right" onChange={onChange} />
-          <div className="border-t border-admin-border pt-4">
-            <p className="mb-3 text-sm font-medium text-admin-text">Fiyat / kur ayari</p>
+          <div className="rounded-xl border border-admin-primary/30 bg-admin-primary-container/10 p-3">
+            <p className="mb-2 text-sm font-medium text-admin-text">Kur / kurus sayisi</p>
             <div className="mb-3 flex flex-wrap gap-2">
               {(['TRY', 'USD', 'EUR'] as const).map((code) => (
                 <button
@@ -627,34 +624,62 @@ export default function StoreEditorInspector({
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Para birimi (ISO)">
-                <input
-                  className={inputClass}
-                  value={settings.currencyCode || 'TRY'}
-                  maxLength={3}
-                  onChange={(e) => patch('currencyCode', e.target.value.toUpperCase())}
-                  placeholder="TRY"
-                />
-              </Field>
-              <Field label="Kurus / ondalik basamak">
-                <select
-                  className={inputClass}
-                  value={settings.currencyDecimals ?? 2}
-                  onChange={(e) => patch('currencyDecimals', Number(e.target.value))}
+            <Field label={`Kurus basamak sayisi: ${decimals}`}>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={decimals <= 0}
+                  onClick={() => patch('currencyDecimals', Math.max(0, decimals - 1))}
+                  className="rounded-lg border border-admin-border px-3 py-2 text-sm text-admin-text hover:border-admin-primary disabled:opacity-40"
                 >
-                  <option value={0}>0 (1.000)</option>
-                  <option value={1}>1 (1.000,0)</option>
-                  <option value={2}>2 (1.000,00)</option>
-                  <option value={3}>3</option>
-                  <option value={4}>4</option>
-                </select>
-              </Field>
-            </div>
+                  −
+                </button>
+                <input
+                  className={`${inputClass} text-center`}
+                  type="number"
+                  min={0}
+                  max={4}
+                  value={decimals}
+                  onChange={(e) =>
+                    patch(
+                      'currencyDecimals',
+                      Math.min(4, Math.max(0, Number(e.target.value) || 0)),
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  disabled={decimals >= 4}
+                  onClick={() => patch('currencyDecimals', Math.min(4, decimals + 1))}
+                  className="rounded-lg border border-admin-border px-3 py-2 text-sm text-admin-text hover:border-admin-primary disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+            </Field>
             <p className="mt-2 text-xs text-admin-muted">
-              Footer panelinden magaza fiyatlarinin kurunu ve kurus sayisini degistirirsin.
+              Ornek fiyat onizleme: <span className="font-semibold text-admin-text">{previewPrice}</span>
             </p>
           </div>
+
+          <Field label={`Sol metin (${leftLen}/160)`}>
+            <textarea
+              className={`${inputClass} min-h-20`}
+              maxLength={160}
+              value={settings.footerLeft}
+              onChange={(e) => patch('footerLeft', e.target.value.slice(0, 160))}
+            />
+          </Field>
+          <StoreTextStyleFields settings={settings} styleKey="footer.left" onChange={onChange} />
+          <Field label={`Sag metin (${rightLen}/160)`}>
+            <textarea
+              className={`${inputClass} min-h-20`}
+              maxLength={160}
+              value={settings.footerRight}
+              onChange={(e) => patch('footerRight', e.target.value.slice(0, 160))}
+            />
+          </Field>
+          <StoreTextStyleFields settings={settings} styleKey="footer.right" onChange={onChange} />
         </div>
       </InspectorShell>
     );
