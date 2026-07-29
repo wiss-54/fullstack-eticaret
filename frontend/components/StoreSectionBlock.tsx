@@ -77,14 +77,24 @@ export default function StoreSectionBlock({
   const card = getCardRadiusClass(settings);
 
   if (section.type === 'features') {
-    const features = settings.featureCards ?? [];
+    const features = (settings.featureCards ?? []).filter(
+      (item) => item.title.trim() || item.text.trim(),
+    );
     if (features.length === 0) return null;
+    const colClass =
+      features.length === 1
+        ? 'sm:grid-cols-1 lg:grid-cols-1'
+        : features.length === 2
+          ? 'sm:grid-cols-2 lg:grid-cols-2'
+          : features.length === 3
+            ? 'sm:grid-cols-2 lg:grid-cols-3'
+            : 'sm:grid-cols-2 lg:grid-cols-4';
     return (
       <section className="mx-auto w-full max-w-6xl px-6 py-10">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={`grid gap-4 ${colClass}`}>
           {features.map((item, index) => (
             <div
-              key={`${item.title}-${item.text}`}
+              key={`${item.title}-${item.text}-${index}`}
               className={`${card} border border-store-border bg-store-surface p-5`}
             >
               <SectionText

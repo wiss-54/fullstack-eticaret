@@ -146,6 +146,7 @@ export default function StoreEditorCanvas({
                 navItem1Href={settings.navItem1Href}
                 navItem2Label={settings.navItem2Label}
                 navItem2Href={settings.navItem2Href}
+                categories={categories}
               />
             </div>
           </div>

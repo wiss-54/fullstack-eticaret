@@ -19,7 +19,7 @@ const variantAxisSchema = z.object({
 });
 
 const variantRowSchema = z.object({
-  valueLabels: z.array(z.string().trim().min(1).max(200)).min(1).max(3),
+  valueLabels: z.array(z.string().trim().min(1).max(200)).min(1).max(1),
   sku: z.string().trim().max(80).optional().nullable(),
   price: z.number().finite().nonnegative().optional().nullable(),
   stock: z.number().int().nonnegative().optional(),
@@ -28,7 +28,8 @@ const variantRowSchema = z.object({
 });
 
 const replaceProductVariantsSchema = z.object({
-  axes: z.array(variantAxisSchema).max(3),
+  // Tek eksen: tisort = beden, saat = renk. Renk x beden kombinasyonu yok.
+  axes: z.array(variantAxisSchema).max(1),
   variants: z.array(variantRowSchema).max(512),
 });
 

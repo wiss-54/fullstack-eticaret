@@ -63,9 +63,16 @@ export default function CategoryManager() {
 
     try {
       if (editingId) {
-        await adminUpdateCategory(editingId, { name: name.trim() });
+        const current = categories.find((category) => category.id === editingId);
+        await adminUpdateCategory(editingId, {
+          name: name.trim(),
+          sortOrder: current?.sortOrder ?? 0,
+        });
       } else {
-        await adminCreateCategory({ name: name.trim() });
+        await adminCreateCategory({
+          name: name.trim(),
+          sortOrder: categories.length,
+        });
       }
       resetForm();
       await loadCategories();
@@ -88,12 +95,38 @@ export default function CategoryManager() {
     }
   }
 
+  async function moveCategory(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= categories.length) return;
+
+    const ordered = [...categories];
+    const [item] = ordered.splice(index, 1);
+    ordered.splice(nextIndex, 0, item);
+    setCategories(ordered.map((category, sortOrder) => ({ ...category, sortOrder })));
+    setError(null);
+
+    try {
+      await Promise.all(
+        ordered.map((category, sortOrder) =>
+          adminUpdateCategory(category.id, {
+            name: category.name,
+            sortOrder,
+          }),
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sira guncellenemedi');
+      await loadCategories();
+    }
+  }
+
   return (
     <section className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm">
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-admin-text">Kategoriler</h2>
         <p className="mt-1 text-sm text-admin-muted">
-          Urunleri kategorilere ayir; filtreleme ve vitrin duzeni icin kullanilir.
+          Urun filtre chip’leri ve Koleksiyon menusu bu sirayi kullanir. Yukari/asagi ile yerini
+          degistir.
         </p>
       </div>
 
@@ -136,7 +169,7 @@ export default function CategoryManager() {
           {categories.length === 0 ? (
             <p className="text-sm text-admin-muted">Henuz kategori yok.</p>
           ) : (
-            categories.map((category) => (
+            categories.map((category, index) => (
               <div
                 key={category.id}
                 className="flex items-center justify-between rounded-lg border border-admin-border bg-admin-bg px-4 py-3"
@@ -146,6 +179,22 @@ export default function CategoryManager() {
                   <p className="font-admin-mono text-xs text-admin-muted">/{category.slug}</p>
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={index === 0}
+                    onClick={() => void moveCategory(index, -1)}
+                    className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary disabled:opacity-40"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    disabled={index === categories.length - 1}
+                    onClick={() => void moveCategory(index, 1)}
+                    className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-text hover:border-admin-primary disabled:opacity-40"
+                  >
+                    ↓
+                  </button>
                   <button
                     type="button"
                     onClick={() => {

@@ -180,22 +180,21 @@ export default function ProductVariantsEditor({
   }
 
   function addPresetAxis(style: DraftAxis['displayStyle']) {
-    if (axes.length >= 3) return;
-    const already = axes.some(
-      (axis) =>
-        axis.displayStyle === style ||
-        axis.name.trim().toLowerCase() === (style === 'color' ? 'renk' : 'beden'),
-    );
-    if (already) {
-      setError(
-        style === 'color'
-          ? 'Renk secenegi zaten ekli.'
-          : 'Beden secenegi zaten ekli.',
-      );
+    if (axes.length >= 1) {
+      setError('Urun basina tek secenek turu. Once mevcut secenegi sil, sonra digerini ekle.');
       return;
     }
     setError(null);
-    setAxes((current) => [...current, emptyAxis(style)]);
+    setAxes([emptyAxis(style)]);
+  }
+
+  function addCustomAxis() {
+    if (axes.length >= 1) {
+      setError('Urun basina tek secenek turu. Once mevcut secenegi sil, sonra digerini ekle.');
+      return;
+    }
+    setError(null);
+    setAxes([emptyAxis('list')]);
   }
 
   function addValuePreset(axisIndex: number, label: string, colorHex = '') {
@@ -218,10 +217,13 @@ export default function ProductVariantsEditor({
     try {
       const payload = toPayload(axes, rows);
       if (payload.axes.length === 0) {
-        throw new Error('En az bir secenek (Renk veya Beden) ve deger ekle.');
+        throw new Error('Bir secenek turu sec (Renk veya Beden) ve deger ekle.');
+      }
+      if (payload.axes.length > 1) {
+        throw new Error('Sadece bir secenek turu olabilir. Fazla secenekleri sil.');
       }
       if (payload.variants.length === 0) {
-        throw new Error('Once "Kombinasyonlari Olustur" ile stok satirlarini uret.');
+        throw new Error('Once "Stok satirlarini olustur" ile satirlari uret.');
       }
       const saved = await adminSaveProductVariants(productId, payload);
       setMessage('Varyantlar kaydedildi');
@@ -236,44 +238,56 @@ export default function ProductVariantsEditor({
   return (
     <div className="mt-6 space-y-5 border-t border-admin-border pt-6">
       <div className="rounded-2xl border border-admin-primary/30 bg-admin-primary-container/15 p-4 text-sm text-admin-text">
-        <p className="font-semibold text-admin-primary">Varyantlar (Renk / Beden)</p>
+        <p className="font-semibold text-admin-primary">Varyantlar — tek secenek turu</p>
         <ol className="mt-2 list-decimal space-y-1 pl-4 text-admin-muted">
-          <li>Renk veya beden gibi secenek ekle</li>
-          <li>Her secenek icin degerleri yaz (S, M, L veya Siyah, Beyaz...)</li>
-          <li>Kombinasyonlari olustur, her satira stok gir</li>
+          <li>
+            Urun tipine gore bir tur sec: tisort icin <strong className="text-admin-text">Beden</strong>,
+            saat icin <strong className="text-admin-text">Renk</strong>
+          </li>
+          <li>Degerleri yaz (S, M, L veya Siyah, Beyaz...)</li>
+          <li>Stok satirlarini olustur, her satira stok gir</li>
           <li>Varyantlari kaydet</li>
         </ol>
+        <p className="mt-2 text-xs text-admin-muted">
+          Renk x beden kombinasyonu yok. Hem renk hem beden lazimsa ayri urun olarak ac.
+        </p>
       </div>
+
+      {axes.length > 1 ? (
+        <div className="rounded-xl border border-admin-danger/40 bg-admin-danger/10 px-4 py-3 text-sm text-admin-danger">
+          Bu urunde birden fazla secenek turu var. Fazlalari silip tek tur birak (ornegin sadece Beden).
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-admin-text">1) Secenekler</h3>
-          <p className="text-sm text-admin-muted">Musterinin urun sayfasinda sececegi alanlar</p>
+          <h3 className="font-semibold text-admin-text">1) Secenek turu</h3>
+          <p className="text-sm text-admin-muted">Urun basina sadece bir tur (Renk veya Beden)</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={axes.length >= 3}
+            disabled={axes.length >= 1}
             onClick={() => addPresetAxis('color')}
             className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary disabled:opacity-50"
           >
-            + Renk ekle
+            + Renk
           </button>
           <button
             type="button"
-            disabled={axes.length >= 3}
+            disabled={axes.length >= 1}
             onClick={() => addPresetAxis('button')}
             className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary disabled:opacity-50"
           >
-            + Beden ekle
+            + Beden
           </button>
           <button
             type="button"
-            disabled={axes.length >= 3}
-            onClick={() => setAxes((current) => [...current, emptyAxis('list')])}
+            disabled={axes.length >= 1}
+            onClick={addCustomAxis}
             className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-muted hover:border-admin-primary disabled:opacity-50"
           >
-            + Ozel secenek
+            + Ozel
           </button>
         </div>
       </div>
@@ -281,8 +295,8 @@ export default function ProductVariantsEditor({
       {axes.length === 0 ? (
         <div className="rounded-xl border border-dashed border-admin-border bg-admin-bg px-4 py-6 text-center">
           <p className="text-sm text-admin-muted">
-            Henuz secenek yok. Hizli baslamak icin <strong className="text-admin-text">Renk</strong>{' '}
-            veya <strong className="text-admin-text">Beden</strong> ekle.
+            Ornek: tisort → <strong className="text-admin-text">Beden</strong>, saat →{' '}
+            <strong className="text-admin-text">Renk</strong>.
           </p>
         </div>
       ) : (
@@ -478,9 +492,9 @@ export default function ProductVariantsEditor({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-admin-text">2) Stok matrisi</h3>
+          <h3 className="font-semibold text-admin-text">2) Stok satirlari</h3>
           <p className="text-sm text-admin-muted">
-            Ornek: M + Siyah icin ayri stok. Bos fiyat = ana urun fiyati.
+            Her deger icin ayri stok. Bos fiyat = ana urun fiyati.
           </p>
         </div>
         <button
@@ -488,14 +502,14 @@ export default function ProductVariantsEditor({
           onClick={regenerateRows}
           className="rounded-lg border border-admin-border px-3 py-1.5 text-sm text-admin-text hover:border-admin-primary"
         >
-          Kombinasyonlari Olustur / Yenile
+          Stok satirlarini olustur / yenile
         </button>
       </div>
 
       {rows.length > 0 ? (
         <div className="space-y-3">
           <p className="text-sm text-admin-muted">
-            {productName || 'Urun'} icin {combinationCount} kombinasyon
+            {productName || 'Urun'} icin {combinationCount} varyant satiri
           </p>
           <div className="overflow-x-auto rounded-xl border border-admin-border">
             <table className="min-w-full text-sm text-admin-text">
@@ -579,7 +593,7 @@ export default function ProductVariantsEditor({
         </div>
       ) : (
         <p className="rounded-xl border border-dashed border-admin-border bg-admin-bg px-4 py-5 text-sm text-admin-muted">
-          Secenek ve degerleri girdikten sonra &quot;Kombinasyonlari Olustur&quot;a bas.
+          Secenek ve degerleri girdikten sonra &quot;Stok satirlarini olustur&quot;a bas.
         </p>
       )}
 

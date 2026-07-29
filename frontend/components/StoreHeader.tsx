@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import CartNav from '@/components/CartNav';
 import CustomerNav from '@/components/CustomerNav';
+import StoreHeaderNav from '@/components/StoreHeaderNav';
 import StoreThemeToggle from '@/components/StoreThemeToggle';
-import { safeHref } from '@/lib/safe-href';
+import type { Category } from '@/lib/types';
 import { safeMediaUrl } from '@/lib/safe-media-url';
 
 type StoreHeaderProps = {
@@ -15,6 +16,7 @@ type StoreHeaderProps = {
   navItem1Href?: string;
   navItem2Label?: string;
   navItem2Href?: string;
+  categories?: Category[];
   /** Editor canvas: no sticky overlay, no live nav actions */
   preview?: boolean;
 };
@@ -28,12 +30,11 @@ export default function StoreHeader({
   navItem1Href = '/#kategoriler',
   navItem2Label = 'Koleksiyon',
   navItem2Href = '/#urunler',
+  categories = [],
   preview = false,
 }: StoreHeaderProps) {
   const logoSrc = safeMediaUrl(logoUrl);
   const brand = subtitle || 'EticaretShop';
-  const link1Href = safeHref(navItem1Href, '/#kategoriler');
-  const link2Href = safeHref(navItem2Href, '/#urunler');
 
   const brandBlock = (
     <>
@@ -68,21 +69,14 @@ export default function StoreHeader({
         )}
 
         <nav className="hidden items-center gap-6 text-sm font-semibold text-store-muted lg:flex">
-          {preview ? (
-            <>
-              <span>{navItem1Label}</span>
-              <span>{navItem2Label}</span>
-            </>
-          ) : (
-            <>
-              <a href={link1Href} className="transition hover:text-store-primary">
-                {navItem1Label}
-              </a>
-              <a href={link2Href} className="transition hover:text-store-primary">
-                {navItem2Label}
-              </a>
-            </>
-          )}
+          <StoreHeaderNav
+            navItem1Label={navItem1Label}
+            navItem1Href={navItem1Href}
+            navItem2Label={navItem2Label}
+            navItem2Href={navItem2Href}
+            categories={categories}
+            preview={preview}
+          />
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
