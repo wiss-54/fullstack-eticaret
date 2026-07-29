@@ -87,6 +87,7 @@ export default async function Home({ searchParams }: HomeProps) {
         navItem1Href={settings.navItem1Href}
         navItem2Label={settings.navItem2Label}
         navItem2Href={settings.navItem2Href}
+        categories={categories}
       />
 
       {sections.map((section) => {

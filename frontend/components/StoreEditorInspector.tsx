@@ -8,6 +8,7 @@ import {
   isMultilineTextKey,
   setTextValue,
 } from '@/lib/editor-selection';
+import { adminUpdateCategory } from '@/lib/admin-api';
 import ProductImageField from '@/components/ProductImageField';
 import StoreEditorQuickProduct from '@/components/StoreEditorQuickProduct';
 import StoreTextStyleFields from '@/components/StoreTextStyleFields';
@@ -24,6 +25,7 @@ type Props = {
   onServerLogoUrl: (value: string | null) => void;
   onProductCreated: (product: Product) => void;
   onRemoveSection?: (id: string) => void;
+  onCategoriesChange?: (next: Category[]) => void;
 };
 
 function Field({
@@ -362,6 +364,7 @@ export default function StoreEditorInspector({
   onServerLogoUrl,
   onProductCreated,
   onRemoveSection,
+  onCategoriesChange,
 }: Props) {
   function patch<K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) {
     onChange({ ...settings, [key]: value });
@@ -381,6 +384,48 @@ export default function StoreEditorInspector({
       i === index ? { ...card, [key]: value } : card,
     );
     patch('featureCards', featureCards);
+  }
+
+  function addFeatureCard() {
+    if (settings.featureCards.length >= 6) return;
+    patch('featureCards', [...settings.featureCards, { title: '', text: '' }]);
+  }
+
+  function removeFeatureCard(index: number) {
+    patch(
+      'featureCards',
+      settings.featureCards.filter((_, i) => i !== index),
+    );
+  }
+
+  function moveFeatureCard(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= settings.featureCards.length) return;
+    const next = [...settings.featureCards];
+    const [item] = next.splice(index, 1);
+    next.splice(nextIndex, 0, item);
+    patch('featureCards', next);
+  }
+
+  async function moveCategory(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= categories.length) return;
+    const ordered = [...categories];
+    const [item] = ordered.splice(index, 1);
+    ordered.splice(nextIndex, 0, item);
+    try {
+      await Promise.all(
+        ordered.map((category, sortOrder) =>
+          adminUpdateCategory(category.id, {
+            name: category.name,
+            sortOrder,
+          }),
+        ),
+      );
+      onCategoriesChange?.(ordered.map((category, sortOrder) => ({ ...category, sortOrder })));
+    } catch {
+      // parent may show global error via reload
+    }
   }
 
   const canRemoveSection = settings.sections.length > 1;
@@ -600,12 +645,57 @@ export default function StoreEditorInspector({
 
       {section.type === 'features' ? (
         <div className="space-y-3">
-          <p className="text-xs text-admin-muted">Kart metinlerini buradan duzenle (max 4).</p>
-          {settings.featureCards.slice(0, 4).map((card, index) => (
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-admin-muted">
+              Kart ekle/cikar (max 6). Bos kartlar kayitta silinir.
+            </p>
+            <button
+              type="button"
+              disabled={settings.featureCards.length >= 6}
+              onClick={addFeatureCard}
+              className="rounded-lg border border-admin-border px-2.5 py-1 text-xs font-semibold text-admin-text hover:border-admin-primary disabled:opacity-50"
+            >
+              + Kart
+            </button>
+          </div>
+          {settings.featureCards.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-admin-border px-3 py-4 text-xs text-admin-muted">
+              Henuz kart yok. + Kart ile ekle.
+            </p>
+          ) : null}
+          {settings.featureCards.map((card, index) => (
             <div
               key={index}
               className="space-y-2 rounded-xl border border-admin-border p-3"
             >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-admin-muted">Kart {index + 1}</p>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    disabled={index === 0}
+                    onClick={() => moveFeatureCard(index, -1)}
+                    className="rounded border border-admin-border px-2 py-0.5 text-xs disabled:opacity-40"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    disabled={index === settings.featureCards.length - 1}
+                    onClick={() => moveFeatureCard(index, 1)}
+                    className="rounded border border-admin-border px-2 py-0.5 text-xs disabled:opacity-40"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeFeatureCard(index)}
+                    className="rounded border border-admin-danger/40 px-2 py-0.5 text-xs text-admin-danger"
+                  >
+                    Sil
+                  </button>
+                </div>
+              </div>
               <input
                 className={inputClass}
                 placeholder="Baslik"
@@ -649,6 +739,53 @@ export default function StoreEditorInspector({
               onChange={(e) => patch('productsSubtitle', e.target.value)}
             />
           </Field>
+
+          <div className="space-y-2 border-t border-admin-border pt-3">
+            <p className="text-sm font-semibold text-admin-text">Vitrin kategorileri</p>
+            <p className="text-xs text-admin-muted">
+              Sirayi degistir; ana sayfa chip’leri ve Koleksiyon menusu buna gore gelir.
+              Ekle/sil icin Urunler sayfasindaki Kategoriler panelini kullan.
+            </p>
+            {categories.length === 0 ? (
+              <p className="text-xs text-admin-muted">Henuz kategori yok.</p>
+            ) : (
+              <div className="space-y-2">
+                {categories.map((category, index) => (
+                  <div
+                    key={category.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-admin-border bg-admin-bg px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-admin-text">
+                        {category.name}
+                      </p>
+                      <p className="font-admin-mono text-[11px] text-admin-muted">
+                        /{category.slug}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => void moveCategory(index, -1)}
+                        className="rounded border border-admin-border px-2 py-0.5 text-xs disabled:opacity-40"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === categories.length - 1}
+                        onClick={() => void moveCategory(index, 1)}
+                        className="rounded border border-admin-border px-2 py-0.5 text-xs disabled:opacity-40"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       ) : null}
 

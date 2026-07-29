@@ -49,7 +49,7 @@ export const SECTION_PALETTE: {
   hint: string;
 }[] = [
   { type: 'hero', label: 'Hero', hint: 'Baslik + butonlar (ust alan)' },
-  { type: 'features', label: 'Ozellikler', hint: '4 kartlik ozellik gridi' },
+  { type: 'features', label: 'Ozellikler', hint: 'Ozellik kartlari (ekle/cikar, max 6)' },
   { type: 'products', label: 'Urunler', hint: 'Katalog listesi' },
   { type: 'rich_text', label: 'Metin', hint: 'Serbest yazi' },
   { type: 'banner', label: 'Banner', hint: 'Duyuru seridi' },

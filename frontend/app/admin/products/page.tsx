@@ -389,8 +389,8 @@ export default function AdminPage() {
             {editingProductType === 'variant' ? (
               <p className="rounded-lg border border-admin-primary/25 bg-admin-primary-container/10 px-3 py-2 text-sm text-admin-primary">
                 {editingId
-                  ? 'Asagidan renk/beden seceneklerini ekle, kombinasyon olustur ve stok gir.'
-                  : 'Kaydetten sonra renk/beden varyantlarini burada hemen ekleyebilirsin.'}
+                  ? 'Asagidan tek secenek turu sec (tisort=beden, saat=renk), degerleri ekle ve stok gir.'
+                  : 'Kaydetten sonra tek varyant turunu (renk veya beden) burada ekleyebilirsin.'}
               </p>
             ) : null}
 

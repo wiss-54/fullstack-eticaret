@@ -19,13 +19,6 @@ import type { EditorSelection } from '@/lib/editor-selection';
 import StoreEditorCanvas from '@/components/StoreEditorCanvas';
 import StoreEditorInspector from '@/components/StoreEditorInspector';
 
-const emptyFeatures = [
-  { title: '', text: '' },
-  { title: '', text: '' },
-  { title: '', text: '' },
-  { title: '', text: '' },
-];
-
 export default function StoreVisualEditor() {
   const router = useRouter();
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -71,10 +64,7 @@ export default function StoreVisualEditor() {
           heroFeatureSide: store.heroFeatureSide === 'left' || store.heroFeatureSide === 'right'
             ? store.heroFeatureSide
             : 'right',
-          featureCards:
-            store.featureCards?.length > 0
-              ? [...store.featureCards, ...emptyFeatures].slice(0, 4)
-              : emptyFeatures,
+          featureCards: store.featureCards?.length ? store.featureCards : [],
           sections: store.sections?.length
             ? store.sections
             : [
@@ -175,10 +165,7 @@ export default function StoreVisualEditor() {
             updated.heroFeatureSide === 'left' || updated.heroFeatureSide === 'right'
               ? updated.heroFeatureSide
               : 'right',
-        featureCards:
-          updated.featureCards.length > 0
-            ? [...updated.featureCards, ...emptyFeatures].slice(0, 4)
-            : emptyFeatures,
+        featureCards: updated.featureCards ?? [],
       });
       setServerLogoUrl(updated.logoUrl);
       setSaved(true);
@@ -201,7 +188,7 @@ export default function StoreVisualEditor() {
     setSaved(false);
     try {
       const featureCards = settings.featureCards.filter(
-        (card) => card.title.trim() && card.text.trim(),
+        (card) => card.title.trim() || card.text.trim(),
       );
       const updated = await adminUpdateStoreSettings({
         ...settings,
@@ -222,10 +209,7 @@ export default function StoreVisualEditor() {
           updated.heroFeatureSide === 'left' || updated.heroFeatureSide === 'right'
             ? updated.heroFeatureSide
             : 'right',
-        featureCards:
-          updated.featureCards.length > 0
-            ? [...updated.featureCards, ...emptyFeatures].slice(0, 4)
-            : emptyFeatures,
+        featureCards: updated.featureCards ?? [],
       });
       setServerLogoUrl(updated.logoUrl);
       setSaved(true);
@@ -449,6 +433,7 @@ export default function StoreVisualEditor() {
             onServerLogoUrl={setServerLogoUrl}
             onProductCreated={handleProductCreated}
             onRemoveSection={removeSection}
+            onCategoriesChange={setCategories}
           />
         </aside>
       </div>
