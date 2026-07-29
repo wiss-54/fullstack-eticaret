@@ -662,21 +662,21 @@ export default function StoreEditorInspector({
             </p>
           </div>
 
-          <Field label={`Sol metin (${leftLen}/160)`}>
+          <Field label={`Sol metin (${leftLen}/500)`}>
             <textarea
               className={`${inputClass} min-h-20`}
-              maxLength={160}
+              maxLength={500}
               value={settings.footerLeft}
-              onChange={(e) => patch('footerLeft', e.target.value.slice(0, 160))}
+              onChange={(e) => patch('footerLeft', e.target.value.slice(0, 500))}
             />
           </Field>
           <StoreTextStyleFields settings={settings} styleKey="footer.left" onChange={onChange} />
-          <Field label={`Sag metin (${rightLen}/160)`}>
+          <Field label={`Sag metin (${rightLen}/500)`}>
             <textarea
               className={`${inputClass} min-h-20`}
-              maxLength={160}
+              maxLength={500}
               value={settings.footerRight}
-              onChange={(e) => patch('footerRight', e.target.value.slice(0, 160))}
+              onChange={(e) => patch('footerRight', e.target.value.slice(0, 500))}
             />
           </Field>
           <StoreTextStyleFields settings={settings} styleKey="footer.right" onChange={onChange} />
