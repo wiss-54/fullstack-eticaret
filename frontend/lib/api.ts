@@ -39,7 +39,7 @@ export async function getProducts(categoryId?: number): Promise<Product[]> {
   }
 
   const json: ProductsResponse = await response.json();
-  return json.data;
+  return json.data.filter((product) => !product.name.startsWith('Arsiv Urun'));
 }
 
 export async function getProduct(id: number): Promise<Product | null> {
