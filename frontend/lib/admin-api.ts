@@ -23,6 +23,8 @@ type ApiResponse<T> = {
   success: boolean;
   data?: T;
   error?: string;
+  code?: string;
+  details?: string | null;
   token?: string;
 };
 
@@ -67,7 +69,10 @@ async function adminFetch<T>(
   }
 
   if (!response.ok || !json.success) {
-    throw new Error(json.error ?? 'Istek basarisiz');
+    const parts = [json.error ?? 'Istek basarisiz'];
+    if (json.code) parts.push(`code=${json.code}`);
+    if (json.details) parts.push(String(json.details));
+    throw new Error(parts.join(' | '));
   }
 
   return json.data as T;

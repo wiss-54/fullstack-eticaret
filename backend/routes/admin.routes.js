@@ -117,9 +117,16 @@ router.patch('/orders/:id/status', requireAdmin, async (req, res) => {
       return res.status(409).json({
         success: false,
         error: 'Siparis durumu veritabani tarafinda reddedildi. Migration gerekli olabilir.',
+        code: err.code,
+        details: err.detail ?? err.message ?? null,
       });
     }
-    res.status(500).json({ success: false, error: 'Siparis guncellenemedi' });
+    res.status(500).json({
+      success: false,
+      error: 'Siparis guncellenemedi',
+      code: err?.code ?? 'UNKNOWN',
+      details: err?.detail ?? err?.message ?? null,
+    });
   }
 });
 
