@@ -251,7 +251,6 @@ export default function AdminPage() {
         await loadProducts();
         if (wantsVariants) {
           await startEdit(created);
-          setVariantsEditorKey((current) => current + 1);
         } else {
           resetForm();
         }
