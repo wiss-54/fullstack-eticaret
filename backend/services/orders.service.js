@@ -535,16 +535,16 @@ async function updateOrderStatus(orderId, status) {
       `
         UPDATE orders
         SET
-          status = $1,
+          status = $1::varchar(30),
           stock_reserved = CASE
-            WHEN $1 = 'cancelled' AND stock_reserved = true THEN false
+            WHEN $3::boolean = true AND stock_reserved = true THEN false
             ELSE stock_reserved
           END,
           updated_at = NOW()
         WHERE id = $2
         RETURNING ${ORDER_COLUMNS}
       `,
-      [status, orderId],
+      [status, orderId, status === 'cancelled'],
     );
 
     await client.query('COMMIT');
