@@ -51,7 +51,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-store-accent-text">
             Urun detayi
           </p>
-          <p className="mt-3 text-3xl font-bold text-store-primary">
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-store-text md:text-4xl">
+            {product.name}
+          </h1>
+          <p className="mt-4 text-3xl font-bold text-store-primary">
             {formatStorePrice(product.price, {
               currencyCode: settings.currencyCode,
               currencyDecimals: settings.currencyDecimals,

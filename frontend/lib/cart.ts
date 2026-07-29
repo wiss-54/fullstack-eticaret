@@ -130,8 +130,15 @@ export type AddCartItemInput = {
   variantLabel?: string;
 };
 
-export function addItemToCart(current: CartItem[], input: AddCartItemInput): CartItem[] {
-  const quantityToAdd = input.quantity ?? 1;
+export type AddCartResult = {
+  items: CartItem[];
+  added: number;
+  reason?: 'out_of_stock' | 'limit_reached';
+};
+
+export function addItemToCart(current: CartItem[], input: AddCartItemInput): AddCartResult {
+  const quantityToAdd = Math.max(1, input.quantity ?? 1);
+  const availableStock = Math.max(0, Math.floor(input.stock));
   const optionDelta = input.selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
   const unitPrice = input.basePrice + optionDelta;
   const lineId = buildLineId(
@@ -142,32 +149,52 @@ export function addItemToCart(current: CartItem[], input: AddCartItemInput): Car
   );
   const existing = current.find((item) => item.lineId === lineId);
 
-  if (existing) {
-    const nextQuantity = Math.min(existing.quantity + quantityToAdd, input.stock);
-    return current.map((item) =>
-      item.lineId === lineId
-        ? { ...item, quantity: nextQuantity, stock: input.stock, unitPrice }
-        : item,
-    );
+  if (availableStock < 1) {
+    return { items: current, added: 0, reason: 'out_of_stock' };
   }
 
-  return [
-    ...current,
-    {
-      lineId,
-      productId: input.productId,
-      name: input.name,
-      basePrice: input.basePrice,
-      unitPrice,
-      imageUrl: input.imageUrl,
-      stock: input.stock,
-      quantity: Math.min(quantityToAdd, input.stock),
-      selectedOptions: input.selectedOptions,
-      customerNote: input.customerNote.trim(),
-      variantId: input.variantId ?? null,
-      variantLabel: input.variantLabel?.trim() ?? '',
-    },
-  ];
+  if (existing) {
+    const room = availableStock - existing.quantity;
+    if (room < 1) {
+      return { items: current, added: 0, reason: 'limit_reached' };
+    }
+    const added = Math.min(quantityToAdd, room);
+    return {
+      items: current.map((item) =>
+        item.lineId === lineId
+          ? {
+              ...item,
+              quantity: existing.quantity + added,
+              stock: availableStock,
+              unitPrice,
+            }
+          : item,
+      ),
+      added,
+    };
+  }
+
+  const added = Math.min(quantityToAdd, availableStock);
+  return {
+    items: [
+      ...current,
+      {
+        lineId,
+        productId: input.productId,
+        name: input.name,
+        basePrice: input.basePrice,
+        unitPrice,
+        imageUrl: input.imageUrl,
+        stock: availableStock,
+        quantity: added,
+        selectedOptions: input.selectedOptions,
+        customerNote: input.customerNote.trim(),
+        variantId: input.variantId ?? null,
+        variantLabel: input.variantLabel?.trim() ?? '',
+      },
+    ],
+    added,
+  };
 }
 
 export function updateItemQuantity(current: CartItem[], lineId: string, quantity: number) {

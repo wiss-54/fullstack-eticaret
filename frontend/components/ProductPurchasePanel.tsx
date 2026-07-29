@@ -59,7 +59,7 @@ export default function ProductPurchasePanel({
   currencyCode = 'TRY',
   currencyDecimals = 2,
 }: ProductPurchasePanelProps) {
-  const { addItem } = useCart();
+  const { addItem, items } = useCart();
   const variantAxes = useMemo(() => product.variantAxes ?? [], [product.variantAxes]);
   const variants = useMemo(() => product.variants ?? [], [product.variants]);
   const hasVariants = product.productType === 'variant' && variantAxes.length > 0 && variants.length > 0;
@@ -122,11 +122,25 @@ export default function ProductPurchasePanel({
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
+      setMessage(null);
       return;
     }
 
-    setError(null);
-    addItem({
+    const inCart = items
+      .filter((item) =>
+        selectedVariant
+          ? item.variantId === selectedVariant.id
+          : item.productId === product.id && !item.variantId,
+      )
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    if (availableStock - inCart < 1) {
+      setMessage(null);
+      setError('Bu secenek icin stok tukendi');
+      return;
+    }
+
+    const result = addItem({
       productId: product.id,
       name: product.name,
       basePrice: unitPrice,
@@ -139,6 +153,18 @@ export default function ProductPurchasePanel({
         ? selectedVariant.selections.map((selection) => selection.label).join(' / ')
         : '',
     });
+
+    if (result.added < 1) {
+      setMessage(null);
+      setError(
+        result.reason === 'limit_reached'
+          ? 'Sepetteki miktar stok limitine ulasti'
+          : 'Bu urun stokta yok',
+      );
+      return;
+    }
+
+    setError(null);
     setMessage('Sepete eklendi');
     window.setTimeout(() => setMessage(null), 2000);
   }
