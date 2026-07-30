@@ -412,6 +412,10 @@ export default function MonitoringDashboard() {
   const ramUsedPercent = meta
     ? memoryUsedPercent(meta.server.freeMemoryMb, meta.server.totalMemoryMb)
     : 0;
+  const backendCapMb = 512;
+  const backendUsedPercent = meta
+    ? Math.min(100, Math.round((meta.backend.memoryMb / backendCapMb) * 100))
+    : 0;
 
   const showDashboard = ready && (meta || completedCount > 0 || !loading);
 
@@ -616,10 +620,10 @@ export default function MonitoringDashboard() {
               </section>
 
               {meta ? (
-                <section className="grid gap-4 lg:grid-cols-3">
+                <section className="grid items-start gap-4 lg:grid-cols-3">
                   <div className="rounded-xl border border-admin-border bg-admin-bg/40 p-6 shadow-sm lg:col-span-2">
                     <h3 className="text-lg font-semibold text-admin-text">Sunucu Metrikleri</h3>
-                    <div className="mt-5 space-y-5">
+                    <div className="mt-5 space-y-4">
                       <MetricBar
                         label="RAM kullanimi"
                         value={`${meta.server.totalMemoryMb - meta.server.freeMemoryMb} / ${meta.server.totalMemoryMb} MB`}
@@ -634,8 +638,15 @@ export default function MonitoringDashboard() {
                       />
                       <MetricBar
                         label="Backend bellek"
-                        value={`${meta.backend.memoryMb} MB`}
-                        percent={Math.min(100, Math.round((meta.backend.memoryMb / 512) * 100))}
+                        value={`${meta.backend.memoryMb} / ${backendCapMb} MB`}
+                        percent={backendUsedPercent}
+                        tone={
+                          backendUsedPercent > 85
+                            ? 'bg-red-500'
+                            : backendUsedPercent > 70
+                              ? 'bg-amber-500'
+                              : 'bg-emerald-500'
+                        }
                       />
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
