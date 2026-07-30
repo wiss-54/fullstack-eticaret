@@ -7,6 +7,13 @@ const DEPLOY_INFO_PATH = path.join(__dirname, '..', '.deploy-info.json');
 
 const SERVICE_CHECK_KEYS = ['database', 'api', 'shop', 'adminPanel'];
 
+let sslCache = {
+  at: 0,
+  shop: null,
+  admin: null,
+};
+const SSL_CACHE_MS = 5 * 60 * 1000;
+
 function readDeployInfo() {
   try {
     const raw = fs.readFileSync(DEPLOY_INFO_PATH, 'utf8');
@@ -142,13 +149,122 @@ function getBackendSnapshot() {
   };
 }
 
+function getDiskSnapshot() {
+  try {
+    if (typeof fs.statfsSync !== 'function') {
+      return null;
+    }
+    const stat = fs.statfsSync('/');
+    const total = Number(stat.blocks) * Number(stat.bsize);
+    const free = Number(stat.bavail) * Number(stat.bsize);
+    const used = Math.max(0, total - free);
+    return {
+      totalGb: Number((total / 1024 / 1024 / 1024).toFixed(1)),
+      usedGb: Number((used / 1024 / 1024 / 1024).toFixed(1)),
+      freeGb: Number((free / 1024 / 1024 / 1024).toFixed(1)),
+      usedPercent: total > 0 ? Math.round((used / total) * 100) : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getNetworkSnapshot() {
+  try {
+    if (!fs.existsSync('/proc/net/dev')) return null;
+    const raw = fs.readFileSync('/proc/net/dev', 'utf8');
+    let rx = 0;
+    let tx = 0;
+    for (const line of raw.split('\n').slice(2)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('lo:')) continue;
+      const parts = trimmed.split(/\s+/);
+      if (parts.length < 10) continue;
+      rx += Number(parts[1]) || 0;
+      tx += Number(parts[9]) || 0;
+    }
+    return {
+      rxMb: Number((rx / 1024 / 1024).toFixed(1)),
+      txMb: Number((tx / 1024 / 1024).toFixed(1)),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function getServerSnapshot() {
+  const cpus = os.cpus()?.length || 1;
+  const load = os.loadavg().map((v) => Number(v.toFixed(2)));
+  const totalMemoryMb = Math.round(os.totalmem() / 1024 / 1024);
+  const freeMemoryMb = Math.round(os.freemem() / 1024 / 1024);
+  const usedMemoryMb = Math.max(0, totalMemoryMb - freeMemoryMb);
+
   return {
     hostname: os.hostname(),
-    loadAverage: os.loadavg().map((v) => Number(v.toFixed(2))),
-    freeMemoryMb: Math.round(os.freemem() / 1024 / 1024),
-    totalMemoryMb: Math.round(os.totalmem() / 1024 / 1024),
+    loadAverage: load,
+    cpuCount: cpus,
+    cpuPercent: Math.min(100, Math.round((load[0] / cpus) * 100)),
+    freeMemoryMb,
+    totalMemoryMb,
+    usedMemoryMb,
+    memoryUsedPercent:
+      totalMemoryMb > 0 ? Math.round((usedMemoryMb / totalMemoryMb) * 100) : 0,
+    disk: getDiskSnapshot(),
+    network: getNetworkSnapshot(),
   };
+}
+
+async function getSslStatus(urlString) {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== 'https:') {
+      return { status: 'skipped', daysRemaining: null, validTo: null, host: url.hostname };
+    }
+
+    const tls = require('tls');
+    const cert = await new Promise((resolve, reject) => {
+      const socket = tls.connect(
+        {
+          host: url.hostname,
+          port: Number(url.port || 443),
+          servername: url.hostname,
+          timeout: 8000,
+        },
+        () => {
+          const peer = socket.getPeerCertificate();
+          socket.end();
+          resolve(peer);
+        },
+      );
+      socket.on('error', reject);
+      socket.on('timeout', () => {
+        socket.destroy();
+        reject(new Error('SSL timeout'));
+      });
+    });
+
+    if (!cert?.valid_to) {
+      return { status: 'unknown', daysRemaining: null, validTo: null, host: url.hostname };
+    }
+
+    const validTo = new Date(cert.valid_to);
+    const daysRemaining = Math.ceil((validTo.getTime() - Date.now()) / 86_400_000);
+    return {
+      status: daysRemaining <= 14 ? 'expiring' : 'ok',
+      daysRemaining,
+      validTo: validTo.toISOString(),
+      host: url.hostname,
+      issuer: cert.issuer?.O || cert.issuer?.CN || null,
+    };
+  } catch (err) {
+    return {
+      status: 'error',
+      daysRemaining: null,
+      validTo: null,
+      host: null,
+      error: err instanceof Error ? err.message : 'SSL okunamadi',
+    };
+  }
 }
 
 /** Local/meta info without remote HTTP probes — resolves quickly. */
@@ -160,15 +276,36 @@ async function getStatusMeta() {
     productCount = null;
   }
 
+  const { shopUrl, adminUrl } = monitorUrls();
+  const now = Date.now();
+  let shopSsl = sslCache.shop;
+  let adminSsl = sslCache.admin;
+  if (!shopSsl || !adminSsl || now - sslCache.at > SSL_CACHE_MS) {
+    [shopSsl, adminSsl] = await Promise.all([getSslStatus(shopUrl), getSslStatus(adminUrl)]);
+    sslCache = { at: now, shop: shopSsl, admin: adminSsl };
+  }
+
   return {
     checkedAt: new Date().toISOString(),
     deploy: readDeployInfo(),
     backup: getBackupStatus(),
     backend: getBackendSnapshot(),
     server: getServerSnapshot(),
+    ssl: {
+      shop: shopSsl,
+      admin: adminSsl,
+    },
     stats: { productCount },
+    monitor: {
+      intervalSeconds: 30,
+      probeAttempts: 10,
+      timeoutSeconds: 8,
+      targets: ['backend', 'database', 'api', 'shop', 'adminPanel'],
+    },
     links: {
       githubActions: 'https://github.com/wiss-54/fullstack-eticaret/actions',
+      shop: shopUrl,
+      admin: adminUrl,
     },
   };
 }
