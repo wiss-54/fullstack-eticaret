@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { requireAdmin } = require('../middleware/auth.middleware');
-const { getSystemStatus } = require('../services/monitoring.service');
+const { getSystemStatus, getStatusMeta, runServiceCheck, SERVICE_CHECK_KEYS } = require('../services/monitoring.service');
 const { updateOrderStatusSchema } = require('../validation/orders.schemas');
 const {
   getOrderById,
@@ -59,6 +59,41 @@ router.get('/status', requireAdmin, async (_req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Monitoring verisi alinamadi' });
+  }
+});
+
+router.get('/status/meta', requireAdmin, async (_req, res) => {
+  try {
+    const data = await getStatusMeta();
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Monitoring meta alinamadi' });
+  }
+});
+
+router.get('/status/check/:name', requireAdmin, async (req, res) => {
+  const name = req.params.name;
+  if (!SERVICE_CHECK_KEYS.includes(name)) {
+    return res.status(400).json({
+      success: false,
+      error: `Gecerli kontroller: ${SERVICE_CHECK_KEYS.join(', ')}`,
+    });
+  }
+
+  try {
+    const check = await runServiceCheck(name);
+    res.json({
+      success: true,
+      data: {
+        name,
+        check,
+        checkedAt: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Servis kontrolu basarisiz' });
   }
 });
 

@@ -177,6 +177,16 @@ export async function adminGetStatus() {
   return adminFetch<import('./types').SystemStatus>('/api/admin/status');
 }
 
+export async function adminGetStatusMeta() {
+  return adminFetch<import('./types').SystemStatusMeta>('/api/admin/status/meta');
+}
+
+export async function adminGetStatusCheck(name: import('./types').SystemStatusCheckName) {
+  return adminFetch<import('./types').SystemStatusCheckResult>(
+    `/api/admin/status/check/${name}`,
+  );
+}
+
 export async function adminCreateProduct(input: ProductInput) {
   return adminFetch<Product>('/api/products', {
     method: 'POST',

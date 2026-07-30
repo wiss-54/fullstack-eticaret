@@ -1,14 +1,34 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AdminAuthError, adminGetStatus } from '@/lib/admin-api';
+import {
+  AdminAuthError,
+  adminGetStatusCheck,
+  adminGetStatusMeta,
+} from '@/lib/admin-api';
 import { getAdminPaths } from '@/lib/admin-paths';
 import { useAdminGuard } from '@/lib/use-admin-guard';
-import type { BackupStatus, ServiceCheck, SystemStatus } from '@/lib/types';
+import type {
+  BackupStatus,
+  ServiceCheck,
+  SystemStatusCheckName,
+  SystemStatusMeta,
+} from '@/lib/types';
 
 const REFRESH_MS = 15_000;
+
+const SERVICE_CHECKS: Array<{ key: SystemStatusCheckName; title: string }> = [
+  { key: 'database', title: 'Veritabani' },
+  { key: 'api', title: 'Backend API' },
+  { key: 'shop', title: 'Magaza Sitesi' },
+  { key: 'adminPanel', title: 'Admin Panel' },
+];
+
+const PROGRESS_TOTAL = 1 + SERVICE_CHECKS.length;
+
+type ProgressKey = 'meta' | SystemStatusCheckName;
 
 function formatUptime(seconds: number) {
   const days = Math.floor(seconds / 86400);
@@ -42,17 +62,6 @@ function memoryUsedPercent(freeMb: number, totalMb: number) {
   return Math.round(((totalMb - freeMb) / totalMb) * 100);
 }
 
-function countHealthy(status: SystemStatus) {
-  const checks = [
-    status.services.database,
-    status.services.api,
-    status.services.shop,
-    status.services.adminPanel,
-    status.services.backend,
-  ];
-  return checks.filter((check) => check.status === 'up').length;
-}
-
 function ServiceIcon({ title }: { title: string }) {
   const icon =
     title === 'Veritabani'
@@ -75,10 +84,32 @@ function ServiceIcon({ title }: { title: string }) {
 function ServiceCard({
   title,
   check,
+  pending,
 }: {
   title: string;
-  check: ServiceCheck & { status: 'up' | 'down' };
+  check?: ServiceCheck;
+  pending?: boolean;
 }) {
+  if (pending || !check) {
+    return (
+      <article className="relative overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <ServiceIcon title={title} />
+            <div>
+              <h3 className="font-semibold text-admin-text">{title}</h3>
+              <p className="text-sm text-admin-muted">Yanit bekleniyor...</p>
+            </div>
+          </div>
+          <span className="rounded-full bg-admin-bg px-3 py-1 font-admin-mono text-xs font-semibold text-admin-muted">
+            ...
+          </span>
+        </div>
+        <div className="mt-5 h-2 animate-pulse rounded-full bg-admin-bg" />
+      </article>
+    );
+  }
+
   const up = check.status === 'up';
 
   return (
@@ -252,54 +283,109 @@ export default function MonitoringDashboard() {
   const router = useRouter();
   const paths = getAdminPaths();
   const ready = useAdminGuard();
-  const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [meta, setMeta] = useState<SystemStatusMeta | null>(null);
+  const [checks, setChecks] = useState<Partial<Record<SystemStatusCheckName, ServiceCheck>>>({});
+  const [settled, setSettled] = useState<Partial<Record<ProgressKey, boolean>>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [tick, setTick] = useState(0);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const completedCount = useMemo(
+    () => Object.values(settled).filter(Boolean).length,
+    [settled],
+  );
+  const progressPercent = Math.round((completedCount / PROGRESS_TOTAL) * 100);
+  const allSettled = completedCount >= PROGRESS_TOTAL;
+
+  const healthyCount = useMemo(() => {
+    let count = 0;
+    if (meta?.backend.status === 'up') count += 1;
+    for (const item of SERVICE_CHECKS) {
+      if (checks[item.key]?.status === 'up') count += 1;
+    }
+    return count;
+  }, [meta, checks]);
 
   const health = useMemo(() => {
-    if (!status) return null;
-    const healthy = countHealthy(status);
-    const total = 5;
-    if (healthy === total) return { label: 'Tum sistemler calisiyor', tone: 'emerald' as const };
-    if (healthy >= 3) return { label: 'Kismi sorun var', tone: 'amber' as const };
+    if (!allSettled) {
+      return { label: 'Kontroller suruyor', tone: 'amber' as const };
+    }
+    if (healthyCount === 5) return { label: 'Tum sistemler calisiyor', tone: 'emerald' as const };
+    if (healthyCount >= 3) return { label: 'Kismi sorun var', tone: 'amber' as const };
     return { label: 'Kritik sorun', tone: 'red' as const };
-  }, [status]);
+  }, [allSettled, healthyCount]);
+
+  const markSettled = useCallback((key: ProgressKey) => {
+    setSettled((current) => ({ ...current, [key]: true }));
+  }, []);
+
+  const runProgressiveFetch = useCallback(
+    async (initial: boolean) => {
+      if (initial) setLoading(true);
+      else setRefreshing(true);
+      setError(null);
+      setSettled({});
+      setChecks({});
+
+      const handleAuth = (err: unknown) => {
+        if (err instanceof AdminAuthError) {
+          router.replace(paths.login);
+          return true;
+        }
+        return false;
+      };
+
+      const tasks: Array<Promise<void>> = [
+        adminGetStatusMeta()
+          .then((data) => {
+            setMeta(data);
+            markSettled('meta');
+          })
+          .catch((err) => {
+            markSettled('meta');
+            if (handleAuth(err)) return;
+            setError(err instanceof Error ? err.message : 'Monitoring meta alinamadi');
+          }),
+        ...SERVICE_CHECKS.map(({ key }) =>
+          adminGetStatusCheck(key)
+            .then((data) => {
+              setChecks((current) => ({ ...current, [key]: data.check }));
+              markSettled(key);
+            })
+            .catch((err) => {
+              markSettled(key);
+              if (handleAuth(err)) return;
+              setChecks((current) => ({
+                ...current,
+                [key]: {
+                  status: 'down',
+                  error: err instanceof Error ? err.message : 'Kontrol basarisiz',
+                },
+              }));
+            }),
+        ),
+      ];
+
+      await Promise.allSettled(tasks);
+      setLastUpdated(new Date());
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [markSettled, paths.login, router],
+  );
 
   useEffect(() => {
     if (!ready) return;
 
     let cancelled = false;
 
-    async function fetchStatus(initial = false) {
-      if (initial) setLoading(true);
-      else setRefreshing(true);
-
-      try {
-        const data = await adminGetStatus();
-        if (cancelled) return;
-        setStatus(data);
-        setLastUpdated(new Date());
-        setError(null);
-      } catch (err) {
-        if (cancelled) return;
-        if (err instanceof AdminAuthError) {
-          router.replace(paths.login);
-          return;
-        }
-        setError(err instanceof Error ? err.message : 'Monitoring verisi alinamadi');
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      }
-    }
-
-    void fetchStatus(true);
+    void (async () => {
+      if (!cancelled) await runProgressiveFetch(true);
+    })();
 
     if (!autoRefresh) {
       return () => {
@@ -308,14 +394,14 @@ export default function MonitoringDashboard() {
     }
 
     const intervalId = window.setInterval(() => {
-      void fetchStatus(false);
+      if (!cancelled) void runProgressiveFetch(false);
     }, REFRESH_MS);
 
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [ready, autoRefresh, router, paths.login]);
+  }, [ready, autoRefresh, runProgressiveFetch]);
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -323,28 +409,11 @@ export default function MonitoringDashboard() {
     return () => window.clearInterval(id);
   }, [lastUpdated]);
 
-  async function handleManualRefresh() {
-    setRefreshing(true);
-    setError(null);
-    try {
-      const data = await adminGetStatus();
-      setStatus(data);
-      setLastUpdated(new Date());
-    } catch (err) {
-      if (err instanceof AdminAuthError) {
-        router.replace(paths.login);
-        return;
-      }
-      setError(err instanceof Error ? err.message : 'Monitoring verisi alinamadi');
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
-  }
-
-  const ramUsedPercent = status
-    ? memoryUsedPercent(status.server.freeMemoryMb, status.server.totalMemoryMb)
+  const ramUsedPercent = meta
+    ? memoryUsedPercent(meta.server.freeMemoryMb, meta.server.totalMemoryMb)
     : 0;
+
+  const showDashboard = ready && (meta || completedCount > 0 || !loading);
 
   return (
     <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-6 md:px-8 md:py-8">
@@ -352,7 +421,7 @@ export default function MonitoringDashboard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-admin-text">Izleme</h1>
           <p className="mt-1 text-sm text-admin-muted">
-            Servisler her {REFRESH_MS / 1000} saniyede otomatik yenilenir
+            Servisler paralel kontrol edilir · her {REFRESH_MS / 1000} sn yenilenir
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -366,86 +435,86 @@ export default function MonitoringDashboard() {
           </label>
           <button
             type="button"
-            onClick={() => void handleManualRefresh()}
-            disabled={refreshing}
+            onClick={() => void runProgressiveFetch(false)}
+            disabled={refreshing || loading}
             className="rounded-lg bg-admin-primary-container px-4 py-2 text-sm font-semibold text-admin-on-primary-container disabled:opacity-60"
           >
-            {refreshing ? 'Yenileniyor...' : 'Simdi Yenile'}
+            {refreshing || (loading && !meta) ? 'Yenileniyor...' : 'Simdi Yenile'}
           </button>
         </div>
       </div>
 
-      {!ready || loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-44 animate-pulse rounded-xl border border-admin-border bg-admin-surface-low"
-              />
-            ))}
-          </div>
-        ) : null}
+      {!ready ? (
+        <div className="h-40 animate-pulse rounded-xl border border-admin-border bg-admin-surface-low" />
+      ) : null}
 
-        {error ? (
-          <div className="rounded-xl border border-admin-danger/40 bg-admin-surface-low px-5 py-4">
-            <p className="font-medium text-admin-danger">{error}</p>
-            <p className="mt-1 text-sm text-admin-muted">
-              Oturum suresi dolmus olabilir. Tekrar giris yapmayi dene.
-            </p>
-            <Link
-              href={paths.login}
-              className="mt-3 inline-block rounded-lg bg-admin-danger px-4 py-2 text-sm text-admin-bg"
-            >
-              Giris Sayfasina Git
-            </Link>
-          </div>
-        ) : null}
+      {error ? (
+        <div className="rounded-xl border border-admin-danger/40 bg-admin-surface-low px-5 py-4">
+          <p className="font-medium text-admin-danger">{error}</p>
+          <p className="mt-1 text-sm text-admin-muted">
+            Oturum suresi dolmus olabilir. Tekrar giris yapmayi dene.
+          </p>
+          <Link
+            href={paths.login}
+            className="mt-3 inline-block rounded-lg bg-admin-danger px-4 py-2 text-sm text-admin-bg"
+          >
+            Giris Sayfasina Git
+          </Link>
+        </div>
+      ) : null}
 
-        {status && health ? (
-          <>
-            <section
-              className={`rounded-xl border p-6 shadow-sm ${
-                health.tone === 'emerald'
-                  ? 'border-emerald-500/30 bg-admin-surface-low'
-                  : health.tone === 'amber'
-                    ? 'border-admin-primary/40 bg-admin-surface-low'
-                    : 'border-admin-danger/40 bg-admin-surface-low'
-              }`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-admin-bg shadow-sm">
-                    <span
-                      className={`absolute inline-flex h-4 w-4 animate-ping rounded-full opacity-40 ${
-                        autoRefresh ? 'bg-emerald-500' : 'bg-admin-muted'
-                      }`}
-                    />
-                    <span
-                      className={`relative inline-flex h-4 w-4 rounded-full ${
-                        autoRefresh ? 'bg-emerald-500' : 'bg-admin-muted'
-                      }`}
-                    />
-                  </div>
-                  <div>
-                    <p className="font-admin-mono text-sm font-semibold uppercase tracking-[0.18em] text-admin-muted">
-                      Genel Durum
-                    </p>
-                    <h2 className="text-2xl font-bold text-admin-text">{health.label}</h2>
-                    <p className="text-sm text-admin-muted">
-                      {countHealthy(status)}/5 servis saglikli
-                      {lastUpdated ? ` · Son guncelleme ${formatAgo(lastUpdated)}` : ''}
-                    </p>
-                  </div>
+      {showDashboard ? (
+        <>
+          <section
+            className={`rounded-xl border p-6 shadow-sm ${
+              health.tone === 'emerald'
+                ? 'border-emerald-500/30 bg-admin-surface-low'
+                : health.tone === 'amber'
+                  ? 'border-admin-primary/40 bg-admin-surface-low'
+                  : 'border-admin-danger/40 bg-admin-surface-low'
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-admin-bg shadow-sm">
+                  <span
+                    className={`absolute inline-flex h-4 w-4 rounded-full opacity-40 ${
+                      !allSettled ? 'animate-ping bg-amber-500' : autoRefresh ? 'bg-emerald-500' : 'bg-admin-muted'
+                    }`}
+                  />
+                  <span
+                    className={`relative inline-flex h-4 w-4 rounded-full ${
+                      !allSettled
+                        ? 'bg-amber-500'
+                        : autoRefresh
+                          ? 'bg-emerald-500'
+                          : 'bg-admin-muted'
+                    }`}
+                  />
                 </div>
+                <div>
+                  <p className="font-admin-mono text-sm font-semibold uppercase tracking-[0.18em] text-admin-muted">
+                    Genel Durum
+                  </p>
+                  <h2 className="text-2xl font-bold text-admin-text">{health.label}</h2>
+                  <p className="text-sm text-admin-muted">
+                    {allSettled
+                      ? `${healthyCount}/5 servis saglikli`
+                      : `${completedCount}/${PROGRESS_TOTAL} yanit alindi`}
+                    {lastUpdated && allSettled ? ` · Son guncelleme ${formatAgo(lastUpdated)}` : ''}
+                  </p>
+                </div>
+              </div>
+              {meta ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
                     <p className="text-xs text-admin-muted">Urun</p>
-                    <p className="text-xl font-bold text-admin-text">{status.stats.productCount ?? '-'}</p>
+                    <p className="text-xl font-bold text-admin-text">{meta.stats.productCount ?? '-'}</p>
                   </div>
                   <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
                     <p className="text-xs text-admin-muted">Uptime</p>
                     <p className="text-sm font-bold text-admin-text">
-                      {formatUptime(status.services.backend.uptimeSeconds)}
+                      {formatUptime(meta.backend.uptimeSeconds)}
                     </p>
                   </div>
                   <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
@@ -454,89 +523,181 @@ export default function MonitoringDashboard() {
                   </div>
                   <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
                     <p className="text-xs text-admin-muted">Commit</p>
-                    <p className="text-sm font-bold text-admin-text">{status.deploy?.commit?.slice(0, 7) ?? '-'}</p>
+                    <p className="text-sm font-bold text-admin-text">
+                      {meta.deploy?.commit?.slice(0, 7) ?? '-'}
+                    </p>
                   </div>
                 </div>
+              ) : null}
+            </div>
+
+            <div className="mt-6">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-medium text-admin-text">Kontrol ilerlemesi</span>
+                <span className="font-admin-mono text-admin-muted">
+                  {completedCount}/{PROGRESS_TOTAL} · %{progressPercent}
+                </span>
               </div>
-            </section>
+              <div className="h-3 overflow-hidden rounded-full bg-admin-bg">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    allSettled
+                      ? healthyCount === 5
+                        ? 'bg-emerald-500'
+                        : healthyCount >= 3
+                          ? 'bg-amber-500'
+                          : 'bg-red-500'
+                      : 'bg-admin-primary'
+                  }`}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {(
+                  [
+                    { key: 'meta' as const, label: 'Meta' },
+                    ...SERVICE_CHECKS.map((item) => ({ key: item.key, label: item.title })),
+                  ] as Array<{ key: ProgressKey; label: string }>
+                ).map((item) => {
+                  const done = Boolean(settled[item.key]);
+                  const failed =
+                    done &&
+                    item.key !== 'meta' &&
+                    checks[item.key as SystemStatusCheckName]?.status === 'down';
+                  return (
+                    <li
+                      key={item.key}
+                      className={`rounded-full px-3 py-1 font-admin-mono text-[11px] font-semibold ${
+                        !done
+                          ? 'bg-admin-bg text-admin-muted'
+                          : failed
+                            ? 'bg-admin-danger/15 text-admin-danger'
+                            : 'bg-emerald-500/15 text-emerald-700'
+                      }`}
+                    >
+                      {item.label}
+                      {!done ? ' …' : failed ? ' ↓' : ' ✓'}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </section>
 
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <ServiceCard title="Veritabani" check={status.services.database} />
-              <ServiceCard title="Backend API" check={status.services.api} />
-              <ServiceCard title="Magaza Sitesi" check={status.services.shop} />
-              <ServiceCard title="Admin Panel" check={status.services.adminPanel} />
-            </section>
+          <details
+            className="rounded-xl border border-admin-border bg-admin-surface-low shadow-sm open:pb-2"
+            open={detailsOpen}
+            onToggle={(event) => setDetailsOpen((event.target as HTMLDetailsElement).open)}
+          >
+            <summary className="cursor-pointer list-none px-6 py-4 marker:content-none">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-lg font-semibold text-admin-text">Detaylar</p>
+                  <p className="text-sm text-admin-muted">
+                    Servis kartlari, sunucu metrikleri, deploy ve backup
+                  </p>
+                </div>
+                <span className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-muted">
+                  {detailsOpen ? 'Gizle' : 'Goster'}
+                </span>
+              </div>
+            </summary>
 
-            <section className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm lg:col-span-2">
-                <h3 className="text-lg font-semibold text-admin-text">Sunucu Metrikleri</h3>
-                <div className="mt-5 space-y-5">
-                  <MetricBar
-                    label="RAM kullanimi"
-                    value={`${status.server.totalMemoryMb - status.server.freeMemoryMb} / ${status.server.totalMemoryMb} MB`}
-                    percent={ramUsedPercent}
-                    tone={ramUsedPercent > 85 ? 'bg-red-500' : ramUsedPercent > 70 ? 'bg-amber-500' : 'bg-emerald-500'}
+            <div className="space-y-4 border-t border-admin-border px-4 py-4 md:px-6">
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {SERVICE_CHECKS.map((item) => (
+                  <ServiceCard
+                    key={item.key}
+                    title={item.title}
+                    check={checks[item.key]}
+                    pending={!settled[item.key]}
                   />
-                  <MetricBar
-                    label="Backend bellek"
-                    value={`${status.services.backend.memoryMb} MB`}
-                    percent={Math.min(100, Math.round((status.services.backend.memoryMb / 512) * 100))}
-                  />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
-                      <p className="text-sm text-admin-muted">Hostname</p>
-                      <p className="mt-1 font-medium text-admin-text">{status.server.hostname}</p>
-                    </div>
-                    <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
-                      <p className="text-sm text-admin-muted">Load average</p>
-                      <p className="mt-1 font-medium text-admin-text">
-                        {status.server.loadAverage.join(' · ')}
-                      </p>
+                ))}
+              </section>
+
+              {meta ? (
+                <section className="grid gap-4 lg:grid-cols-3">
+                  <div className="rounded-xl border border-admin-border bg-admin-bg/40 p-6 shadow-sm lg:col-span-2">
+                    <h3 className="text-lg font-semibold text-admin-text">Sunucu Metrikleri</h3>
+                    <div className="mt-5 space-y-5">
+                      <MetricBar
+                        label="RAM kullanimi"
+                        value={`${meta.server.totalMemoryMb - meta.server.freeMemoryMb} / ${meta.server.totalMemoryMb} MB`}
+                        percent={ramUsedPercent}
+                        tone={
+                          ramUsedPercent > 85
+                            ? 'bg-red-500'
+                            : ramUsedPercent > 70
+                              ? 'bg-amber-500'
+                              : 'bg-emerald-500'
+                        }
+                      />
+                      <MetricBar
+                        label="Backend bellek"
+                        value={`${meta.backend.memoryMb} MB`}
+                        percent={Math.min(100, Math.round((meta.backend.memoryMb / 512) * 100))}
+                      />
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                          <p className="text-sm text-admin-muted">Hostname</p>
+                          <p className="mt-1 font-medium text-admin-text">{meta.server.hostname}</p>
+                        </div>
+                        <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                          <p className="text-sm text-admin-muted">Load average</p>
+                          <p className="mt-1 font-medium text-admin-text">
+                            {meta.server.loadAverage.join(' · ')}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                <div className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-admin-text">Deploy & CI</h3>
-                  <dl className="mt-5 space-y-4 text-sm">
-                    <div>
-                      <dt className="text-admin-muted">Son commit</dt>
-                      <dd className="mt-1 font-mono text-admin-text">
-                        {status.deploy?.commit ?? 'Bilinmiyor'}
-                      </dd>
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-admin-border bg-admin-bg/40 p-6 shadow-sm">
+                      <h3 className="text-lg font-semibold text-admin-text">Deploy & CI</h3>
+                      <dl className="mt-5 space-y-4 text-sm">
+                        <div>
+                          <dt className="text-admin-muted">Son commit</dt>
+                          <dd className="mt-1 font-mono text-admin-text">
+                            {meta.deploy?.commit ?? 'Bilinmiyor'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-admin-muted">Deploy zamani</dt>
+                          <dd className="mt-1 text-admin-text">
+                            {meta.deploy?.deployedAt
+                              ? new Date(meta.deploy.deployedAt).toLocaleString('tr-TR')
+                              : 'Bilinmiyor'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-admin-muted">Son kontrol</dt>
+                          <dd className="mt-1 text-admin-text">
+                            {new Date(meta.checkedAt).toLocaleString('tr-TR')}
+                          </dd>
+                        </div>
+                      </dl>
+                      <a
+                        href={meta.links.githubActions}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+                      >
+                        GitHub Actions
+                      </a>
                     </div>
-                    <div>
-                      <dt className="text-admin-muted">Deploy zamani</dt>
-                      <dd className="mt-1 text-admin-text">
-                        {status.deploy?.deployedAt
-                          ? new Date(status.deploy.deployedAt).toLocaleString('tr-TR')
-                          : 'Bilinmiyor'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-admin-muted">Son kontrol</dt>
-                      <dd className="mt-1 text-admin-text">
-                        {new Date(status.checkedAt).toLocaleString('tr-TR')}
-                      </dd>
-                    </div>
-                  </dl>
-                  <a
-                    href={status.links.githubActions}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
-                  >
-                    GitHub Actions
-                  </a>
-                </div>
 
-                {status.backup ? <BackupCard backup={status.backup} /> : null}
-              </div>
-            </section>
-          </>
-        ) : null}
+                    {meta.backup ? <BackupCard backup={meta.backup} /> : null}
+                  </div>
+                </section>
+              ) : (
+                <div className="h-40 animate-pulse rounded-xl border border-admin-border bg-admin-bg/40" />
+              )}
+            </div>
+          </details>
+        </>
+      ) : null}
+
       <span className="sr-only" aria-hidden>
         {tick}
       </span>
