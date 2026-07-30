@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { Product, ProductOption, ProductVariant, VariantAxis } from '@/lib/types';
 import { useCart } from '@/components/CartProvider';
-import type { SelectedOption } from '@/lib/cart';
+import { getCartQuantityForVariant, type SelectedOption } from '@/lib/cart';
 import { formatStorePrice } from '@/lib/format-price';
 
 type ProductPurchasePanelProps = {
@@ -33,11 +33,14 @@ function getAvailableValueIds(
   variants: ProductVariant[],
   axisId: number,
   selectedByAxis: Map<number, number>,
+  remainingByVariantId: Map<number, number>,
 ) {
   const available = new Set<number>();
 
   for (const variant of variants) {
-    if (!variant.isActive || variant.stock < 1) continue;
+    if (!variant.isActive) continue;
+    const remaining = remainingByVariantId.get(variant.id) ?? variant.stock;
+    if (remaining < 1) continue;
 
     const matchesOtherAxes = variant.selections.every((selection) => {
       if (selection.axisId === axisId) return true;
@@ -94,7 +97,23 @@ export default function ProductPurchasePanel({
   }, [textOptions, textValues]);
 
   const unitPrice = selectedVariant?.price ?? product.price;
-  const availableStock = selectedVariant?.stock ?? product.stock;
+  const catalogStock = selectedVariant?.stock ?? product.stock;
+
+  const remainingByVariantId = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const variant of variants) {
+      const inCart = getCartQuantityForVariant(items, product.id, variant.id);
+      map.set(variant.id, Math.max(0, variant.stock - inCart));
+    }
+    return map;
+  }, [variants, items, product.id]);
+
+  const inCartForSelected = getCartQuantityForVariant(
+    items,
+    product.id,
+    selectedVariant?.id ?? null,
+  );
+  const remainingStock = Math.max(0, catalogStock - inCartForSelected);
 
   function validateForm(): string | null {
     if (hasVariants) {
@@ -104,8 +123,8 @@ export default function ProductPurchasePanel({
         }
       }
       if (!selectedVariant) return 'Gecerli bir varyant sec';
-      if (selectedVariant.stock < 1) return 'Secilen varyant stokta yok';
-    } else if (product.stock < 1) {
+      if (remainingStock < 1) return 'Bu secenek icin stok tukendi';
+    } else if (remainingStock < 1) {
       return 'Urun stokta yok';
     }
 
@@ -126,15 +145,7 @@ export default function ProductPurchasePanel({
       return;
     }
 
-    const inCart = items
-      .filter((item) =>
-        selectedVariant
-          ? item.variantId === selectedVariant.id
-          : item.productId === product.id && !item.variantId,
-      )
-      .reduce((sum, item) => sum + item.quantity, 0);
-
-    if (availableStock - inCart < 1) {
+    if (remainingStock < 1) {
       setMessage(null);
       setError('Bu secenek icin stok tukendi');
       return;
@@ -145,7 +156,7 @@ export default function ProductPurchasePanel({
       name: product.name,
       basePrice: unitPrice,
       imageUrl: product.imageUrl,
-      stock: availableStock,
+      stock: catalogStock,
       selectedOptions,
       customerNote,
       variantId: selectedVariant?.id ?? null,
@@ -192,6 +203,7 @@ export default function ProductPurchasePanel({
               variants={variants}
               selectedValueId={selectedByAxis[axis.id]}
               selectedByAxis={selectedMap}
+              remainingByVariantId={remainingByVariantId}
               onSelect={(valueId) =>
                 setSelectedByAxis((current) => ({ ...current, [axis.id]: valueId }))
               }
@@ -248,15 +260,22 @@ function VariantAxisPicker({
   variants,
   selectedValueId,
   selectedByAxis,
+  remainingByVariantId,
   onSelect,
 }: {
   axis: VariantAxis;
   variants: ProductVariant[];
   selectedValueId?: number;
   selectedByAxis: Map<number, number>;
+  remainingByVariantId: Map<number, number>;
   onSelect: (valueId: number) => void;
 }) {
-  const availableIds = getAvailableValueIds(variants, axis.id, selectedByAxis);
+  const availableIds = getAvailableValueIds(
+    variants,
+    axis.id,
+    selectedByAxis,
+    remainingByVariantId,
+  );
 
   return (
     <div className="space-y-2">

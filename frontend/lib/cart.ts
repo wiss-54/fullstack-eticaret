@@ -43,19 +43,34 @@ type LegacyCartItem = {
   variantLabel?: string;
 };
 
+function optionsKey(selectedOptions: SelectedOption[]) {
+  return [...selectedOptions]
+    .sort((a, b) => a.optionId - b.optionId)
+    .map((option) => `${option.optionId}:${option.value}`)
+    .join('|');
+}
+
+/** Stable unique line key — do not truncate hashes (variant collisions). */
 export function buildLineId(
   productId: number,
   selectedOptions: SelectedOption[],
   customerNote: string,
   variantId?: number | null,
 ): string {
-  const payload = JSON.stringify({
-    productId,
-    variantId: variantId ?? null,
-    selectedOptions: [...selectedOptions].sort((a, b) => a.optionId - b.optionId),
-    customerNote: customerNote.trim(),
-  });
-  return `${productId}-${btoa(unescape(encodeURIComponent(payload))).slice(0, 24)}`;
+  const variantKey = variantId == null ? 'base' : `v${variantId}`;
+  const noteKey = encodeURIComponent(customerNote.trim());
+  const optionPart = optionsKey(selectedOptions) || '-';
+  return `p${productId}__${variantKey}__${optionPart}__${noteKey || '-'}`;
+}
+
+function sameCartIdentity(
+  item: Pick<CartItem, 'productId' | 'variantId' | 'selectedOptions' | 'customerNote'>,
+  input: Pick<AddCartItemInput, 'productId' | 'variantId' | 'selectedOptions' | 'customerNote'>,
+) {
+  if (item.productId !== input.productId) return false;
+  if ((item.variantId ?? null) !== (input.variantId ?? null)) return false;
+  if (item.customerNote.trim() !== input.customerNote.trim()) return false;
+  return optionsKey(item.selectedOptions) === optionsKey(input.selectedOptions);
 }
 
 function normalizeItem(raw: LegacyCartItem): CartItem {
@@ -64,9 +79,8 @@ function normalizeItem(raw: LegacyCartItem): CartItem {
   const basePrice = raw.basePrice ?? raw.price ?? 0;
   const optionDelta = selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
   const unitPrice = raw.unitPrice ?? basePrice + optionDelta;
-  const lineId =
-    raw.lineId ??
-    buildLineId(raw.productId, selectedOptions, customerNote, raw.variantId ?? null);
+  // Always rebuild so old truncated lineIds cannot collide across variants.
+  const lineId = buildLineId(raw.productId, selectedOptions, customerNote, raw.variantId ?? null);
 
   return {
     lineId,
@@ -84,6 +98,29 @@ function normalizeItem(raw: LegacyCartItem): CartItem {
   };
 }
 
+function mergeDuplicateLines(items: CartItem[]): CartItem[] {
+  const byLine = new Map<string, CartItem>();
+
+  for (const item of items) {
+    const existing = byLine.get(item.lineId);
+    if (!existing) {
+      byLine.set(item.lineId, item);
+      continue;
+    }
+
+    const quantity = Math.min(existing.stock, existing.quantity + item.quantity);
+    byLine.set(item.lineId, {
+      ...existing,
+      quantity,
+      stock: Math.min(existing.stock, item.stock),
+      unitPrice: item.unitPrice || existing.unitPrice,
+      variantLabel: existing.variantLabel || item.variantLabel,
+    });
+  }
+
+  return [...byLine.values()].filter((item) => item.quantity > 0);
+}
+
 export function readCart(): CartState {
   if (typeof window === 'undefined') {
     return { items: [], updatedAt: new Date().toISOString() };
@@ -98,7 +135,7 @@ export function readCart(): CartState {
     }
     return {
       ...parsed,
-      items: parsed.items.map((item) => normalizeItem(item as LegacyCartItem)),
+      items: mergeDuplicateLines(parsed.items.map((item) => normalizeItem(item as LegacyCartItem))),
     };
   } catch {
     return { items: [], updatedAt: new Date().toISOString() };
@@ -115,6 +152,20 @@ export function getCartCount(items: CartItem[]) {
 
 export function getCartTotal(items: CartItem[]) {
   return items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+}
+
+export function getCartQuantityForVariant(
+  items: CartItem[],
+  productId: number,
+  variantId: number | null,
+) {
+  return items
+    .filter((item) =>
+      variantId != null
+        ? item.variantId === variantId
+        : item.productId === productId && item.variantId == null,
+    )
+    .reduce((sum, item) => sum + item.quantity, 0);
 }
 
 export type AddCartItemInput = {
@@ -141,32 +192,46 @@ export function addItemToCart(current: CartItem[], input: AddCartItemInput): Add
   const availableStock = Math.max(0, Math.floor(input.stock));
   const optionDelta = input.selectedOptions.reduce((sum, option) => sum + option.priceDelta, 0);
   const unitPrice = input.basePrice + optionDelta;
+  const variantId = input.variantId ?? null;
   const lineId = buildLineId(
     input.productId,
     input.selectedOptions,
     input.customerNote,
-    input.variantId ?? null,
+    variantId,
   );
-  const existing = current.find((item) => item.lineId === lineId);
 
-  if (availableStock < 1) {
-    return { items: current, added: 0, reason: 'out_of_stock' };
+  // Cap against all lines of this variant (notes/options may split lines).
+  const alreadyInCart = getCartQuantityForVariant(current, input.productId, variantId);
+  const roomTotal = availableStock - alreadyInCart;
+
+  if (availableStock < 1 || roomTotal < 1) {
+    return {
+      items: current,
+      added: 0,
+      reason: availableStock < 1 ? 'out_of_stock' : 'limit_reached',
+    };
   }
 
+  const existing = current.find(
+    (item) => item.lineId === lineId || sameCartIdentity(item, { ...input, variantId }),
+  );
+
   if (existing) {
-    const room = availableStock - existing.quantity;
-    if (room < 1) {
+    const added = Math.min(quantityToAdd, roomTotal);
+    if (added < 1) {
       return { items: current, added: 0, reason: 'limit_reached' };
     }
-    const added = Math.min(quantityToAdd, room);
     return {
       items: current.map((item) =>
-        item.lineId === lineId
+        item.lineId === existing.lineId
           ? {
               ...item,
-              quantity: existing.quantity + added,
+              lineId,
+              quantity: item.quantity + added,
               stock: availableStock,
               unitPrice,
+              variantId,
+              variantLabel: input.variantLabel?.trim() ?? item.variantLabel,
             }
           : item,
       ),
@@ -174,7 +239,7 @@ export function addItemToCart(current: CartItem[], input: AddCartItemInput): Add
     };
   }
 
-  const added = Math.min(quantityToAdd, availableStock);
+  const added = Math.min(quantityToAdd, roomTotal);
   return {
     items: [
       ...current,
@@ -189,7 +254,7 @@ export function addItemToCart(current: CartItem[], input: AddCartItemInput): Add
         quantity: added,
         selectedOptions: input.selectedOptions,
         customerNote: input.customerNote.trim(),
-        variantId: input.variantId ?? null,
+        variantId,
         variantLabel: input.variantLabel?.trim() ?? '',
       },
     ],
@@ -201,7 +266,13 @@ export function updateItemQuantity(current: CartItem[], lineId: string, quantity
   return current
     .map((item) => {
       if (item.lineId !== lineId) return item;
-      const nextQuantity = Math.max(0, Math.min(quantity, item.stock));
+      const othersQty = getCartQuantityForVariant(
+        current.filter((row) => row.lineId !== lineId),
+        item.productId,
+        item.variantId,
+      );
+      const maxForLine = Math.max(0, item.stock - othersQty);
+      const nextQuantity = Math.max(0, Math.min(quantity, maxForLine));
       return { ...item, quantity: nextQuantity };
     })
     .filter((item) => item.quantity > 0);
