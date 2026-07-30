@@ -12,6 +12,10 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
+  security-events: write
+  id-token: write
+  pull-requests: write
 
 jobs:
   secret-scan:
@@ -31,6 +35,78 @@ jobs:
             exit 1
           fi
           echo "Secret dosya kontrolu basarili."
+
+  gitleaks:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  codeql:
+    name: SAST Analysis (CodeQL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
+
+  scorecard:
+    name: Supply Chain Security (Scorecard)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2.4.2
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: ${{ github.event_name != 'pull_request' }}
+
+      - name: Upload SARIF to GitHub Security
+        if: github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: OpenSSF-Scorecard
+
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+          comment-summary-in-pr: always
 
   backend:
     name: Backend Test & Security
@@ -129,8 +205,24 @@ jobs:
 
   deploy:
     name: Deploy to Production
-    needs: [secret-scan, backend, frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - secret-scan
+      - gitleaks
+      - codeql
+      - scorecard
+      - dependency-review
+      - backend
+      - frontend
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.secret-scan.result == 'success' &&
+      needs.gitleaks.result == 'success' &&
+      needs.codeql.result == 'success' &&
+      needs.scorecard.result == 'success' &&
+      needs.backend.result == 'success' &&
+      needs.frontend.result == 'success' &&
+      (needs.dependency-review.result == 'success' || needs.dependency-review.result == 'skipped')
     runs-on: ubuntu-latest
     environment: production
     steps:
