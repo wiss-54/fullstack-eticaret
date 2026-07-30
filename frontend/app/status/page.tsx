@@ -1,9 +1,9 @@
 import StoreFooter from '@/components/StoreFooter';
 import StoreHeader from '@/components/StoreHeader';
 import PublicStatusClient from '@/components/PublicStatusClient';
-import { getCategories, getStoreSettings } from '@/lib/api';
+import { getCategories, getPublicStatus, getStoreSettings } from '@/lib/api';
 import { getStoreShellClass } from '@/lib/store-theme';
-import type { Category, StoreSettings } from '@/lib/types';
+import type { Category, PublicStatusPayload, StoreSettings } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,10 +42,19 @@ const FALLBACK_SETTINGS: StoreSettings = {
 export default async function StatusPage() {
   let settings: StoreSettings = FALLBACK_SETTINGS;
   let categories: Category[] = [];
+  let initialData: PublicStatusPayload | null = null;
+  let initialError: string | null = null;
+
   try {
     [settings, categories] = await Promise.all([getStoreSettings(), getCategories()]);
   } catch {
     settings = FALLBACK_SETTINGS;
+  }
+
+  try {
+    initialData = await getPublicStatus(true);
+  } catch (err) {
+    initialError = err instanceof Error ? err.message : 'Durum yuklenemedi';
   }
 
   return (
@@ -61,7 +70,7 @@ export default async function StatusPage() {
         categories={categories}
       />
       <main className="flex-1">
-        <PublicStatusClient />
+        <PublicStatusClient initialData={initialData} initialError={initialError} />
       </main>
       <StoreFooter
         brandName={settings.brandName}

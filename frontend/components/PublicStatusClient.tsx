@@ -35,16 +35,22 @@ function formatDuration(seconds: number | null | undefined) {
   return `${hours} sa ${minutes % 60} dk`;
 }
 
-export default function PublicStatusClient() {
-  const [data, setData] = useState<PublicStatusPayload | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function PublicStatusClient({
+  initialData = null,
+  initialError = null,
+}: {
+  initialData?: PublicStatusPayload | null;
+  initialError?: string | null;
+}) {
+  const [data, setData] = useState<PublicStatusPayload | null>(initialData);
+  const [error, setError] = useState<string | null>(initialError);
+  const [loading, setLoading] = useState(!initialData && !initialError);
 
   const load = useCallback(async (refresh = false) => {
     try {
-      setError(null);
       const next = await getPublicStatus(refresh);
       setData(next);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Durum yuklenemedi');
     } finally {
@@ -53,8 +59,9 @@ export default function PublicStatusClient() {
   }, []);
 
   useEffect(() => {
-    void load(true);
-    const id = window.setInterval(() => void load(false), 30_000);
+    const id = window.setInterval(() => {
+      void load(false);
+    }, 30_000);
     return () => window.clearInterval(id);
   }, [load]);
 
@@ -74,7 +81,10 @@ export default function PublicStatusClient() {
         </div>
         <button
           type="button"
-          onClick={() => void load(true)}
+          onClick={() => {
+            setLoading(true);
+            void load(true);
+          }}
           className="rounded-lg border border-store-border bg-store-surface-low px-4 py-2 text-sm font-medium text-store-text transition hover:border-store-primary"
         >
           Yenile
@@ -93,9 +103,7 @@ export default function PublicStatusClient() {
 
       {data ? (
         <div className="space-y-6">
-          <section
-            className={`rounded-2xl border px-5 py-5 ${overallTone(data.overall)}`}
-          >
+          <section className={`rounded-2xl border px-5 py-5 ${overallTone(data.overall)}`}>
             <p className="text-sm font-semibold uppercase tracking-[0.12em]">Genel durum</p>
             <p className="mt-2 text-2xl font-bold">{overallLabel(data.overall)}</p>
             <p className="mt-2 text-sm opacity-80">
