@@ -16,6 +16,13 @@ import type {
   SystemStatusCheckName,
   SystemStatusMeta,
 } from '@/lib/types';
+import {
+  appendUptimeHistoryPoint,
+  emptyScores,
+  readUptimeHistory,
+  type UptimeHistoryPoint,
+  type UptimeHistoryScores,
+} from '@/lib/uptime-history';
 
 const REFRESH_MS = 30_000;
 const UPTIME_ATTEMPTS = 10;
@@ -462,6 +469,170 @@ function UptimeAxisCard({
   );
 }
 
+const UPTIME_SERIES: Array<{ key: UptimeTargetKey; label: string; color: string }> = [
+  { key: 'backend', label: 'backend', color: '#3b82f6' },
+  { key: 'database', label: 'database', color: '#14b8a6' },
+  { key: 'api', label: 'api', color: '#a855f7' },
+  { key: 'shop', label: 'shop', color: '#f43f5e' },
+  { key: 'adminPanel', label: 'admin', color: '#f59e0b' },
+];
+
+function formatClock(ts: number) {
+  return new Date(ts).toLocaleTimeString('tr-TR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function UptimeHourChart({
+  points,
+  now,
+}: {
+  points: UptimeHistoryPoint[];
+  now: number;
+}) {
+  const width = 920;
+  const height = 260;
+  const pad = { top: 16, right: 16, bottom: 28, left: 40 };
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const start = now - 60 * 60 * 1000;
+
+  const xFor = (at: number) =>
+    pad.left + ((Math.max(start, Math.min(now, at)) - start) / (60 * 60 * 1000)) * innerW;
+  const yFor = (percent: number) => pad.top + ((100 - percent) / 100) * innerH;
+
+  const ticks = [0, 25, 50, 75, 100];
+  const timeTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => start + ratio * 60 * 60 * 1000);
+
+  function pathFor(key: UptimeTargetKey) {
+    if (points.length === 0) return '';
+    return points
+      .map((point, index) => {
+        const x = xFor(point.at);
+        const y = yFor(point.scores[key] ?? 0);
+        return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
+      })
+      .join(' ');
+  }
+
+  const overallPath =
+    points.length === 0
+      ? ''
+      : points
+          .map((point, index) => {
+            const x = xFor(point.at);
+            const y = yFor(point.overall);
+            return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
+          })
+          .join(' ');
+
+  return (
+    <section className="rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-admin-text">Resource Health · Uptime</h2>
+          <p className="mt-1 text-sm text-admin-muted">
+            Son 1 saat · her {REFRESH_MS / 1000} sn olcum · Y: basari % · X: zaman
+          </p>
+        </div>
+        <span className="rounded-lg border border-admin-border bg-admin-bg px-3 py-1.5 text-sm text-admin-text">
+          1 hour
+        </span>
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-64 w-full min-w-[640px]">
+          {ticks.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={pad.left}
+                x2={width - pad.right}
+                y1={yFor(tick)}
+                y2={yFor(tick)}
+                stroke="currentColor"
+                className="text-admin-border"
+                strokeWidth="1"
+              />
+              <text
+                x={pad.left - 8}
+                y={yFor(tick) + 3}
+                textAnchor="end"
+                className="fill-admin-muted font-admin-mono text-[10px]"
+              >
+                {tick}%
+              </text>
+            </g>
+          ))}
+
+          {timeTicks.map((ts) => (
+            <text
+              key={ts}
+              x={xFor(ts)}
+              y={height - 8}
+              textAnchor="middle"
+              className="fill-admin-muted font-admin-mono text-[10px]"
+            >
+              {formatClock(ts)}
+            </text>
+          ))}
+
+          {UPTIME_SERIES.map((series) => (
+            <path
+              key={series.key}
+              d={pathFor(series.key)}
+              fill="none"
+              stroke={series.color}
+              strokeWidth="2.2"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ))}
+
+          {overallPath ? (
+            <path
+              d={overallPath}
+              fill="none"
+              stroke="#22c55e"
+              strokeWidth="2.8"
+              strokeDasharray="5 4"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ) : null}
+
+          {points.length === 0 ? (
+            <text
+              x={width / 2}
+              y={height / 2}
+              textAnchor="middle"
+              className="fill-admin-muted text-sm"
+            >
+              Olcumler birikiyor… 30 sn sonra grafik dolacak
+            </text>
+          ) : null}
+        </svg>
+      </div>
+
+      <ul className="mt-3 flex flex-wrap gap-3">
+        <li className="inline-flex items-center gap-2 text-xs text-admin-muted">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          overall
+        </li>
+        {UPTIME_SERIES.map((series) => (
+          <li key={series.key} className="inline-flex items-center gap-2 text-xs text-admin-muted">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: series.color }}
+            />
+            {series.label}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function MonitoringDashboard() {
   const router = useRouter();
   const paths = getAdminPaths();
@@ -478,6 +649,10 @@ export default function MonitoringDashboard() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uptimeBoard, setUptimeBoard] = useState<UptimeBoard>(() => emptyUptimeBoard());
   const [uptimeRunning, setUptimeRunning] = useState(false);
+  const [uptimeHistory, setUptimeHistory] = useState<UptimeHistoryPoint[]>(() =>
+    typeof window === 'undefined' ? [] : readUptimeHistory(),
+  );
+  const [chartNow] = useState(() => Date.now());
 
   const completedCount = useMemo(
     () => Object.values(settled).filter(Boolean).length,
@@ -548,28 +723,51 @@ export default function MonitoringDashboard() {
       setUptimeRunning(true);
       setUptimeBoard(emptyUptimeBoard());
 
+      const tallies: Record<UptimeTargetKey, { success: number; done: number }> = {
+        backend: { success: 0, done: 0 },
+        database: { success: 0, done: 0 },
+        api: { success: 0, done: 0 },
+        shop: { success: 0, done: 0 },
+        adminPanel: { success: 0, done: 0 },
+      };
+
       await Promise.all(
         UPTIME_TARGETS.map(async (target) => {
           await Promise.all(
             Array.from({ length: UPTIME_ATTEMPTS }, async (_, index) => {
               const probeIndex = index + 1;
+              let ok = false;
               try {
                 if (target.key === 'backend') {
                   await adminGetStatusMeta();
-                  setProbeResult('backend', probeIndex, true);
+                  ok = true;
                 } else {
                   const data = await adminGetStatusCheck(target.key);
-                  setProbeResult(target.key, probeIndex, data.check.status === 'up');
+                  ok = data.check.status === 'up';
                 }
               } catch (err) {
                 if (handleAuth(err)) return;
-                setProbeResult(target.key, probeIndex, false);
+                ok = false;
               }
+              tallies[target.key].done += 1;
+              if (ok) tallies[target.key].success += 1;
+              setProbeResult(target.key, probeIndex, ok);
             }),
           );
         }),
       );
 
+      const scores: UptimeHistoryScores = emptyScores();
+      let successTotal = 0;
+      for (const target of UPTIME_TARGETS) {
+        const { success } = tallies[target.key];
+        scores[target.key] = Math.round((success / UPTIME_ATTEMPTS) * 100);
+        successTotal += success;
+      }
+      const overall = Math.round(
+        (successTotal / (UPTIME_TARGETS.length * UPTIME_ATTEMPTS)) * 100,
+      );
+      setUptimeHistory(appendUptimeHistoryPoint(scores, overall));
       setUptimeRunning(false);
     },
     [setProbeResult],
@@ -848,12 +1046,17 @@ export default function MonitoringDashboard() {
             </div>
           </section>
 
+          <UptimeHourChart
+            points={uptimeHistory}
+            now={lastUpdated?.getTime() ?? chartNow}
+          />
+
           <section className="space-y-3">
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <h2 className="text-lg font-semibold text-admin-text">Uptime grafigi (X/Y)</h2>
+                <h2 className="text-lg font-semibold text-admin-text">Anlik olcum</h2>
                 <p className="text-sm text-admin-muted">
-                  X: istek (1–{UPTIME_ATTEMPTS}) · Y: basari yuzdesi · es zamanli yukselir
+                  Bu tur: her hedefe {UPTIME_ATTEMPTS} istek · bitince 1 saatligine islenir
                 </p>
               </div>
               <p className="font-admin-mono text-sm text-admin-muted">
