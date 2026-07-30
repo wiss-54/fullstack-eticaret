@@ -302,6 +302,33 @@ function scheduleOrderConfirmationEmail(order) {
   });
 }
 
+async function sendContactMessage({ name, email, phone, message }) {
+  const inbox = process.env.CONTACT_INBOX_EMAIL?.trim() || process.env.MAIL_FROM_EMAIL?.trim();
+  const subject = `Iletisim formu: ${name}`;
+  const text = [
+    `Ad: ${name}`,
+    `E-posta: ${email}`,
+    `Telefon: ${phone || '-'}`,
+    '',
+    'Mesaj:',
+    message,
+  ].join('\n');
+  const html = `
+    <p><strong>Ad:</strong> ${name}</p>
+    <p><strong>E-posta:</strong> ${email}</p>
+    <p><strong>Telefon:</strong> ${phone || '-'}</p>
+    <p><strong>Mesaj:</strong></p>
+    <p>${String(message).replace(/\n/g, '<br/>')}</p>
+  `;
+
+  if (!inbox) {
+    console.info('[contact:mock]', { name, email, phone, message });
+    return { provider: 'mock', accepted: true };
+  }
+
+  return sendEmail({ to: inbox, subject, text, html });
+}
+
 module.exports = {
   getEmailProvider,
   isBrevoConfigured,
@@ -313,4 +340,5 @@ module.exports = {
   scheduleEmailVerificationEmail,
   sendOrderConfirmationEmail,
   scheduleOrderConfirmationEmail,
+  sendContactMessage,
 };
