@@ -187,6 +187,19 @@ export async function adminGetStatusCheck(name: import('./types').SystemStatusCh
   );
 }
 
+export async function adminGetUptimeScore(options?: {
+  attempts?: number;
+  target?: import('./types').SystemStatusCheckName;
+}) {
+  const attempts = options?.attempts ?? 10;
+  const target = options?.target ?? 'api';
+  const params = new URLSearchParams({
+    attempts: String(attempts),
+    target,
+  });
+  return adminFetch<import('./types').UptimeScore>(`/api/admin/status/uptime?${params}`);
+}
+
 export async function adminCreateProduct(input: ProductInput) {
   return adminFetch<Product>('/api/products', {
     method: 'POST',

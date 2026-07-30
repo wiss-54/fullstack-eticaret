@@ -18,6 +18,8 @@ import type {
 } from '@/lib/types';
 
 const REFRESH_MS = 15_000;
+const UPTIME_ATTEMPTS = 10;
+const UPTIME_TARGET: SystemStatusCheckName = 'api';
 
 const SERVICE_CHECKS: Array<{ key: SystemStatusCheckName; title: string }> = [
   { key: 'database', title: 'Veritabani' },
@@ -26,9 +28,12 @@ const SERVICE_CHECKS: Array<{ key: SystemStatusCheckName; title: string }> = [
   { key: 'adminPanel', title: 'Admin Panel' },
 ];
 
-const PROGRESS_TOTAL = 1 + SERVICE_CHECKS.length;
-
 type ProgressKey = 'meta' | SystemStatusCheckName;
+
+type UptimeProbeState = {
+  index: number;
+  ok: boolean | null;
+};
 
 function formatUptime(seconds: number) {
   const days = Math.floor(seconds / 86400);
@@ -293,34 +298,67 @@ export default function MonitoringDashboard() {
   const [tick, setTick] = useState(0);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [uptimeProbes, setUptimeProbes] = useState<UptimeProbeState[]>(() =>
+    Array.from({ length: UPTIME_ATTEMPTS }, (_, index) => ({ index: index + 1, ok: null })),
+  );
+  const [uptimeRunning, setUptimeRunning] = useState(false);
 
   const completedCount = useMemo(
     () => Object.values(settled).filter(Boolean).length,
     [settled],
   );
-  const progressPercent = Math.round((completedCount / PROGRESS_TOTAL) * 100);
-  const allSettled = completedCount >= PROGRESS_TOTAL;
 
-  const healthyCount = useMemo(() => {
-    let count = 0;
-    if (meta?.backend.status === 'up') count += 1;
-    for (const item of SERVICE_CHECKS) {
-      if (checks[item.key]?.status === 'up') count += 1;
-    }
-    return count;
-  }, [meta, checks]);
+  const uptimeDone = useMemo(
+    () => uptimeProbes.filter((probe) => probe.ok !== null).length,
+    [uptimeProbes],
+  );
+  const uptimeSuccess = useMemo(
+    () => uptimeProbes.filter((probe) => probe.ok === true).length,
+    [uptimeProbes],
+  );
+  const uptimePercent = Math.round((uptimeSuccess / UPTIME_ATTEMPTS) * 100);
+  const uptimeProgressPercent = Math.round((uptimeDone / UPTIME_ATTEMPTS) * 100);
 
   const health = useMemo(() => {
-    if (!allSettled) {
-      return { label: 'Kontroller suruyor', tone: 'amber' as const };
+    if (uptimeRunning || uptimeDone < UPTIME_ATTEMPTS) {
+      return { label: 'Uptime olcumu suruyor', tone: 'amber' as const };
     }
-    if (healthyCount === 5) return { label: 'Tum sistemler calisiyor', tone: 'emerald' as const };
-    if (healthyCount >= 3) return { label: 'Kismi sorun var', tone: 'amber' as const };
-    return { label: 'Kritik sorun', tone: 'red' as const };
-  }, [allSettled, healthyCount]);
+    if (uptimePercent >= 90) return { label: 'Uptime skoru yuksek', tone: 'emerald' as const };
+    if (uptimePercent >= 70) return { label: 'Uptime skoru orta', tone: 'amber' as const };
+    return { label: 'Uptime skoru dusuk', tone: 'red' as const };
+  }, [uptimeRunning, uptimeDone, uptimePercent]);
 
   const markSettled = useCallback((key: ProgressKey) => {
     setSettled((current) => ({ ...current, [key]: true }));
+  }, []);
+
+  const runUptimeProbes = useCallback(async (handleAuth: (err: unknown) => boolean) => {
+    setUptimeRunning(true);
+    setUptimeProbes(
+      Array.from({ length: UPTIME_ATTEMPTS }, (_, index) => ({ index: index + 1, ok: null })),
+    );
+
+    await Promise.all(
+      Array.from({ length: UPTIME_ATTEMPTS }, async (_, index) => {
+        try {
+          const data = await adminGetStatusCheck(UPTIME_TARGET);
+          setUptimeProbes((current) =>
+            current.map((probe) =>
+              probe.index === index + 1 ? { ...probe, ok: data.check.status === 'up' } : probe,
+            ),
+          );
+        } catch (err) {
+          if (handleAuth(err)) return;
+          setUptimeProbes((current) =>
+            current.map((probe) =>
+              probe.index === index + 1 ? { ...probe, ok: false } : probe,
+            ),
+          );
+        }
+      }),
+    );
+
+    setUptimeRunning(false);
   }, []);
 
   const runProgressiveFetch = useCallback(
@@ -340,6 +378,7 @@ export default function MonitoringDashboard() {
       };
 
       const tasks: Array<Promise<void>> = [
+        runUptimeProbes(handleAuth),
         adminGetStatusMeta()
           .then((data) => {
             setMeta(data);
@@ -375,7 +414,7 @@ export default function MonitoringDashboard() {
       setLoading(false);
       setRefreshing(false);
     },
-    [markSettled, paths.login, router],
+    [markSettled, paths.login, router, runUptimeProbes],
   );
 
   useEffect(() => {
@@ -483,12 +522,16 @@ export default function MonitoringDashboard() {
                 <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-admin-bg shadow-sm">
                   <span
                     className={`absolute inline-flex h-4 w-4 rounded-full opacity-40 ${
-                      !allSettled ? 'animate-ping bg-amber-500' : autoRefresh ? 'bg-emerald-500' : 'bg-admin-muted'
+                      uptimeRunning || uptimeDone < UPTIME_ATTEMPTS
+                        ? 'animate-ping bg-amber-500'
+                        : autoRefresh
+                          ? 'bg-emerald-500'
+                          : 'bg-admin-muted'
                     }`}
                   />
                   <span
                     className={`relative inline-flex h-4 w-4 rounded-full ${
-                      !allSettled
+                      uptimeRunning || uptimeDone < UPTIME_ATTEMPTS
                         ? 'bg-amber-500'
                         : autoRefresh
                           ? 'bg-emerald-500'
@@ -498,14 +541,16 @@ export default function MonitoringDashboard() {
                 </div>
                 <div>
                   <p className="font-admin-mono text-sm font-semibold uppercase tracking-[0.18em] text-admin-muted">
-                    Genel Durum
+                    Uptime Skoru
                   </p>
                   <h2 className="text-2xl font-bold text-admin-text">{health.label}</h2>
                   <p className="text-sm text-admin-muted">
-                    {allSettled
-                      ? `${healthyCount}/5 servis saglikli`
-                      : `${completedCount}/${PROGRESS_TOTAL} yanit alindi`}
-                    {lastUpdated && allSettled ? ` · Son guncelleme ${formatAgo(lastUpdated)}` : ''}
+                    {uptimeDone < UPTIME_ATTEMPTS
+                      ? `${uptimeDone}/${UPTIME_ATTEMPTS} istek tamamlandi · ${uptimeSuccess} basarili`
+                      : `${uptimeSuccess}/${UPTIME_ATTEMPTS} basarili yanit · %${uptimePercent}`}
+                    {lastUpdated && uptimeDone >= UPTIME_ATTEMPTS
+                      ? ` · Son olcum ${formatAgo(lastUpdated)}`
+                      : ''}
                   </p>
                 </div>
               </div>
@@ -516,7 +561,7 @@ export default function MonitoringDashboard() {
                     <p className="text-xl font-bold text-admin-text">{meta.stats.productCount ?? '-'}</p>
                   </div>
                   <div className="rounded-lg bg-admin-bg px-4 py-3 text-center">
-                    <p className="text-xs text-admin-muted">Uptime</p>
+                    <p className="text-xs text-admin-muted">Calisma</p>
                     <p className="text-sm font-bold text-admin-text">
                       {formatUptime(meta.backend.uptimeSeconds)}
                     </p>
@@ -537,54 +582,51 @@ export default function MonitoringDashboard() {
 
             <div className="mt-6">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="font-medium text-admin-text">Kontrol ilerlemesi</span>
+                <span className="font-medium text-admin-text">
+                  Sunucuya {UPTIME_ATTEMPTS} istek · kaci dondu?
+                </span>
                 <span className="font-admin-mono text-admin-muted">
-                  {completedCount}/{PROGRESS_TOTAL} · %{progressPercent}
+                  {uptimeSuccess}/{UPTIME_ATTEMPTS} · %{uptimePercent}
+                  {uptimeDone < UPTIME_ATTEMPTS ? ` · ilerleme %${uptimeProgressPercent}` : ''}
                 </span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-admin-bg">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    allSettled
-                      ? healthyCount === 5
+                    uptimeDone < UPTIME_ATTEMPTS
+                      ? 'bg-admin-primary'
+                      : uptimePercent >= 90
                         ? 'bg-emerald-500'
-                        : healthyCount >= 3
+                        : uptimePercent >= 70
                           ? 'bg-amber-500'
                           : 'bg-red-500'
-                      : 'bg-admin-primary'
                   }`}
-                  style={{ width: `${progressPercent}%` }}
+                  style={{
+                    width: `${uptimeDone < UPTIME_ATTEMPTS ? uptimeProgressPercent : uptimePercent}%`,
+                  }}
                 />
               </div>
               <ul className="mt-3 flex flex-wrap gap-2">
-                {(
-                  [
-                    { key: 'meta' as const, label: 'Meta' },
-                    ...SERVICE_CHECKS.map((item) => ({ key: item.key, label: item.title })),
-                  ] as Array<{ key: ProgressKey; label: string }>
-                ).map((item) => {
-                  const done = Boolean(settled[item.key]);
-                  const failed =
-                    done &&
-                    item.key !== 'meta' &&
-                    checks[item.key as SystemStatusCheckName]?.status === 'down';
-                  return (
-                    <li
-                      key={item.key}
-                      className={`rounded-full px-3 py-1 font-admin-mono text-[11px] font-semibold ${
-                        !done
-                          ? 'bg-admin-bg text-admin-muted'
-                          : failed
-                            ? 'bg-admin-danger/15 text-admin-danger'
-                            : 'bg-emerald-500/15 text-emerald-700'
-                      }`}
-                    >
-                      {item.label}
-                      {!done ? ' …' : failed ? ' ↓' : ' ✓'}
-                    </li>
-                  );
-                })}
+                {uptimeProbes.map((probe) => (
+                  <li
+                    key={probe.index}
+                    className={`rounded-full px-3 py-1 font-admin-mono text-[11px] font-semibold ${
+                      probe.ok === null
+                        ? 'bg-admin-bg text-admin-muted'
+                        : probe.ok
+                          ? 'bg-emerald-500/15 text-emerald-700'
+                          : 'bg-admin-danger/15 text-admin-danger'
+                    }`}
+                  >
+                    #{probe.index}
+                    {probe.ok === null ? ' …' : probe.ok ? ' ✓' : ' ✗'}
+                  </li>
+                ))}
               </ul>
+              <p className="mt-3 text-xs text-admin-muted">
+                Hedef: <span className="font-admin-mono">{UPTIME_TARGET}</span> health endpoint
+                (MONITOR_API_URL). Servis kartlari asagida Detaylar icinde.
+              </p>
             </div>
           </section>
 
