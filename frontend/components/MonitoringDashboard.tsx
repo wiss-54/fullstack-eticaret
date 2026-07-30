@@ -18,7 +18,7 @@ import type {
 } from '@/lib/types';
 
 const REFRESH_MS = 30_000;
-const UPTIME_ATTEMPTS = 15;
+const UPTIME_ATTEMPTS = 10;
 
 const SERVICE_CHECKS: Array<{ key: SystemStatusCheckName; title: string }> = [
   { key: 'database', title: 'Veritabani' },
@@ -36,14 +36,13 @@ type UptimeTargetKey = 'backend' | SystemStatusCheckName;
 const UPTIME_TARGETS: Array<{
   key: UptimeTargetKey;
   title: string;
-  axis: string;
   subtitle: string;
 }> = [
-  { key: 'backend', title: 'Backend', axis: 'X', subtitle: 'Meta / API yaniti' },
-  { key: 'database', title: 'Veritabani', axis: 'Y', subtitle: 'Postgres SELECT 1' },
-  { key: 'api', title: 'Backend API', axis: 'Z', subtitle: 'MONITOR_API_URL' },
-  { key: 'shop', title: 'Magaza Sitesi', axis: 'X′', subtitle: 'MONITOR_SHOP_URL' },
-  { key: 'adminPanel', title: 'Admin Panel', axis: 'Y′', subtitle: 'MONITOR_ADMIN_URL' },
+  { key: 'backend', title: 'Backend', subtitle: 'Meta / API yaniti' },
+  { key: 'database', title: 'Veritabani', subtitle: 'Postgres SELECT 1' },
+  { key: 'api', title: 'Backend API', subtitle: 'MONITOR_API_URL' },
+  { key: 'shop', title: 'Magaza Sitesi', subtitle: 'MONITOR_SHOP_URL' },
+  { key: 'adminPanel', title: 'Admin Panel', subtitle: 'MONITOR_ADMIN_URL' },
 ];
 
 type UptimeProbeState = {
@@ -341,80 +340,115 @@ function MetricBar({
 
 function UptimeAxisCard({
   title,
-  axis,
   subtitle,
   probes,
 }: {
   title: string;
-  axis: string;
   subtitle: string;
   probes: UptimeProbeState[];
 }) {
   const summary = summarizeProbes(probes);
-  const tone = !summary.complete
+  const livePercent = summary.percent;
+  const barTone = !summary.complete
     ? 'bg-admin-primary'
-    : summary.percent >= 90
+    : livePercent >= 90
       ? 'bg-emerald-500'
-      : summary.percent >= 70
+      : livePercent >= 70
         ? 'bg-amber-500'
         : 'bg-red-500';
 
+  // X ekseni: istek sirasi — Y: o ana kadar biriken basari yuzdesi (es zamanli yukselir)
+  let runningSuccess = 0;
+  const cumulativeHeights = probes.map((probe) => {
+    if (probe.ok === null) {
+      return { height: livePercent, pending: true, ok: null as boolean | null };
+    }
+    if (probe.ok) runningSuccess += 1;
+    return {
+      height: Math.round((runningSuccess / UPTIME_ATTEMPTS) * 100),
+      pending: false,
+      ok: probe.ok,
+    };
+  });
+
   return (
-    <article className="relative overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low p-4 shadow-[6px_6px_0_rgba(0,0,0,0.06)]">
-      <div className="pointer-events-none absolute inset-y-3 left-0 w-1 rounded-r bg-admin-primary/50" />
-      <div className="pointer-events-none absolute inset-x-3 bottom-0 h-1 rounded-t bg-admin-primary/30" />
+    <article className="rounded-xl border border-admin-border bg-admin-surface-low p-4 shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-admin-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-admin-muted">
-            Eksen {axis}
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-admin-text">{title}</h3>
+          <h3 className="text-base font-semibold text-admin-text">{title}</h3>
           <p className="mt-0.5 text-xs text-admin-muted">{subtitle}</p>
         </div>
-        <span className="rounded-lg border border-admin-border bg-admin-bg px-2.5 py-1 font-admin-mono text-xs font-bold text-admin-text">
-          {summary.success}/{UPTIME_ATTEMPTS}
-        </span>
-      </div>
-
-      <div className="mt-4">
-        <div className="mb-1 flex justify-between font-admin-mono text-[11px] text-admin-muted">
-          <span>Y: basarili yanit</span>
-          <span>
-            %{summary.percent}
-            {!summary.complete ? ` · X ilerleme %${summary.progressPercent}` : ''}
-          </span>
-        </div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-admin-bg">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${tone}`}
-            style={{
-              width: `${summary.complete ? summary.percent : summary.progressPercent}%`,
-            }}
-          />
+        <div className="text-right">
+          <p className="font-admin-mono text-2xl font-bold tabular-nums text-admin-text transition-all">
+            %{livePercent}
+          </p>
+          <p className="font-admin-mono text-[11px] text-admin-muted">
+            {summary.success}/{UPTIME_ATTEMPTS}
+          </p>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-5 gap-1.5 sm:grid-cols-5">
-        {probes.map((probe) => (
-          <span
-            key={probe.index}
-            title={`#${probe.index}`}
-            className={`flex h-7 items-center justify-center rounded-md font-admin-mono text-[10px] font-semibold ${
-              probe.ok === null
-                ? 'bg-admin-bg text-admin-muted'
-                : probe.ok
-                  ? 'bg-emerald-500/15 text-emerald-700'
-                  : 'bg-admin-danger/15 text-admin-danger'
-            }`}
-          >
-            {probe.ok === null ? '·' : probe.ok ? '✓' : '✗'}
-          </span>
-        ))}
+      <div className="mt-4 flex gap-2">
+        <div className="flex h-40 w-8 flex-col justify-between font-admin-mono text-[10px] text-admin-muted">
+          <span>100</span>
+          <span>75</span>
+          <span>50</span>
+          <span>25</span>
+          <span>0</span>
+        </div>
+
+        <div className="relative min-w-0 flex-1">
+          <p className="pointer-events-none absolute -left-1 -top-5 text-[10px] font-semibold text-admin-muted">
+            Y %
+          </p>
+          <div className="relative flex h-40 items-end gap-1 border-b border-l border-admin-border bg-[linear-gradient(to_top,transparent_0,transparent_calc(25%-1px),rgba(0,0,0,0.04)_calc(25%-1px),rgba(0,0,0,0.04)_25%,transparent_25%,transparent_calc(50%-1px),rgba(0,0,0,0.04)_calc(50%-1px),rgba(0,0,0,0.04)_50%,transparent_50%,transparent_calc(75%-1px),rgba(0,0,0,0.04)_calc(75%-1px),rgba(0,0,0,0.04)_75%,transparent_75%)] px-1 pb-0 pt-1">
+            {/* Canli Y dolgusu — toplam skor yukari cikar */}
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-0 opacity-20 transition-all duration-500 ${barTone}`}
+              style={{ height: `${Math.max(livePercent, summary.done > 0 ? 4 : 0)}%` }}
+            />
+
+            {cumulativeHeights.map((column, index) => {
+              const probe = probes[index];
+              const height =
+                probe.ok === null
+                  ? Math.max(livePercent * 0.15, summary.done > 0 ? 4 : 2)
+                  : Math.max(column.height, probe.ok ? 8 : 6);
+
+              return (
+                <div
+                  key={probe.index}
+                  className="relative z-[1] flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                  title={`#${probe.index}: ${
+                    probe.ok === null ? 'bekleniyor' : probe.ok ? 'dondu' : 'donmedi'
+                  }`}
+                >
+                  <div
+                    className={`w-full max-w-[18px] rounded-t-sm transition-all duration-500 ease-out ${
+                      probe.ok === null
+                        ? 'animate-pulse bg-admin-muted/50'
+                        : probe.ok
+                          ? barTone
+                          : 'bg-admin-danger'
+                    }`}
+                    style={{ height: `${height}%` }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-1 flex justify-between font-admin-mono text-[10px] text-admin-muted">
+            <span>X: 1</span>
+            <span>istek</span>
+            <span>{UPTIME_ATTEMPTS}</span>
+          </div>
+        </div>
       </div>
+
       <p className="mt-3 text-xs text-admin-muted">
         {summary.complete
-          ? `${summary.success}/${UPTIME_ATTEMPTS} istek dondu`
-          : `${summary.done}/${UPTIME_ATTEMPTS} denendi · ${summary.success} dondu`}
+          ? `${summary.success}/${UPTIME_ATTEMPTS} istek dondu · skor %${livePercent}`
+          : `${summary.done}/${UPTIME_ATTEMPTS} denendi · ${summary.success} dondu · canli %${livePercent}`}
       </p>
     </article>
   );
@@ -809,9 +843,9 @@ export default function MonitoringDashboard() {
           <section className="space-y-3">
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <h2 className="text-lg font-semibold text-admin-text">Uptime eksenleri</h2>
+                <h2 className="text-lg font-semibold text-admin-text">Uptime grafigi (X/Y)</h2>
                 <p className="text-sm text-admin-muted">
-                  Her hedefe {UPTIME_ATTEMPTS} istek · X ilerleme / Y basari orani
+                  X: istek (1–{UPTIME_ATTEMPTS}) · Y: basari yuzdesi · es zamanli yukselir
                 </p>
               </div>
               <p className="font-admin-mono text-sm text-admin-muted">
@@ -823,7 +857,6 @@ export default function MonitoringDashboard() {
                 <UptimeAxisCard
                   key={target.key}
                   title={target.title}
-                  axis={target.axis}
                   subtitle={target.subtitle}
                   probes={uptimeBoard[target.key]}
                 />
