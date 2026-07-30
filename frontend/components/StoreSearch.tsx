@@ -10,15 +10,17 @@ type Props = {
 export default function StoreSearch({ preview = false }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const urlQuery = searchParams.get('q') ?? '';
+  const [open, setOpen] = useState(Boolean(urlQuery));
+  const [query, setQuery] = useState(urlQuery);
+  const [syncedQuery, setSyncedQuery] = useState(urlQuery);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const q = searchParams.get('q') ?? '';
-    setQuery(q);
-    if (q) setOpen(true);
-  }, [searchParams]);
+  if (urlQuery !== syncedQuery) {
+    setSyncedQuery(urlQuery);
+    setQuery(urlQuery);
+    if (urlQuery) setOpen(true);
+  }
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -52,7 +54,13 @@ export default function StoreSearch({ preview = false }: Props) {
         type="button"
         aria-label="Urun ara"
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          setOpen((value) => {
+            const next = !value;
+            if (next) setQuery(urlQuery);
+            return next;
+          });
+        }}
         className="inline-flex h-10 w-10 items-center justify-center rounded-full text-store-text transition hover:bg-store-surface-low hover:text-store-primary"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">

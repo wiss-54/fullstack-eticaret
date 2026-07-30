@@ -21,7 +21,6 @@ const linkClass =
 export default function StoreHeaderNav({
   navItem1Label,
   navItem1Href,
-  navItem2Label,
   navItem2Href,
   categories: providedCategories = [],
   preview = false,
