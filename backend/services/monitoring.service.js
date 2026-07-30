@@ -2,6 +2,7 @@ const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const { pool } = require('../db');
+const { syncIncident, getIncidentSummary, TARGET_LABELS } = require('./incidents.service');
 
 const DEPLOY_INFO_PATH = path.join(__dirname, '..', '.deploy-info.json');
 
@@ -13,6 +14,12 @@ let sslCache = {
   admin: null,
 };
 const SSL_CACHE_MS = 5 * 60 * 1000;
+
+let ciCache = { at: 0, data: null };
+const CI_CACHE_MS = 60 * 1000;
+
+let publicStatusCache = { at: 0, data: null };
+const PUBLIC_STATUS_CACHE_MS = 20 * 1000;
 
 function readDeployInfo() {
   try {
@@ -267,6 +274,162 @@ async function getSslStatus(urlString) {
   }
 }
 
+function githubRepo() {
+  return {
+    owner: process.env.GITHUB_REPO_OWNER || 'wiss-54',
+    repo: process.env.GITHUB_REPO_NAME || 'fullstack-eticaret',
+    workflow: process.env.GITHUB_WORKFLOW_FILE || 'ci.yml',
+    branch: process.env.GITHUB_DEFAULT_BRANCH || 'main',
+  };
+}
+
+function mapCiConclusion(conclusion, status) {
+  if (status === 'in_progress' || status === 'queued' || status === 'pending') {
+    return 'pending';
+  }
+  if (conclusion === 'success') return 'success';
+  if (conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'cancelled') {
+    return conclusion === 'cancelled' ? 'cancelled' : 'failure';
+  }
+  return 'unknown';
+}
+
+async function fetchCiFromApi() {
+  const { owner, repo, workflow, branch } = githubRepo();
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  const url =
+    `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/runs` +
+    `?per_page=5&branch=${encodeURIComponent(branch)}`;
+
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    'User-Agent': 'eticaretshop-monitoring',
+    'X-GitHub-Api-Version': '2022-11-28',
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(url, { signal: AbortSignal.timeout(8000), headers });
+  if (!response.ok) {
+    throw new Error(`GitHub API ${response.status}`);
+  }
+
+  const body = await response.json();
+  const runs = Array.isArray(body.workflow_runs) ? body.workflow_runs : [];
+  const latest = runs[0] || null;
+  const htmlUrl = `https://github.com/${owner}/${repo}/actions`;
+  const badgeUrl =
+    `https://github.com/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/badge.svg` +
+    `?branch=${encodeURIComponent(branch)}`;
+
+  return {
+    status: latest ? mapCiConclusion(latest.conclusion, latest.status) : 'unknown',
+    conclusion: latest?.conclusion || null,
+    runStatus: latest?.status || null,
+    workflowName: latest?.name || workflow,
+    branch,
+    displayTitle: latest?.display_title || latest?.head_commit?.message || null,
+    commitSha: latest?.head_sha ? String(latest.head_sha).slice(0, 7) : null,
+    event: latest?.event || null,
+    actor: latest?.actor?.login || null,
+    runUrl: latest?.html_url || htmlUrl,
+    htmlUrl,
+    badgeUrl,
+    startedAt: latest?.run_started_at || latest?.created_at || null,
+    updatedAt: latest?.updated_at || null,
+    recent: runs.slice(0, 5).map((run) => ({
+      id: run.id,
+      status: mapCiConclusion(run.conclusion, run.status),
+      conclusion: run.conclusion,
+      title: run.display_title || run.name,
+      commitSha: run.head_sha ? String(run.head_sha).slice(0, 7) : null,
+      url: run.html_url,
+      updatedAt: run.updated_at,
+    })),
+    source: token ? 'api-auth' : 'api',
+  };
+}
+
+async function fetchCiFromBadge() {
+  const { owner, repo, workflow, branch } = githubRepo();
+  const htmlUrl = `https://github.com/${owner}/${repo}/actions`;
+  const badgeUrl =
+    `https://github.com/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/badge.svg` +
+    `?branch=${encodeURIComponent(branch)}`;
+
+  const response = await fetch(badgeUrl, {
+    signal: AbortSignal.timeout(8000),
+    headers: { 'User-Agent': 'eticaretshop-monitoring' },
+  });
+  const svg = response.ok ? await response.text() : '';
+  let status = 'unknown';
+  if (/passing/i.test(svg) || /#4c1/i.test(svg)) status = 'success';
+  else if (/failing/i.test(svg) || /#e05d44/i.test(svg)) status = 'failure';
+  else if (/pending|no status/i.test(svg)) status = 'pending';
+
+  return {
+    status,
+    conclusion: status === 'success' ? 'success' : status === 'failure' ? 'failure' : null,
+    runStatus: null,
+    workflowName: workflow,
+    branch,
+    displayTitle: null,
+    commitSha: null,
+    event: null,
+    actor: null,
+    runUrl: htmlUrl,
+    htmlUrl,
+    badgeUrl,
+    startedAt: null,
+    updatedAt: new Date().toISOString(),
+    recent: [],
+    source: 'badge',
+  };
+}
+
+async function getCiStatus({ force = false } = {}) {
+  const now = Date.now();
+  if (!force && ciCache.data && now - ciCache.at < CI_CACHE_MS) {
+    return ciCache.data;
+  }
+
+  try {
+    const data = await fetchCiFromApi();
+    ciCache = { at: now, data };
+    return data;
+  } catch {
+    try {
+      const data = await fetchCiFromBadge();
+      ciCache = { at: now, data };
+      return data;
+    } catch (err) {
+      const { owner, repo, workflow, branch } = githubRepo();
+      const data = {
+        status: 'unknown',
+        conclusion: null,
+        runStatus: null,
+        workflowName: workflow,
+        branch,
+        displayTitle: null,
+        commitSha: null,
+        event: null,
+        actor: null,
+        runUrl: `https://github.com/${owner}/${repo}/actions`,
+        htmlUrl: `https://github.com/${owner}/${repo}/actions`,
+        badgeUrl:
+          `https://github.com/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/badge.svg` +
+          `?branch=${encodeURIComponent(branch)}`,
+        startedAt: null,
+        updatedAt: null,
+        recent: [],
+        source: 'error',
+        error: err instanceof Error ? err.message : 'CI durumu alinamadi',
+      };
+      ciCache = { at: now, data };
+      return data;
+    }
+  }
+}
+
 /** Local/meta info without remote HTTP probes — resolves quickly. */
 async function getStatusMeta() {
   let productCount = null;
@@ -285,6 +448,8 @@ async function getStatusMeta() {
     sslCache = { at: now, shop: shopSsl, admin: adminSsl };
   }
 
+  const ci = await getCiStatus();
+
   return {
     checkedAt: new Date().toISOString(),
     deploy: readDeployInfo(),
@@ -295,6 +460,7 @@ async function getStatusMeta() {
       shop: shopSsl,
       admin: adminSsl,
     },
+    ci,
     stats: { productCount },
     monitor: {
       intervalSeconds: 30,
@@ -303,29 +469,123 @@ async function getStatusMeta() {
       targets: ['backend', 'database', 'api', 'shop', 'adminPanel'],
     },
     links: {
-      githubActions: 'https://github.com/wiss-54/fullstack-eticaret/actions',
+      githubActions: ci.htmlUrl,
+      statusPage: '/status',
       shop: shopUrl,
       admin: adminUrl,
     },
   };
 }
 
-async function runServiceCheck(name) {
+async function runServiceCheck(name, { trackIncident = true } = {}) {
   const { shopUrl, adminUrl, apiUrl } = monitorUrls();
 
+  let result;
   if (name === 'database') {
-    return checkDatabase().catch((err) => ({
+    result = await checkDatabase().catch((err) => ({
       status: 'down',
       error: err instanceof Error ? err.message : 'Database check failed',
     }));
+  } else if (name === 'shop') {
+    result = await checkHttpUrl(shopUrl);
+  } else if (name === 'adminPanel') {
+    result = await checkHttpUrl(adminUrl);
+  } else if (name === 'api') {
+    result = await checkHttpUrl(apiUrl);
+  } else {
+    const error = new Error(`Bilinmeyen servis kontrolu: ${name}`);
+    error.statusCode = 400;
+    throw error;
   }
-  if (name === 'shop') return checkHttpUrl(shopUrl);
-  if (name === 'adminPanel') return checkHttpUrl(adminUrl);
-  if (name === 'api') return checkHttpUrl(apiUrl);
 
-  const error = new Error(`Bilinmeyen servis kontrolu: ${name}`);
-  error.statusCode = 400;
-  throw error;
+  if (trackIncident && TARGET_LABELS[name]) {
+    try {
+      syncIncident(name, {
+        ok: result.status === 'up',
+        message: result.error || (result.statusCode ? `HTTP ${result.statusCode}` : undefined),
+      });
+    } catch (err) {
+      console.error('Incident sync failed', err);
+    }
+  }
+
+  return result;
+}
+
+async function getPublicStatus({ force = false } = {}) {
+  const now = Date.now();
+  if (!force && publicStatusCache.data && now - publicStatusCache.at < PUBLIC_STATUS_CACHE_MS) {
+    return publicStatusCache.data;
+  }
+
+  const [database, api, shop, adminPanel, ci, deploy] = await Promise.all([
+    runServiceCheck('database', { trackIncident: true }),
+    runServiceCheck('api', { trackIncident: true }),
+    runServiceCheck('shop', { trackIncident: true }),
+    runServiceCheck('adminPanel', { trackIncident: true }),
+    getCiStatus(),
+    Promise.resolve(readDeployInfo()),
+  ]);
+
+  const services = [
+    { key: 'database', label: TARGET_LABELS.database, ...database },
+    { key: 'api', label: TARGET_LABELS.api, ...api },
+    { key: 'shop', label: TARGET_LABELS.shop, ...shop },
+    { key: 'adminPanel', label: TARGET_LABELS.adminPanel, ...adminPanel },
+  ].map((service) => ({
+    key: service.key,
+    label: service.label,
+    status: service.status,
+    latencyMs: service.latencyMs,
+  }));
+
+  const upCount = services.filter((service) => service.status === 'up').length;
+  const overall = upCount === services.length ? 'operational' : upCount === 0 ? 'major' : 'partial';
+  const incidents = getIncidentSummary();
+
+  const data = {
+    checkedAt: new Date().toISOString(),
+    overall,
+    services,
+    ci: {
+      status: ci.status,
+      workflowName: ci.workflowName,
+      branch: ci.branch,
+      htmlUrl: ci.htmlUrl,
+      badgeUrl: ci.badgeUrl,
+      commitSha: ci.commitSha,
+      updatedAt: ci.updatedAt,
+    },
+    deploy: deploy
+      ? {
+          commit: deploy.commit ? String(deploy.commit).slice(0, 7) : null,
+          deployedAt: deploy.deployedAt || null,
+        }
+      : null,
+    incidents: {
+      openCount: incidents.openCount,
+      open: incidents.open.map((item) => ({
+        id: item.id,
+        target: item.target,
+        label: item.label,
+        startedAt: item.startedAt,
+        message: item.message,
+      })),
+      lastResolved: incidents.lastResolved
+        ? {
+            id: incidents.lastResolved.id,
+            target: incidents.lastResolved.target,
+            label: incidents.lastResolved.label,
+            startedAt: incidents.lastResolved.startedAt,
+            endedAt: incidents.lastResolved.endedAt,
+            durationSeconds: incidents.lastResolved.durationSeconds,
+          }
+        : null,
+    },
+  };
+
+  publicStatusCache = { at: now, data };
+  return data;
 }
 
 /**
@@ -343,7 +603,7 @@ async function runUptimeScore({ attempts = 10, target = 'api' } = {}) {
   const startedAt = Date.now();
   const probes = await Promise.all(
     Array.from({ length: total }, async (_, index) => {
-      const result = await runServiceCheck(target);
+      const result = await runServiceCheck(target, { trackIncident: false });
       return {
         index: index + 1,
         ok: result.status === 'up',
@@ -410,4 +670,6 @@ module.exports = {
   runServiceCheck,
   runUptimeScore,
   getSystemStatus,
+  getCiStatus,
+  getPublicStatus,
 };

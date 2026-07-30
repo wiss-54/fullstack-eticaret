@@ -181,9 +181,21 @@ export async function adminGetStatusMeta() {
   return adminFetch<import('./types').SystemStatusMeta>('/api/admin/status/meta');
 }
 
-export async function adminGetStatusCheck(name: import('./types').SystemStatusCheckName) {
+export async function adminGetStatusCheck(
+  name: import('./types').SystemStatusCheckName,
+  options?: { track?: boolean },
+) {
+  const params = new URLSearchParams();
+  if (options?.track === false) params.set('track', '0');
+  const query = params.toString();
   return adminFetch<import('./types').SystemStatusCheckResult>(
-    `/api/admin/status/check/${name}`,
+    `/api/admin/status/check/${name}${query ? `?${query}` : ''}`,
+  );
+}
+
+export async function adminGetIncidents(limit = 50) {
+  return adminFetch<import('./types').IncidentLogSummary>(
+    `/api/admin/status/incidents?limit=${limit}`,
   );
 }
 

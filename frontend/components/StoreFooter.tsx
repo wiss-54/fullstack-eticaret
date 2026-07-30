@@ -56,6 +56,7 @@ const POLICY_LINKS = [
   { label: 'Yasal bildirim', href: '/yasal/bildirim' },
   { label: 'Kargo politikasi', href: '/yasal/kargo' },
   { label: 'Iletisim bilgileri', href: '/iletisim' },
+  { label: 'Sistem durumu', href: '/status' },
 ] as const;
 
 function PaymentMarks() {

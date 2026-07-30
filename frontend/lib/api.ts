@@ -1,6 +1,19 @@
 import type { Category, Product, ProductsResponse, StoreSettings } from './types';
 import { getApiBaseUrl } from './config';
 
+export async function getPublicStatus(refresh = false): Promise<import('./types').PublicStatusPayload> {
+  const params = refresh ? '?refresh=1' : '';
+  const response = await fetch(`${getApiBaseUrl()}/api/status${params}`, {
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    throw new Error('Durum bilgisi yuklenemedi');
+  }
+  const json: { success: boolean; data: import('./types').PublicStatusPayload } =
+    await response.json();
+  return json.data;
+}
+
 export async function getCategories(): Promise<Category[]> {
   const response = await fetch(`${getApiBaseUrl()}/api/categories`, {
     cache: 'no-store',

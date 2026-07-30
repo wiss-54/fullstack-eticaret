@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { requireAdmin } = require('../middleware/auth.middleware');
 const { getSystemStatus, getStatusMeta, runServiceCheck, runUptimeScore, SERVICE_CHECK_KEYS } = require('../services/monitoring.service');
+const { listIncidents, getIncidentSummary } = require('../services/incidents.service');
 const { updateOrderStatusSchema } = require('../validation/orders.schemas');
 const {
   getOrderById,
@@ -82,7 +83,8 @@ router.get('/status/check/:name', requireAdmin, async (req, res) => {
   }
 
   try {
-    const check = await runServiceCheck(name);
+    const trackIncident = String(req.query.track || '1') !== '0';
+    const check = await runServiceCheck(name, { trackIncident });
     res.json({
       success: true,
       data: {
@@ -94,6 +96,23 @@ router.get('/status/check/:name', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Servis kontrolu basarisiz' });
+  }
+});
+
+router.get('/status/incidents', requireAdmin, async (req, res) => {
+  try {
+    const limit = Number(req.query.limit ?? 50);
+    const summary = getIncidentSummary();
+    res.json({
+      success: true,
+      data: {
+        ...summary,
+        recent: listIncidents({ limit }),
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Incident log alinamadi' });
   }
 });
 
