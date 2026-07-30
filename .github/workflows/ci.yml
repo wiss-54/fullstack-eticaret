@@ -1,8 +1,7 @@
 name: CI
 
-# Tek cizgi pipeline:
-# Secret → Gitleaks → Dependency Review → Backend → Frontend → Deploy
-# CodeQL ruleset icin Frontend sonrasi paralel kosar; deploy onu BEKLEMEZ (hiz).
+# Tek cizgi pipeline (hepsi yesil olmadan sonraki adim yok):
+# Secret → Gitleaks → Dependency Review → Backend → Frontend → SAST → Deploy
 # Scorecard haftalik security-schedule.yml icinde kalir.
 
 on:
@@ -171,7 +170,6 @@ jobs:
       - name: Security audit (high+)
         run: npm run audit:check
 
-  # Ruleset bunu ister; deploy beklemez → production deploy eski hiza yaklasir.
   codeql:
     name: SAST Analysis
     needs: [frontend]
@@ -198,7 +196,7 @@ jobs:
 
   deploy:
     name: Deploy to Production
-    needs: [frontend]
+    needs: [codeql]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
