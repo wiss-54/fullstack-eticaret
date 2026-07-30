@@ -1,5 +1,10 @@
 name: CI
 
+# Tek cizgi pipeline:
+# Secret → Gitleaks → Dependency Review → Backend → Frontend → Deploy
+# CodeQL ruleset icin Frontend sonrasi paralel kosar; deploy onu BEKLEMEZ (hiz).
+# Scorecard haftalik security-schedule.yml icinde kalir.
+
 on:
   push:
     branches: [main]
@@ -38,6 +43,7 @@ jobs:
 
   gitleaks:
     name: Secret Scan (Gitleaks)
+    needs: [secret-scan]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,57 +55,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  codeql:
-    name: SAST Analysis
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [javascript-typescript]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: /language:${{ matrix.language }}
-
-  scorecard:
-    name: Supply Chain Security (Scorecard)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
-      - name: Run OpenSSF Scorecard
-        uses: ossf/scorecard-action@v2.4.2
-        with:
-          results_file: results.sarif
-          results_format: sarif
-          publish_results: ${{ github.event_name != 'pull_request' }}
-
-      - name: Upload SARIF to GitHub Security
-        if: github.event_name != 'pull_request'
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
-          category: OpenSSF-Scorecard
-
   dependency-review:
     name: Dependency Review
+    needs: [gitleaks]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -114,6 +72,11 @@ jobs:
 
   backend:
     name: Backend Test & Security
+    needs: [gitleaks, dependency-review]
+    if: |
+      always() &&
+      needs.gitleaks.result == 'success' &&
+      (needs.dependency-review.result == 'success' || needs.dependency-review.result == 'skipped')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -180,6 +143,7 @@ jobs:
 
   frontend:
     name: Frontend Lint, Build & Security
+    needs: [backend]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -207,26 +171,35 @@ jobs:
       - name: Security audit (high+)
         run: npm run audit:check
 
+  # Ruleset bunu ister; deploy beklemez → production deploy eski hiza yaklasir.
+  codeql:
+    name: SAST Analysis
+    needs: [frontend]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+
   deploy:
     name: Deploy to Production
-    needs:
-      - secret-scan
-      - gitleaks
-      - codeql
-      - scorecard
-      - dependency-review
-      - backend
-      - frontend
-    if: |
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      needs.secret-scan.result == 'success' &&
-      needs.gitleaks.result == 'success' &&
-      needs.codeql.result == 'success' &&
-      needs.scorecard.result == 'success' &&
-      needs.backend.result == 'success' &&
-      needs.frontend.result == 'success' &&
-      (needs.dependency-review.result == 'success' || needs.dependency-review.result == 'skipped')
+    needs: [frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
