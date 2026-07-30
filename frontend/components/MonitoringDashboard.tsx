@@ -20,12 +20,14 @@ import {
   appendUptimeHistoryPoint,
   emptyScores,
   filterUptimeHistory,
+  percentile,
   readUptimeHistory,
   UPTIME_RANGES,
   type UptimeHistoryPoint,
   type UptimeHistoryScores,
   type UptimeRangeId,
 } from '@/lib/uptime-history';
+import MonitoringInsights from '@/components/MonitoringInsights';
 
 const REFRESH_MS = 30_000;
 const UPTIME_ATTEMPTS = 10;
@@ -521,6 +523,7 @@ export default function MonitoringDashboard() {
     () => filterUptimeHistory(uptimeHistory, selectedRange.ms, lastUpdated?.getTime() ?? chartNow),
     [uptimeHistory, selectedRange.ms, lastUpdated, chartNow],
   );
+  const lastHistoryPoint = rangedHistory.length > 0 ? rangedHistory[rangedHistory.length - 1] : null;
 
   const completedCount = useMemo(
     () => Object.values(settled).filter(Boolean).length,
@@ -598,6 +601,21 @@ export default function MonitoringDashboard() {
         shop: { success: 0, done: 0 },
         adminPanel: { success: 0, done: 0 },
       };
+      const latencies: number[] = [];
+      const httpClasses = { c2xx: 0, c3xx: 0, c4xx: 0, c5xx: 0, other: 0 };
+      let latestMeta: SystemStatusMeta | null = null;
+
+      const classifyStatus = (statusCode?: number) => {
+        if (statusCode == null) {
+          httpClasses.other += 1;
+          return;
+        }
+        if (statusCode >= 200 && statusCode < 300) httpClasses.c2xx += 1;
+        else if (statusCode >= 300 && statusCode < 400) httpClasses.c3xx += 1;
+        else if (statusCode >= 400 && statusCode < 500) httpClasses.c4xx += 1;
+        else if (statusCode >= 500) httpClasses.c5xx += 1;
+        else httpClasses.other += 1;
+      };
 
       await Promise.all(
         UPTIME_TARGETS.map(async (target) => {
@@ -605,17 +623,30 @@ export default function MonitoringDashboard() {
             Array.from({ length: UPTIME_ATTEMPTS }, async (_, index) => {
               const probeIndex = index + 1;
               let ok = false;
+              const started = Date.now();
               try {
                 if (target.key === 'backend') {
-                  await adminGetStatusMeta();
+                  const data = await adminGetStatusMeta();
+                  latestMeta = data;
                   ok = true;
+                  latencies.push(Date.now() - started);
+                  httpClasses.c2xx += 1;
                 } else {
                   const data = await adminGetStatusCheck(target.key);
                   ok = data.check.status === 'up';
+                  latencies.push(data.check.latencyMs ?? Date.now() - started);
+                  if (target.key === 'database') {
+                    if (ok) httpClasses.c2xx += 1;
+                    else httpClasses.other += 1;
+                  } else {
+                    classifyStatus(data.check.statusCode);
+                  }
                 }
               } catch (err) {
                 if (handleAuth(err)) return;
                 ok = false;
+                latencies.push(Date.now() - started);
+                httpClasses.other += 1;
               }
               tallies[target.key].done += 1;
               if (ok) tallies[target.key].success += 1;
@@ -624,6 +655,14 @@ export default function MonitoringDashboard() {
           );
         }),
       );
+
+      if (!latestMeta) {
+        try {
+          latestMeta = await adminGetStatusMeta();
+        } catch {
+          latestMeta = null;
+        }
+      }
 
       const scores: UptimeHistoryScores = emptyScores();
       let successTotal = 0;
@@ -635,7 +674,39 @@ export default function MonitoringDashboard() {
       const overall = Math.round(
         (successTotal / (UPTIME_TARGETS.length * UPTIME_ATTEMPTS)) * 100,
       );
-      setUptimeHistory(appendUptimeHistoryPoint(scores, overall));
+      const sorted = [...latencies].sort((a, b) => a - b);
+      const avgLatencyMs =
+        sorted.length > 0
+          ? Math.round(sorted.reduce((sum, value) => sum + value, 0) / sorted.length)
+          : undefined;
+
+      setUptimeHistory(
+        appendUptimeHistoryPoint({
+          scores,
+          overall,
+          avgLatencyMs,
+          p50LatencyMs: sorted.length ? Math.round(percentile(sorted, 50)) : undefined,
+          p95LatencyMs: sorted.length ? Math.round(percentile(sorted, 95)) : undefined,
+          p99LatencyMs: sorted.length ? Math.round(percentile(sorted, 99)) : undefined,
+          httpClasses,
+          resources: latestMeta
+            ? {
+                cpuPercent: latestMeta.server.cpuPercent ?? 0,
+                memoryUsedPercent:
+                  latestMeta.server.memoryUsedPercent ??
+                  memoryUsedPercent(
+                    latestMeta.server.freeMemoryMb,
+                    latestMeta.server.totalMemoryMb,
+                  ),
+                diskUsedPercent: latestMeta.server.disk?.usedPercent ?? null,
+                load1: latestMeta.server.loadAverage[0] ?? 0,
+                backendMemoryMb: latestMeta.backend.memoryMb,
+                networkRxMb: latestMeta.server.network?.rxMb ?? null,
+                networkTxMb: latestMeta.server.network?.txMb ?? null,
+              }
+            : undefined,
+        }),
+      );
       setUptimeRunning(false);
     },
     [setProbeResult],
@@ -946,6 +1017,14 @@ export default function MonitoringDashboard() {
               </div>
             </div>
 
+            <MonitoringInsights
+              meta={meta}
+              points={rangedHistory}
+              now={lastUpdated?.getTime() ?? chartNow}
+              rangeMs={selectedRange.ms}
+              lastRound={lastHistoryPoint}
+            />
+
             <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
               {UPTIME_SERIES.map((series) => {
                 const target = UPTIME_TARGETS.find((item) => item.key === series.key);
@@ -1044,6 +1123,20 @@ export default function MonitoringDashboard() {
                                 : 'bg-emerald-500'
                           }
                         />
+                        {meta.server.disk ? (
+                          <MetricBar
+                            label="Disk kullanimi"
+                            value={`${meta.server.disk.usedGb} / ${meta.server.disk.totalGb} GB`}
+                            percent={meta.server.disk.usedPercent}
+                            tone={
+                              meta.server.disk.usedPercent > 85
+                                ? 'bg-red-500'
+                                : meta.server.disk.usedPercent > 70
+                                  ? 'bg-amber-500'
+                                  : 'bg-emerald-500'
+                            }
+                          />
+                        ) : null}
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
                             <p className="text-sm text-admin-muted">Hostname</p>
@@ -1055,7 +1148,49 @@ export default function MonitoringDashboard() {
                               {meta.server.loadAverage.join(' · ')}
                             </p>
                           </div>
+                          <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                            <p className="text-sm text-admin-muted">CPU (tahmini)</p>
+                            <p className="mt-1 font-medium text-admin-text">
+                              {meta.server.cpuPercent != null ? `${meta.server.cpuPercent}%` : '-'}
+                              {meta.server.cpuCount != null ? ` · ${meta.server.cpuCount} vCPU` : ''}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                            <p className="text-sm text-admin-muted">Network RX / TX</p>
+                            <p className="mt-1 font-medium text-admin-text">
+                              {meta.server.network
+                                ? `${meta.server.network.rxMb} / ${meta.server.network.txMb} MB`
+                                : '-'}
+                            </p>
+                          </div>
                         </div>
+                        {meta.ssl ? (
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            {(
+                              [
+                                ['Magaza SSL', meta.ssl.shop],
+                                ['Admin SSL', meta.ssl.admin],
+                              ] as const
+                            ).map(([label, ssl]) => (
+                              <div
+                                key={label}
+                                className="rounded-lg border border-admin-border bg-admin-bg p-4"
+                              >
+                                <p className="text-sm text-admin-muted">{label}</p>
+                                <p className="mt-1 font-medium text-admin-text">
+                                  {ssl.daysRemaining != null
+                                    ? `${ssl.daysRemaining} gun`
+                                    : ssl.status}
+                                </p>
+                                <p className="mt-1 text-xs text-admin-muted">
+                                  {ssl.validTo
+                                    ? `Bitis ${new Date(ssl.validTo).toLocaleDateString('tr-TR')}`
+                                    : ssl.error || ssl.host || 'Bilgi yok'}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
 

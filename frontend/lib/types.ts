@@ -285,6 +285,15 @@ export type BackupStatus = {
   error?: string;
 };
 
+export type SslStatusInfo = {
+  status: 'ok' | 'expiring' | 'error' | 'skipped' | 'unknown';
+  daysRemaining: number | null;
+  validTo: string | null;
+  host?: string | null;
+  issuer?: string | null;
+  error?: string;
+};
+
 export type SystemStatusMeta = {
   checkedAt: string;
   deploy: {
@@ -302,12 +311,38 @@ export type SystemStatusMeta = {
     loadAverage: number[];
     freeMemoryMb: number;
     totalMemoryMb: number;
+    cpuCount?: number;
+    cpuPercent?: number;
+    usedMemoryMb?: number;
+    memoryUsedPercent?: number;
+    disk?: {
+      totalGb: number;
+      usedGb: number;
+      freeGb: number;
+      usedPercent: number;
+    } | null;
+    network?: {
+      rxMb: number;
+      txMb: number;
+    } | null;
+  };
+  ssl?: {
+    shop: SslStatusInfo;
+    admin: SslStatusInfo;
   };
   stats: {
     productCount: number | null;
   };
+  monitor?: {
+    intervalSeconds: number;
+    probeAttempts: number;
+    timeoutSeconds: number;
+    targets: string[];
+  };
   links: {
     githubActions: string;
+    shop?: string;
+    admin?: string;
   };
 };
 
