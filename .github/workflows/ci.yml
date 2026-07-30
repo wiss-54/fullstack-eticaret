@@ -1,9 +1,7 @@
 name: CI
 
-# Tek cizgi pipeline:
-# Secret → Gitleaks → Dependency Review → Backend → Frontend → Deploy
-# CodeQL ruleset icin Frontend sonrasi paralel kosar; deploy onu BEKLEMEZ (hiz).
-# Scorecard haftalik security-schedule.yml icinde kalir.
+# Tek cizgi — skip yok, hepsi yesil olmadan sonraki adim yok:
+# Secret → Gitleaks → Dependency Review → Backend → Frontend → SAST → Deploy
 
 on:
   push:
@@ -55,28 +53,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Job ASLA skip olmaz (skip zinciri kirilmasin). Action sadece PR'da calisir.
   dependency-review:
     name: Dependency Review
     needs: [gitleaks]
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Review dependency changes
+        if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
           deny-licenses: GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
           comment-summary-in-pr: always
 
+      - name: Skip notice on push
+        if: github.event_name != 'pull_request'
+        run: echo "Dependency Review yalnizca PR'da zorunlu; push'ta adim yesil gecildi."
+
   backend:
     name: Backend Test & Security
-    needs: [gitleaks, dependency-review]
-    if: |
-      always() &&
-      needs.gitleaks.result == 'success' &&
-      (needs.dependency-review.result == 'success' || needs.dependency-review.result == 'skipped')
+    needs: [dependency-review]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -171,34 +170,30 @@ jobs:
       - name: Security audit (high+)
         run: npm run audit:check
 
-  # Ruleset bunu ister; deploy beklemez → production deploy eski hiza yaklasir.
+  # Matrix yok → UI'da dal yok. Ruleset adi birebir ayni.
   codeql:
-    name: SAST Analysis
+    name: SAST Analysis (javascript-typescript)
     needs: [frontend]
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [javascript-typescript]
     steps:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4.37.3
+        uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: javascript-typescript
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v4.37.3
+        uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4.37.3
+        uses: github/codeql-action/analyze@v3
         with:
-          category: /language:${{ matrix.language }}
+          category: /language:javascript-typescript
 
   deploy:
     name: Deploy to Production
-    needs: [frontend]
+    needs: [codeql]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
