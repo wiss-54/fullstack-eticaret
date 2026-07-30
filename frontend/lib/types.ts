@@ -285,6 +285,40 @@ export type BackupStatus = {
   error?: string;
 };
 
+export type SystemStatusMeta = {
+  checkedAt: string;
+  deploy: {
+    commit: string;
+    deployedAt: string;
+  } | null;
+  backup?: BackupStatus;
+  backend: {
+    status: 'up';
+    uptimeSeconds: number;
+    memoryMb: number;
+  };
+  server: {
+    hostname: string;
+    loadAverage: number[];
+    freeMemoryMb: number;
+    totalMemoryMb: number;
+  };
+  stats: {
+    productCount: number | null;
+  };
+  links: {
+    githubActions: string;
+  };
+};
+
+export type SystemStatusCheckName = 'database' | 'api' | 'shop' | 'adminPanel';
+
+export type SystemStatusCheckResult = {
+  name: SystemStatusCheckName;
+  check: ServiceCheck;
+  checkedAt: string;
+};
+
 export type SystemStatus = {
   checkedAt: string;
   deploy: {

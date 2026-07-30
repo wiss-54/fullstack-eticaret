@@ -92,8 +92,8 @@ describe('Admin auth', () => {
     });
 
     pool.query
-      .mockResolvedValueOnce({ rows: [{ '?column?': 1 }] })
-      .mockResolvedValueOnce({ rows: [{ count: 2 }] });
+      .mockResolvedValueOnce({ rows: [{ count: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
 
     const response = await request(app)
       .get('/api/admin/status')
@@ -105,5 +105,35 @@ describe('Admin auth', () => {
     expect(response.body.data.stats.productCount).toBe(2);
     expect(response.body.data.backup).toBeDefined();
     expect(response.body.data.backup.status).toBeDefined();
+  });
+
+  it('token ile monitoring meta ve tekil check doner', async () => {
+    const token = jwt.sign({ role: 'admin', username: 'admin' }, process.env.JWT_SECRET);
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    });
+
+    pool.query.mockResolvedValueOnce({ rows: [{ count: 3 }] });
+
+    const metaResponse = await request(app)
+      .get('/api/admin/status/meta')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(metaResponse.status).toBe(200);
+    expect(metaResponse.body.data.backend.status).toBe('up');
+    expect(metaResponse.body.data.stats.productCount).toBe(3);
+    expect(metaResponse.body.data.services).toBeUndefined();
+
+    pool.query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] });
+
+    const checkResponse = await request(app)
+      .get('/api/admin/status/check/database')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(checkResponse.status).toBe(200);
+    expect(checkResponse.body.data.name).toBe('database');
+    expect(checkResponse.body.data.check.status).toBe('up');
   });
 });

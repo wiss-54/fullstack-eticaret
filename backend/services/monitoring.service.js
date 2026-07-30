@@ -5,6 +5,8 @@ const { pool } = require('../db');
 
 const DEPLOY_INFO_PATH = path.join(__dirname, '..', '.deploy-info.json');
 
+const SERVICE_CHECK_KEYS = ['database', 'api', 'shop', 'adminPanel'];
+
 function readDeployInfo() {
   try {
     const raw = fs.readFileSync(DEPLOY_INFO_PATH, 'utf8');
@@ -59,7 +61,6 @@ function getBackupStatus() {
       ageHours = Number(
         ((Date.now() - new Date(latest.createdAt).getTime()) / 3_600_000).toFixed(1),
       );
-      // Gunluk cron: 36 saatten eskiyse uyar
       if (ageHours > 36) status = 'stale';
     }
 
@@ -124,24 +125,34 @@ async function getProductCount() {
   return result.rows[0].count;
 }
 
-async function getSystemStatus() {
-  const shopUrl =
-    process.env.MONITOR_SHOP_URL || 'https://eticaretshop.com.tr';
-  const adminUrl =
-    process.env.MONITOR_ADMIN_URL || 'https://admin.eticaretshop.com.tr/login';
-  const apiUrl =
-    process.env.MONITOR_API_URL || 'https://eticaretshop.com.tr/api/test-db';
+function monitorUrls() {
+  return {
+    shopUrl: process.env.MONITOR_SHOP_URL || 'https://eticaretshop.com.tr',
+    adminUrl: process.env.MONITOR_ADMIN_URL || 'https://admin.eticaretshop.com.tr/login',
+    apiUrl: process.env.MONITOR_API_URL || 'https://eticaretshop.com.tr/api/test-db',
+  };
+}
 
-  const [database, shop, adminPanel, api] = await Promise.all([
-    checkDatabase().catch((err) => ({
-      status: 'down',
-      error: err instanceof Error ? err.message : 'Database check failed',
-    })),
-    checkHttpUrl(shopUrl),
-    checkHttpUrl(adminUrl),
-    checkHttpUrl(apiUrl),
-  ]);
+function getBackendSnapshot() {
+  const mem = process.memoryUsage();
+  return {
+    status: 'up',
+    uptimeSeconds: Math.floor(process.uptime()),
+    memoryMb: Math.round(mem.rss / 1024 / 1024),
+  };
+}
 
+function getServerSnapshot() {
+  return {
+    hostname: os.hostname(),
+    loadAverage: os.loadavg().map((v) => Number(v.toFixed(2))),
+    freeMemoryMb: Math.round(os.freemem() / 1024 / 1024),
+    totalMemoryMb: Math.round(os.totalmem() / 1024 / 1024),
+  };
+}
+
+/** Local/meta info without remote HTTP probes — resolves quickly. */
+async function getStatusMeta() {
   let productCount = null;
   try {
     productCount = await getProductCount();
@@ -149,40 +160,66 @@ async function getSystemStatus() {
     productCount = null;
   }
 
-  const deployInfo = readDeployInfo();
-  const backup = getBackupStatus();
-  const mem = process.memoryUsage();
-
   return {
     checkedAt: new Date().toISOString(),
-    deploy: deployInfo,
-    backup,
-    services: {
-      database,
-      api,
-      shop,
-      adminPanel,
-      backend: {
-        status: 'up',
-        uptimeSeconds: Math.floor(process.uptime()),
-        memoryMb: Math.round(mem.rss / 1024 / 1024),
-      },
-    },
-    server: {
-      hostname: os.hostname(),
-      loadAverage: os.loadavg().map((v) => Number(v.toFixed(2))),
-      freeMemoryMb: Math.round(os.freemem() / 1024 / 1024),
-      totalMemoryMb: Math.round(os.totalmem() / 1024 / 1024),
-    },
-    stats: {
-      productCount,
-    },
+    deploy: readDeployInfo(),
+    backup: getBackupStatus(),
+    backend: getBackendSnapshot(),
+    server: getServerSnapshot(),
+    stats: { productCount },
     links: {
       githubActions: 'https://github.com/wiss-54/fullstack-eticaret/actions',
     },
   };
 }
 
+async function runServiceCheck(name) {
+  const { shopUrl, adminUrl, apiUrl } = monitorUrls();
+
+  if (name === 'database') {
+    return checkDatabase().catch((err) => ({
+      status: 'down',
+      error: err instanceof Error ? err.message : 'Database check failed',
+    }));
+  }
+  if (name === 'shop') return checkHttpUrl(shopUrl);
+  if (name === 'adminPanel') return checkHttpUrl(adminUrl);
+  if (name === 'api') return checkHttpUrl(apiUrl);
+
+  const error = new Error(`Bilinmeyen servis kontrolu: ${name}`);
+  error.statusCode = 400;
+  throw error;
+}
+
+async function getSystemStatus() {
+  const [meta, database, shop, adminPanel, api] = await Promise.all([
+    getStatusMeta(),
+    runServiceCheck('database'),
+    runServiceCheck('shop'),
+    runServiceCheck('adminPanel'),
+    runServiceCheck('api'),
+  ]);
+
+  return {
+    checkedAt: meta.checkedAt,
+    deploy: meta.deploy,
+    backup: meta.backup,
+    services: {
+      database,
+      api,
+      shop,
+      adminPanel,
+      backend: meta.backend,
+    },
+    server: meta.server,
+    stats: meta.stats,
+    links: meta.links,
+  };
+}
+
 module.exports = {
+  SERVICE_CHECK_KEYS,
+  getStatusMeta,
+  runServiceCheck,
   getSystemStatus,
 };
