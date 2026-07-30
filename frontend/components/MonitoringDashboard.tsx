@@ -89,6 +89,26 @@ function summarizeProbes(probes: UptimeProbeState[]) {
   };
 }
 
+function buildCumulativeHeights(probes: UptimeProbeState[], livePercent: number) {
+  const columns: Array<{ height: number; pending: boolean; ok: boolean | null }> = [];
+  let successSoFar = 0;
+
+  for (const probe of probes) {
+    if (probe.ok === null) {
+      columns.push({ height: livePercent, pending: true, ok: null });
+      continue;
+    }
+    if (probe.ok) successSoFar += 1;
+    columns.push({
+      height: Math.round((successSoFar / UPTIME_ATTEMPTS) * 100),
+      pending: false,
+      ok: probe.ok,
+    });
+  }
+
+  return columns;
+}
+
 function formatUptime(seconds: number) {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
@@ -357,19 +377,7 @@ function UptimeAxisCard({
         ? 'bg-amber-500'
         : 'bg-red-500';
 
-  // X ekseni: istek sirasi — Y: o ana kadar biriken basari yuzdesi (es zamanli yukselir)
-  let runningSuccess = 0;
-  const cumulativeHeights = probes.map((probe) => {
-    if (probe.ok === null) {
-      return { height: livePercent, pending: true, ok: null as boolean | null };
-    }
-    if (probe.ok) runningSuccess += 1;
-    return {
-      height: Math.round((runningSuccess / UPTIME_ATTEMPTS) * 100),
-      pending: false,
-      ok: probe.ok,
-    };
-  });
+  const cumulativeHeights = buildCumulativeHeights(probes, livePercent);
 
   return (
     <article className="rounded-xl border border-admin-border bg-admin-surface-low p-4 shadow-sm">
