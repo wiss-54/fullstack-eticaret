@@ -424,8 +424,14 @@ function SeriesLineChart({
         </p>
       </div>
 
-      <div className="mt-3 overflow-x-auto">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full min-w-[320px]">
+      <div className="mt-3 h-48 w-full overflow-hidden">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid meet"
+          className="block h-full w-full"
+        >
           {ticks.map((tick) => (
             <g key={tick}>
               <line
@@ -722,6 +728,11 @@ export default function MonitoringDashboard() {
     return () => window.clearInterval(id);
   }, [lastUpdated]);
 
+  const agoLabel = useMemo(
+    () => (lastUpdated ? formatAgo(lastUpdated) : ''),
+    [lastUpdated, tick],
+  );
+
   const ramUsedPercent = meta
     ? memoryUsedPercent(meta.server.freeMemoryMb, meta.server.totalMemoryMb)
     : 0;
@@ -733,7 +744,8 @@ export default function MonitoringDashboard() {
   const showDashboard = ready && (meta || completedCount > 0 || !loading);
 
   return (
-    <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-6 md:px-8 md:py-8">
+    <main className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-8">
+      <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-admin-text">Izleme</h1>
@@ -823,7 +835,7 @@ export default function MonitoringDashboard() {
                       ? `${uptimeTotals.success}/${uptimeTotals.total} basarili yanit · %${uptimeTotals.percent}`
                       : `${uptimeTotals.done}/${uptimeTotals.total} denendi · ${uptimeTotals.success} dondu`}
                     {lastUpdated && uptimeTotals.complete
-                      ? ` · Son olcum ${formatAgo(lastUpdated)}`
+                      ? ` · Son olcum ${agoLabel}`
                       : ''}
                   </p>
                 </div>
@@ -973,130 +985,127 @@ export default function MonitoringDashboard() {
             )}
           </section>
 
-          <details
-            className="rounded-xl border border-admin-border bg-admin-surface-low shadow-sm open:pb-2"
-            open={detailsOpen}
-            onToggle={(event) => setDetailsOpen((event.target as HTMLDetailsElement).open)}
-          >
-            <summary className="cursor-pointer list-none px-6 py-4 marker:content-none">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-lg font-semibold text-admin-text">Detaylar</p>
-                  <p className="text-sm text-admin-muted">
-                    Servis kartlari, sunucu metrikleri, deploy ve backup
-                  </p>
-                </div>
-                <span className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-muted">
-                  {detailsOpen ? 'Gizle' : 'Goster'}
-                </span>
+          <section className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low shadow-sm">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((value) => !value)}
+              className="flex w-full items-center justify-between gap-3 px-6 py-4 text-left"
+            >
+              <div>
+                <p className="text-lg font-semibold text-admin-text">Detaylar</p>
+                <p className="text-sm text-admin-muted">
+                  Servis kartlari, sunucu metrikleri, deploy ve backup
+                </p>
               </div>
-            </summary>
+              <span className="rounded-lg border border-admin-border px-3 py-1 text-sm text-admin-muted">
+                {detailsOpen ? 'Gizle' : 'Goster'}
+              </span>
+            </button>
 
-            <div className="space-y-4 border-t border-admin-border px-4 py-4 md:px-6">
-              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {SERVICE_CHECKS.map((item) => (
-                  <ServiceCard
-                    key={item.key}
-                    title={item.title}
-                    check={checks[item.key]}
-                    pending={!settled[item.key]}
-                  />
-                ))}
-              </section>
+            {detailsOpen ? (
+              <div className="space-y-4 border-t border-admin-border px-4 py-4 md:px-6">
+                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {SERVICE_CHECKS.map((item) => (
+                    <ServiceCard
+                      key={item.key}
+                      title={item.title}
+                      check={checks[item.key]}
+                      pending={!settled[item.key]}
+                    />
+                  ))}
+                </section>
 
-              {meta ? (
-                <section className="grid items-start gap-4 lg:grid-cols-3">
-                  <div className="rounded-xl border border-admin-border bg-admin-bg/40 p-6 shadow-sm lg:col-span-2">
-                    <h3 className="text-lg font-semibold text-admin-text">Sunucu Metrikleri</h3>
-                    <div className="mt-5 space-y-4">
-                      <MetricBar
-                        label="RAM kullanimi"
-                        value={`${meta.server.totalMemoryMb - meta.server.freeMemoryMb} / ${meta.server.totalMemoryMb} MB`}
-                        percent={ramUsedPercent}
-                        tone={
-                          ramUsedPercent > 85
-                            ? 'bg-red-500'
-                            : ramUsedPercent > 70
-                              ? 'bg-amber-500'
-                              : 'bg-emerald-500'
-                        }
-                      />
-                      <MetricBar
-                        label="Backend bellek"
-                        value={`${meta.backend.memoryMb} / ${backendCapMb} MB`}
-                        percent={backendUsedPercent}
-                        tone={
-                          backendUsedPercent > 85
-                            ? 'bg-red-500'
-                            : backendUsedPercent > 70
-                              ? 'bg-amber-500'
-                              : 'bg-emerald-500'
-                        }
-                      />
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
-                          <p className="text-sm text-admin-muted">Hostname</p>
-                          <p className="mt-1 font-medium text-admin-text">{meta.server.hostname}</p>
-                        </div>
-                        <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
-                          <p className="text-sm text-admin-muted">Load average</p>
-                          <p className="mt-1 font-medium text-admin-text">
-                            {meta.server.loadAverage.join(' · ')}
-                          </p>
+                {meta ? (
+                  <section className="grid items-start gap-4 lg:grid-cols-3">
+                    <div className="rounded-xl border border-admin-border bg-admin-bg/40 p-6 shadow-sm lg:col-span-2">
+                      <h3 className="text-lg font-semibold text-admin-text">Sunucu Metrikleri</h3>
+                      <div className="mt-5 space-y-4">
+                        <MetricBar
+                          label="RAM kullanimi"
+                          value={`${meta.server.totalMemoryMb - meta.server.freeMemoryMb} / ${meta.server.totalMemoryMb} MB`}
+                          percent={ramUsedPercent}
+                          tone={
+                            ramUsedPercent > 85
+                              ? 'bg-red-500'
+                              : ramUsedPercent > 70
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                          }
+                        />
+                        <MetricBar
+                          label="Backend bellek"
+                          value={`${meta.backend.memoryMb} / ${backendCapMb} MB`}
+                          percent={backendUsedPercent}
+                          tone={
+                            backendUsedPercent > 85
+                              ? 'bg-red-500'
+                              : backendUsedPercent > 70
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                          }
+                        />
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                            <p className="text-sm text-admin-muted">Hostname</p>
+                            <p className="mt-1 font-medium text-admin-text">{meta.server.hostname}</p>
+                          </div>
+                          <div className="rounded-lg border border-admin-border bg-admin-bg p-4">
+                            <p className="text-sm text-admin-muted">Load average</p>
+                            <p className="mt-1 font-medium text-admin-text">
+                              {meta.server.loadAverage.join(' · ')}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-4">
-                    <div className="rounded-xl border border-admin-border bg-admin-bg/40 p-6 shadow-sm">
-                      <h3 className="text-lg font-semibold text-admin-text">Deploy & CI</h3>
-                      <dl className="mt-5 space-y-4 text-sm">
-                        <div>
-                          <dt className="text-admin-muted">Son commit</dt>
-                          <dd className="mt-1 font-mono text-admin-text">
-                            {meta.deploy?.commit ?? 'Bilinmiyor'}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-admin-muted">Deploy zamani</dt>
-                          <dd className="mt-1 text-admin-text">
-                            {meta.deploy?.deployedAt
-                              ? new Date(meta.deploy.deployedAt).toLocaleString('tr-TR')
-                              : 'Bilinmiyor'}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-admin-muted">Son kontrol</dt>
-                          <dd className="mt-1 text-admin-text">
-                            {new Date(meta.checkedAt).toLocaleString('tr-TR')}
-                          </dd>
-                        </div>
-                      </dl>
-                      <a
-                        href={meta.links.githubActions}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
-                      >
-                        GitHub Actions
-                      </a>
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-admin-border bg-admin-bg/40 p-6 shadow-sm">
+                        <h3 className="text-lg font-semibold text-admin-text">Deploy & CI</h3>
+                        <dl className="mt-5 space-y-4 text-sm">
+                          <div>
+                            <dt className="text-admin-muted">Son commit</dt>
+                            <dd className="mt-1 font-mono text-admin-text">
+                              {meta.deploy?.commit ?? 'Bilinmiyor'}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-admin-muted">Deploy zamani</dt>
+                            <dd className="mt-1 text-admin-text">
+                              {meta.deploy?.deployedAt
+                                ? new Date(meta.deploy.deployedAt).toLocaleString('tr-TR')
+                                : 'Bilinmiyor'}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-admin-muted">Son kontrol</dt>
+                            <dd className="mt-1 text-admin-text">
+                              {new Date(meta.checkedAt).toLocaleString('tr-TR')}
+                            </dd>
+                          </div>
+                        </dl>
+                        <a
+                          href={meta.links.githubActions}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+                        >
+                          GitHub Actions
+                        </a>
+                      </div>
+
+                      {meta.backup ? <BackupCard backup={meta.backup} /> : null}
                     </div>
-
-                    {meta.backup ? <BackupCard backup={meta.backup} /> : null}
-                  </div>
-                </section>
-              ) : (
-                <div className="h-40 animate-pulse rounded-xl border border-admin-border bg-admin-bg/40" />
-              )}
-            </div>
-          </details>
+                  </section>
+                ) : (
+                  <div className="h-40 animate-pulse rounded-xl border border-admin-border bg-admin-bg/40" />
+                )}
+              </div>
+            ) : null}
+          </section>
         </>
       ) : null}
-
-      <span className="sr-only" aria-hidden>
-        {tick}
-      </span>
+      </div>
     </main>
   );
 }

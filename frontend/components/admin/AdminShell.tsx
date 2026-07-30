@@ -329,7 +329,7 @@ function AdminShellInner({ children }: AdminShellProps) {
         </nav>
 
         <div
-          className={`min-h-0 min-w-0 flex-1 ${
+          className={`min-h-0 min-w-0 flex-1 overscroll-contain ${
             isEditor ? 'overflow-hidden' : 'overflow-y-auto'
           }`}
         >
