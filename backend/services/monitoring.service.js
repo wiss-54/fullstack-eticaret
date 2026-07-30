@@ -14,6 +14,87 @@ function readDeployInfo() {
   }
 }
 
+function formatBackupSizeMb(bytes) {
+  return Math.round((bytes / (1024 * 1024)) * 10) / 10;
+}
+
+function getBackupStatus() {
+  const backupRoot = process.env.BACKUP_ROOT || '/home/beratav/backups';
+  const retentionDays = Number(process.env.BACKUP_RETENTION_DAYS || 14);
+
+  try {
+    if (!fs.existsSync(backupRoot)) {
+      return {
+        status: 'missing',
+        backupRoot,
+        retentionDays,
+        count: 0,
+        latest: null,
+        recent: [],
+      };
+    }
+
+    const files = fs
+      .readdirSync(backupRoot)
+      .filter((name) => /^eticaret_\d{8}_\d{6}\.tar\.gz$/.test(name))
+      .map((fileName) => {
+        const fullPath = path.join(backupRoot, fileName);
+        const stat = fs.statSync(fullPath);
+        return {
+          fileName,
+          sizeBytes: stat.size,
+          sizeMb: formatBackupSizeMb(stat.size),
+          createdAt: stat.mtime.toISOString(),
+        };
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    const latest = files[0] || null;
+    let status = 'ok';
+    let ageHours = null;
+
+    if (!latest) {
+      status = 'empty';
+    } else {
+      ageHours = Number(
+        ((Date.now() - new Date(latest.createdAt).getTime()) / 3_600_000).toFixed(1),
+      );
+      // Gunluk cron: 36 saatten eskiyse uyar
+      if (ageHours > 36) status = 'stale';
+    }
+
+    return {
+      status,
+      backupRoot,
+      retentionDays,
+      count: files.length,
+      latest: latest
+        ? {
+            fileName: latest.fileName,
+            sizeMb: latest.sizeMb,
+            createdAt: latest.createdAt,
+            ageHours,
+          }
+        : null,
+      recent: files.slice(0, 5).map((file) => ({
+        fileName: file.fileName,
+        sizeMb: file.sizeMb,
+        createdAt: file.createdAt,
+      })),
+    };
+  } catch (err) {
+    return {
+      status: 'error',
+      backupRoot,
+      retentionDays,
+      count: 0,
+      latest: null,
+      recent: [],
+      error: err instanceof Error ? err.message : 'Backup durumu okunamadi',
+    };
+  }
+}
+
 async function checkDatabase() {
   const start = Date.now();
   await pool.query('SELECT 1');
@@ -69,11 +150,13 @@ async function getSystemStatus() {
   }
 
   const deployInfo = readDeployInfo();
+  const backup = getBackupStatus();
   const mem = process.memoryUsage();
 
   return {
     checkedAt: new Date().toISOString(),
     deploy: deployInfo,
+    backup,
     services: {
       database,
       api,
