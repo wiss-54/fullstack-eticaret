@@ -19,9 +19,12 @@ import type {
 import {
   appendUptimeHistoryPoint,
   emptyScores,
+  filterUptimeHistory,
   readUptimeHistory,
+  UPTIME_RANGES,
   type UptimeHistoryPoint,
   type UptimeHistoryScores,
+  type UptimeRangeId,
 } from '@/lib/uptime-history';
 
 const REFRESH_MS = 30_000;
@@ -94,26 +97,6 @@ function summarizeProbes(probes: UptimeProbeState[]) {
     progressPercent: Math.round((done / UPTIME_ATTEMPTS) * 100),
     complete: done >= UPTIME_ATTEMPTS,
   };
-}
-
-function buildCumulativeHeights(probes: UptimeProbeState[], livePercent: number) {
-  const columns: Array<{ height: number; pending: boolean; ok: boolean | null }> = [];
-  let successSoFar = 0;
-
-  for (const probe of probes) {
-    if (probe.ok === null) {
-      columns.push({ height: livePercent, pending: true, ok: null });
-      continue;
-    }
-    if (probe.ok) successSoFar += 1;
-    columns.push({
-      height: Math.round((successSoFar / UPTIME_ATTEMPTS) * 100),
-      pending: false,
-      ok: probe.ok,
-    });
-  }
-
-  return columns;
 }
 
 function formatUptime(seconds: number) {
@@ -365,116 +348,13 @@ function MetricBar({
   );
 }
 
-function UptimeAxisCard({
-  title,
-  subtitle,
-  probes,
-}: {
-  title: string;
-  subtitle: string;
-  probes: UptimeProbeState[];
-}) {
-  const summary = summarizeProbes(probes);
-  const livePercent = summary.percent;
-  const barTone = !summary.complete
-    ? 'bg-admin-primary'
-    : livePercent >= 90
-      ? 'bg-emerald-500'
-      : livePercent >= 70
-        ? 'bg-amber-500'
-        : 'bg-red-500';
-
-  const cumulativeHeights = buildCumulativeHeights(probes, livePercent);
-
-  return (
-    <article className="rounded-xl border border-admin-border bg-admin-surface-low p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-base font-semibold text-admin-text">{title}</h3>
-          <p className="mt-0.5 text-xs text-admin-muted">{subtitle}</p>
-        </div>
-        <div className="text-right">
-          <p className="font-admin-mono text-2xl font-bold tabular-nums text-admin-text transition-all">
-            %{livePercent}
-          </p>
-          <p className="font-admin-mono text-[11px] text-admin-muted">
-            {summary.success}/{UPTIME_ATTEMPTS}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 flex gap-2">
-        <div className="flex h-40 w-8 flex-col justify-between font-admin-mono text-[10px] text-admin-muted">
-          <span>100</span>
-          <span>75</span>
-          <span>50</span>
-          <span>25</span>
-          <span>0</span>
-        </div>
-
-        <div className="relative min-w-0 flex-1">
-          <p className="pointer-events-none absolute -left-1 -top-5 text-[10px] font-semibold text-admin-muted">
-            Y %
-          </p>
-          <div className="relative flex h-40 items-end gap-1 border-b border-l border-admin-border bg-[linear-gradient(to_top,transparent_0,transparent_calc(25%-1px),rgba(0,0,0,0.04)_calc(25%-1px),rgba(0,0,0,0.04)_25%,transparent_25%,transparent_calc(50%-1px),rgba(0,0,0,0.04)_calc(50%-1px),rgba(0,0,0,0.04)_50%,transparent_50%,transparent_calc(75%-1px),rgba(0,0,0,0.04)_calc(75%-1px),rgba(0,0,0,0.04)_75%,transparent_75%)] px-1 pb-0 pt-1">
-            {/* Canli Y dolgusu — toplam skor yukari cikar */}
-            <div
-              className={`pointer-events-none absolute inset-x-0 bottom-0 opacity-20 transition-all duration-500 ${barTone}`}
-              style={{ height: `${Math.max(livePercent, summary.done > 0 ? 4 : 0)}%` }}
-            />
-
-            {cumulativeHeights.map((column, index) => {
-              const probe = probes[index];
-              const height =
-                probe.ok === null
-                  ? Math.max(livePercent * 0.15, summary.done > 0 ? 4 : 2)
-                  : Math.max(column.height, probe.ok ? 8 : 6);
-
-              return (
-                <div
-                  key={probe.index}
-                  className="relative z-[1] flex h-full min-w-0 flex-1 flex-col items-center justify-end"
-                  title={`#${probe.index}: ${
-                    probe.ok === null ? 'bekleniyor' : probe.ok ? 'dondu' : 'donmedi'
-                  }`}
-                >
-                  <div
-                    className={`w-full max-w-[18px] rounded-t-sm transition-all duration-500 ease-out ${
-                      probe.ok === null
-                        ? 'animate-pulse bg-admin-muted/50'
-                        : probe.ok
-                          ? barTone
-                          : 'bg-admin-danger'
-                    }`}
-                    style={{ height: `${height}%` }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-1 flex justify-between font-admin-mono text-[10px] text-admin-muted">
-            <span>X: 1</span>
-            <span>istek</span>
-            <span>{UPTIME_ATTEMPTS}</span>
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-3 text-xs text-admin-muted">
-        {summary.complete
-          ? `${summary.success}/${UPTIME_ATTEMPTS} istek dondu · skor %${livePercent}`
-          : `${summary.done}/${UPTIME_ATTEMPTS} denendi · ${summary.success} dondu · canli %${livePercent}`}
-      </p>
-    </article>
-  );
-}
 
 const UPTIME_SERIES: Array<{ key: UptimeTargetKey; label: string; color: string }> = [
-  { key: 'backend', label: 'backend', color: '#3b82f6' },
-  { key: 'database', label: 'database', color: '#14b8a6' },
-  { key: 'api', label: 'api', color: '#a855f7' },
-  { key: 'shop', label: 'shop', color: '#f43f5e' },
-  { key: 'adminPanel', label: 'admin', color: '#f59e0b' },
+  { key: 'backend', label: 'Backend', color: '#3b82f6' },
+  { key: 'database', label: 'Veritabani', color: '#14b8a6' },
+  { key: 'api', label: 'Backend API', color: '#a855f7' },
+  { key: 'shop', label: 'Magaza', color: '#f43f5e' },
+  { key: 'adminPanel', label: 'Admin', color: '#f59e0b' },
 ];
 
 function formatClock(ts: number) {
@@ -484,65 +364,68 @@ function formatClock(ts: number) {
   });
 }
 
-function UptimeHourChart({
+function SeriesLineChart({
+  title,
+  subtitle,
+  color,
   points,
   now,
+  rangeMs,
+  valueFor,
 }: {
+  title: string;
+  subtitle: string;
+  color: string;
   points: UptimeHistoryPoint[];
   now: number;
+  rangeMs: number;
+  valueFor: (point: UptimeHistoryPoint) => number;
 }) {
-  const width = 920;
-  const height = 260;
-  const pad = { top: 16, right: 16, bottom: 28, left: 40 };
+  const width = 560;
+  const height = 220;
+  const pad = { top: 14, right: 12, bottom: 26, left: 36 };
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
-  const start = now - 60 * 60 * 1000;
+  const start = now - rangeMs;
+  const latest = points.length > 0 ? valueFor(points[points.length - 1]) : null;
 
   const xFor = (at: number) =>
-    pad.left + ((Math.max(start, Math.min(now, at)) - start) / (60 * 60 * 1000)) * innerW;
+    pad.left + ((Math.max(start, Math.min(now, at)) - start) / rangeMs) * innerW;
   const yFor = (percent: number) => pad.top + ((100 - percent) / 100) * innerH;
 
   const ticks = [0, 25, 50, 75, 100];
-  const timeTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => start + ratio * 60 * 60 * 1000);
+  const timeTicks = [0, 0.33, 0.66, 1].map((ratio) => start + ratio * rangeMs);
 
-  function pathFor(key: UptimeTargetKey) {
-    if (points.length === 0) return '';
-    return points
-      .map((point, index) => {
-        const x = xFor(point.at);
-        const y = yFor(point.scores[key] ?? 0);
-        return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
-      })
-      .join(' ');
-  }
-
-  const overallPath =
+  const path =
     points.length === 0
       ? ''
       : points
           .map((point, index) => {
             const x = xFor(point.at);
-            const y = yFor(point.overall);
+            const y = yFor(valueFor(point));
             return `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
           })
           .join(' ');
 
+  const area =
+    points.length === 0
+      ? ''
+      : `${path} L${xFor(points[points.length - 1].at).toFixed(1)} ${(pad.top + innerH).toFixed(1)} L${xFor(points[0].at).toFixed(1)} ${(pad.top + innerH).toFixed(1)} Z`;
+
   return (
-    <section className="rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <article className="rounded-xl border border-admin-border bg-admin-surface-low p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold text-admin-text">Resource Health · Uptime</h2>
-          <p className="mt-1 text-sm text-admin-muted">
-            Son 1 saat · her {REFRESH_MS / 1000} sn olcum · Y: basari % · X: zaman
-          </p>
+          <h3 className="text-base font-semibold text-admin-text">{title}</h3>
+          <p className="mt-0.5 text-xs text-admin-muted">{subtitle}</p>
         </div>
-        <span className="rounded-lg border border-admin-border bg-admin-bg px-3 py-1.5 text-sm text-admin-text">
-          1 hour
-        </span>
+        <p className="font-admin-mono text-2xl font-bold tabular-nums text-admin-text">
+          {latest == null ? '-' : `%${latest}`}
+        </p>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-64 w-full min-w-[640px]">
+      <div className="mt-3 overflow-x-auto">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-48 w-full min-w-[320px]">
           {ticks.map((tick) => (
             <g key={tick}>
               <line
@@ -555,7 +438,7 @@ function UptimeHourChart({
                 strokeWidth="1"
               />
               <text
-                x={pad.left - 8}
+                x={pad.left - 6}
                 y={yFor(tick) + 3}
                 textAnchor="end"
                 className="fill-admin-muted font-admin-mono text-[10px]"
@@ -569,7 +452,7 @@ function UptimeHourChart({
             <text
               key={ts}
               x={xFor(ts)}
-              y={height - 8}
+              y={height - 6}
               textAnchor="middle"
               className="fill-admin-muted font-admin-mono text-[10px]"
             >
@@ -577,25 +460,13 @@ function UptimeHourChart({
             </text>
           ))}
 
-          {UPTIME_SERIES.map((series) => (
+          {area ? <path d={area} fill={color} opacity="0.12" /> : null}
+          {path ? (
             <path
-              key={series.key}
-              d={pathFor(series.key)}
+              d={path}
               fill="none"
-              stroke={series.color}
-              strokeWidth="2.2"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          ))}
-
-          {overallPath ? (
-            <path
-              d={overallPath}
-              fill="none"
-              stroke="#22c55e"
-              strokeWidth="2.8"
-              strokeDasharray="5 4"
+              stroke={color}
+              strokeWidth="2.4"
               strokeLinejoin="round"
               strokeLinecap="round"
             />
@@ -608,28 +479,12 @@ function UptimeHourChart({
               textAnchor="middle"
               className="fill-admin-muted text-sm"
             >
-              Olcumler birikiyor… 30 sn sonra grafik dolacak
+              Olcum bekleniyor...
             </text>
           ) : null}
         </svg>
       </div>
-
-      <ul className="mt-3 flex flex-wrap gap-3">
-        <li className="inline-flex items-center gap-2 text-xs text-admin-muted">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
-          overall
-        </li>
-        {UPTIME_SERIES.map((series) => (
-          <li key={series.key} className="inline-flex items-center gap-2 text-xs text-admin-muted">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: series.color }}
-            />
-            {series.label}
-          </li>
-        ))}
-      </ul>
-    </section>
+    </article>
   );
 }
 
@@ -653,6 +508,13 @@ export default function MonitoringDashboard() {
     typeof window === 'undefined' ? [] : readUptimeHistory(),
   );
   const [chartNow] = useState(() => Date.now());
+  const [rangeId, setRangeId] = useState<UptimeRangeId>('1h');
+
+  const selectedRange = UPTIME_RANGES.find((range) => range.id === rangeId) ?? UPTIME_RANGES[1];
+  const rangedHistory = useMemo(
+    () => filterUptimeHistory(uptimeHistory, selectedRange.ms, lastUpdated?.getTime() ?? chartNow),
+    [uptimeHistory, selectedRange.ms, lastUpdated, chartNow],
+  );
 
   const completedCount = useMemo(
     () => Object.values(settled).filter(Boolean).length,
@@ -1046,33 +908,69 @@ export default function MonitoringDashboard() {
             </div>
           </section>
 
-          <UptimeHourChart
-            points={uptimeHistory}
-            now={lastUpdated?.getTime() ?? chartNow}
-          />
-
-          <section className="space-y-3">
-            <div className="flex flex-wrap items-end justify-between gap-2">
+          <section className="space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-admin-text">Anlik olcum</h2>
+                <h2 className="text-lg font-semibold text-admin-text">Uptime grafigi</h2>
                 <p className="text-sm text-admin-muted">
-                  Bu tur: her hedefe {UPTIME_ATTEMPTS} istek · bitince 1 saatligine islenir
+                  Her servis ayri cizgi · X: zaman · Y: basari % · {REFRESH_MS / 1000} sn olcum
                 </p>
               </div>
-              <p className="font-admin-mono text-sm text-admin-muted">
-                Toplam {uptimeTotals.success}/{uptimeTotals.total} · %{uptimeTotals.percent}
+              <div className="flex flex-wrap gap-2">
+                {UPTIME_RANGES.map((range) => (
+                  <button
+                    key={range.id}
+                    type="button"
+                    onClick={() => setRangeId(range.id)}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+                      rangeId === range.id
+                        ? 'border-admin-primary bg-admin-primary/15 text-admin-primary'
+                        : 'border-admin-border bg-admin-bg text-admin-muted hover:text-admin-text'
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+              {UPTIME_SERIES.map((series) => {
+                const target = UPTIME_TARGETS.find((item) => item.key === series.key);
+                return (
+                  <SeriesLineChart
+                    key={series.key}
+                    title={series.label}
+                    subtitle={target?.subtitle ?? series.key}
+                    color={series.color}
+                    points={rangedHistory}
+                    now={lastUpdated?.getTime() ?? chartNow}
+                    rangeMs={selectedRange.ms}
+                    valueFor={(point) => point.scores[series.key] ?? 0}
+                  />
+                );
+              })}
+              <SeriesLineChart
+                title="Overall"
+                subtitle="Tum hedeflerin ortalamasi"
+                color="#22c55e"
+                points={rangedHistory}
+                now={lastUpdated?.getTime() ?? chartNow}
+                rangeMs={selectedRange.ms}
+                valueFor={(point) => point.overall}
+              />
+            </div>
+
+            {uptimeRunning || !uptimeTotals.complete ? (
+              <p className="text-sm text-admin-muted">
+                Anlik tur: {uptimeTotals.done}/{uptimeTotals.total} denendi · {uptimeTotals.success}{' '}
+                dondu · %{uptimeTotals.percent}
               </p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-              {UPTIME_TARGETS.map((target) => (
-                <UptimeAxisCard
-                  key={target.key}
-                  title={target.title}
-                  subtitle={target.subtitle}
-                  probes={uptimeBoard[target.key]}
-                />
-              ))}
-            </div>
+            ) : (
+              <p className="text-sm text-admin-muted">
+                Son tur skoru %{uptimeTotals.percent} · grafik gecmise islendi
+              </p>
+            )}
           </section>
 
           <details
