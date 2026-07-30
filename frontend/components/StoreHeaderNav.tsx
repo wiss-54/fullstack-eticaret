@@ -15,10 +15,12 @@ type Props = {
   preview?: boolean;
 };
 
+const linkClass =
+  'inline-flex items-center gap-1 text-sm font-medium tracking-wide text-store-text transition hover:text-store-primary';
+
 export default function StoreHeaderNav({
   navItem1Label,
   navItem1Href,
-  navItem2Label,
   navItem2Href,
   categories: providedCategories = [],
   preview = false,
@@ -47,30 +49,33 @@ export default function StoreHeaderNav({
   if (preview) {
     return (
       <>
-        <span>{navItem1Label}</span>
-        <span>{navItem2Label}</span>
+        <span className={linkClass}>Ana Sayfa</span>
+        <span className={linkClass}>Tum Urunler</span>
+        <span className={linkClass}>{navItem1Label}</span>
+        <span className={linkClass}>Iletisim</span>
       </>
     );
   }
 
   return (
     <>
-      <a href={link1Href} className="transition hover:text-store-primary">
-        {navItem1Label}
+      <Link href="/" className={linkClass}>
+        Ana Sayfa
+      </Link>
+
+      <a href={link2Href} className={linkClass}>
+        Tum Urunler
       </a>
 
       <div className="group relative">
-        <a
-          href={link2Href}
-          className="inline-flex items-center gap-1 transition hover:text-store-primary"
-        >
-          {navItem2Label}
+        <a href={link1Href} className={linkClass}>
+          {navItem1Label || 'Kategoriler'}
           <svg className="h-3.5 w-3.5 opacity-70" viewBox="0 0 20 20" fill="currentColor">
             <path d="M5.25 7.5 10 12.25 14.75 7.5" />
           </svg>
         </a>
         {categories.length > 0 ? (
-          <div className="invisible absolute left-0 top-full z-50 min-w-[220px] pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+          <div className="invisible absolute left-1/2 top-full z-50 min-w-[220px] -translate-x-1/2 pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
             <div className="rounded-xl border border-store-border bg-store-surface py-2 shadow-[0px_12px_30px_rgba(0,0,0,0.12)]">
               <Link
                 href="/"
@@ -91,6 +96,10 @@ export default function StoreHeaderNav({
           </div>
         ) : null}
       </div>
+
+      <Link href="/iletisim" className={linkClass}>
+        Iletisim
+      </Link>
     </>
   );
 }

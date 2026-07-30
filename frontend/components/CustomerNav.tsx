@@ -5,7 +5,11 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { getCustomerToken, validateCustomerSession } from '@/lib/customer-api';
 
-export default function CustomerNav() {
+type Props = {
+  variant?: 'default' | 'icon';
+};
+
+export default function CustomerNav({ variant = 'default' }: Props) {
   const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState(false);
 
@@ -25,6 +29,21 @@ export default function CustomerNav() {
       cancelled = true;
     };
   }, [pathname]);
+
+  if (variant === 'icon') {
+    return (
+      <Link
+        href={loggedIn ? '/hesabim' : '/giris'}
+        aria-label={loggedIn ? 'Hesabim' : 'Giris'}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-store-text transition hover:bg-store-surface-low hover:text-store-primary"
+      >
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 19a7 7 0 0 1 14 0" />
+        </svg>
+      </Link>
+    );
+  }
 
   if (loggedIn) {
     return (

@@ -9,7 +9,7 @@ import type { Category, Product, StoreSettings } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 type HomeProps = {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; q?: string }>;
 };
 
 const FALLBACK_SETTINGS: StoreSettings = {
@@ -54,6 +54,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const categoryId = params.category ? Number(params.category) : undefined;
   const activeCategoryId =
     categoryId && Number.isInteger(categoryId) && categoryId > 0 ? categoryId : undefined;
+  const query = params.q?.trim().toLowerCase() ?? '';
 
   let products: Product[] = [];
   let categories: Category[] = [];
@@ -73,6 +74,13 @@ export default async function Home({ searchParams }: HomeProps) {
     } catch {
       settings = FALLBACK_SETTINGS;
     }
+  }
+
+  if (query) {
+    products = products.filter((product) => {
+      const haystack = `${product.name} ${product.description} ${product.categoryName ?? ''}`.toLowerCase();
+      return haystack.includes(query);
+    });
   }
 
   const sections =
