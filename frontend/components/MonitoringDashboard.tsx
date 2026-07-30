@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AdminAuthError,
+  adminGetIncidents,
   adminGetStatusCheck,
   adminGetStatusMeta,
 } from '@/lib/admin-api';
@@ -12,6 +13,7 @@ import { getAdminPaths } from '@/lib/admin-paths';
 import { useAdminGuard } from '@/lib/use-admin-guard';
 import type {
   BackupStatus,
+  IncidentLogSummary,
   ServiceCheck,
   SystemStatusCheckName,
   SystemStatusMeta,
@@ -107,6 +109,31 @@ function formatUptime(seconds: number) {
   const minutes = Math.floor((seconds % 3600) / 60);
   if (days > 0) return `${days}g ${hours}s ${minutes}dk`;
   return `${hours}s ${minutes}dk`;
+}
+
+function formatIncidentDuration(seconds: number | null | undefined) {
+  if (seconds == null) return 'devam ediyor';
+  if (seconds < 60) return `${seconds} sn`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} dk`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} sa ${minutes % 60} dk`;
+}
+
+function ciTone(status?: string) {
+  if (status === 'success') return 'bg-emerald-500/15 text-emerald-700';
+  if (status === 'failure') return 'bg-red-500/15 text-red-700';
+  if (status === 'pending') return 'bg-amber-500/15 text-amber-800';
+  if (status === 'cancelled') return 'bg-admin-muted/20 text-admin-muted';
+  return 'bg-admin-bg text-admin-muted';
+}
+
+function ciLabel(status?: string) {
+  if (status === 'success') return 'Basarili';
+  if (status === 'failure') return 'Basarisiz';
+  if (status === 'pending') return 'Devam ediyor';
+  if (status === 'cancelled') return 'Iptal';
+  return 'Bilinmiyor';
 }
 
 function formatAgo(date: Date) {
@@ -517,6 +544,7 @@ export default function MonitoringDashboard() {
   );
   const [chartNow] = useState(() => Date.now());
   const [rangeId, setRangeId] = useState<UptimeRangeId>('1h');
+  const [incidents, setIncidents] = useState<IncidentLogSummary | null>(null);
 
   const selectedRange = UPTIME_RANGES.find((range) => range.id === rangeId) ?? UPTIME_RANGES[1];
   const rangedHistory = useMemo(
@@ -632,7 +660,7 @@ export default function MonitoringDashboard() {
                   latencies.push(Date.now() - started);
                   httpClasses.c2xx += 1;
                 } else {
-                  const data = await adminGetStatusCheck(target.key);
+                  const data = await adminGetStatusCheck(target.key, { track: false });
                   ok = data.check.status === 'up';
                   latencies.push(data.check.latencyMs ?? Date.now() - started);
                   if (target.key === 'database') {
@@ -739,6 +767,13 @@ export default function MonitoringDashboard() {
             markSettled('meta');
             if (handleAuth(err)) return;
             setError(err instanceof Error ? err.message : 'Monitoring meta alinamadi');
+          }),
+        adminGetIncidents(40)
+          .then((data) => {
+            setIncidents(data);
+          })
+          .catch((err) => {
+            if (handleAuth(err)) return;
           }),
         ...SERVICE_CHECKS.map(({ key }) =>
           adminGetStatusCheck(key)
@@ -1064,6 +1099,144 @@ export default function MonitoringDashboard() {
             )}
           </section>
 
+          <section className="grid gap-4 lg:grid-cols-2">
+            <article className="rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-admin-text">CI / CD (GitHub Actions)</h2>
+                  <p className="text-sm text-admin-muted">Son workflow calismasi · main branch</p>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${ciTone(meta?.ci?.status)}`}
+                >
+                  {ciLabel(meta?.ci?.status)}
+                </span>
+              </div>
+              {meta?.ci ? (
+                <div className="mt-4 space-y-3 text-sm">
+                  <p className="font-medium text-admin-text">
+                    {meta.ci.displayTitle || meta.ci.workflowName || 'ci.yml'}
+                  </p>
+                  <dl className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-admin-bg px-3 py-2">
+                      <dt className="text-xs text-admin-muted">Commit</dt>
+                      <dd className="font-admin-mono text-admin-text">
+                        {meta.ci.commitSha || '-'}
+                      </dd>
+                    </div>
+                    <div className="rounded-lg bg-admin-bg px-3 py-2">
+                      <dt className="text-xs text-admin-muted">Branch</dt>
+                      <dd className="text-admin-text">{meta.ci.branch || 'main'}</dd>
+                    </div>
+                    <div className="rounded-lg bg-admin-bg px-3 py-2">
+                      <dt className="text-xs text-admin-muted">Actor</dt>
+                      <dd className="text-admin-text">{meta.ci.actor || '-'}</dd>
+                    </div>
+                    <div className="rounded-lg bg-admin-bg px-3 py-2">
+                      <dt className="text-xs text-admin-muted">Guncelleme</dt>
+                      <dd className="text-admin-text">
+                        {meta.ci.updatedAt
+                          ? new Date(meta.ci.updatedAt).toLocaleString('tr-TR')
+                          : '-'}
+                      </dd>
+                    </div>
+                  </dl>
+                  {meta.ci.badgeUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={meta.ci.badgeUrl} alt="CI badge" className="h-5" />
+                  ) : null}
+                  {meta.ci.recent && meta.ci.recent.length > 0 ? (
+                    <ul className="space-y-2">
+                      {meta.ci.recent.slice(0, 3).map((run) => (
+                        <li
+                          key={run.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-admin-border px-3 py-2"
+                        >
+                          <span className="truncate text-admin-text">{run.title || run.commitSha}</span>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${ciTone(run.status)}`}>
+                            {ciLabel(run.status)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={meta.ci.runUrl || meta.links.githubActions}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex rounded-lg border border-admin-border px-3 py-2 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+                    >
+                      Actions ac
+                    </a>
+                    <a
+                      href={meta.links.statusPage || '/status'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex rounded-lg border border-admin-border px-3 py-2 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+                    >
+                      Public status
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-admin-muted">CI durumu yukleniyor…</p>
+              )}
+            </article>
+
+            <article className="rounded-xl border border-admin-border bg-admin-surface-low p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-admin-text">Incident log</h2>
+                  <p className="text-sm text-admin-muted">
+                    Admin olay kaydi · dusen servisler otomatik islenir
+                  </p>
+                </div>
+                <span className="rounded-full bg-admin-bg px-3 py-1 font-admin-mono text-xs font-bold text-admin-text">
+                  {incidents?.openCount ?? 0} acik
+                </span>
+              </div>
+              {incidents && incidents.recent.length > 0 ? (
+                <ul className="mt-4 max-h-80 space-y-2 overflow-y-auto overscroll-contain">
+                  {incidents.recent.map((item) => (
+                    <li
+                      key={item.id}
+                      className="rounded-lg border border-admin-border bg-admin-bg px-3 py-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-admin-text">{item.label}</p>
+                          <p className="text-xs text-admin-muted">{item.message}</p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            item.status === 'open'
+                              ? 'bg-red-500/15 text-red-700'
+                              : 'bg-emerald-500/15 text-emerald-700'
+                          }`}
+                        >
+                          {item.status === 'open' ? 'OPEN' : 'RESOLVED'}
+                        </span>
+                      </div>
+                      <p className="mt-2 font-admin-mono text-[11px] text-admin-muted">
+                        {new Date(item.startedAt).toLocaleString('tr-TR')}
+                        {item.endedAt
+                          ? ` → ${new Date(item.endedAt).toLocaleString('tr-TR')}`
+                          : ''}
+                        {' · '}
+                        {formatIncidentDuration(item.durationSeconds)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm text-admin-muted">
+                  Henuz kayit yok. Servis dustugunde burada gorunecek.
+                </p>
+              )}
+            </article>
+          </section>
+
           <section className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface-low shadow-sm">
             <button
               type="button"
@@ -1226,6 +1399,14 @@ export default function MonitoringDashboard() {
                           className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
                         >
                           GitHub Actions
+                        </a>
+                        <a
+                          href={meta.links.statusPage || '/status'}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+                        >
+                          Public status page
                         </a>
                       </div>
 

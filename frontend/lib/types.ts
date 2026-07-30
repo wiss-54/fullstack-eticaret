@@ -294,6 +294,94 @@ export type SslStatusInfo = {
   error?: string;
 };
 
+export type CiStatusInfo = {
+  status: 'success' | 'failure' | 'pending' | 'cancelled' | 'unknown';
+  conclusion?: string | null;
+  runStatus?: string | null;
+  workflowName?: string;
+  branch?: string;
+  displayTitle?: string | null;
+  commitSha?: string | null;
+  event?: string | null;
+  actor?: string | null;
+  runUrl?: string;
+  htmlUrl?: string;
+  badgeUrl?: string;
+  startedAt?: string | null;
+  updatedAt?: string | null;
+  recent?: Array<{
+    id: number;
+    status: CiStatusInfo['status'];
+    conclusion?: string | null;
+    title?: string | null;
+    commitSha?: string | null;
+    url?: string;
+    updatedAt?: string | null;
+  }>;
+  source?: string;
+  error?: string;
+};
+
+export type IncidentLogEntry = {
+  id: string;
+  target: string;
+  label: string;
+  status: 'open' | 'resolved';
+  message: string;
+  startedAt: string;
+  lastSeenAt?: string;
+  endedAt: string | null;
+  durationSeconds: number | null;
+};
+
+export type IncidentLogSummary = {
+  openCount: number;
+  open: IncidentLogEntry[];
+  lastResolved: IncidentLogEntry | null;
+  recent: IncidentLogEntry[];
+};
+
+export type PublicStatusService = {
+  key: string;
+  label: string;
+  status: 'up' | 'down';
+  latencyMs?: number;
+};
+
+export type PublicStatusPayload = {
+  checkedAt: string;
+  overall: 'operational' | 'partial' | 'major';
+  services: PublicStatusService[];
+  ci: {
+    status: CiStatusInfo['status'];
+    workflowName?: string;
+    branch?: string;
+    htmlUrl?: string;
+    badgeUrl?: string;
+    commitSha?: string | null;
+    updatedAt?: string | null;
+  };
+  deploy: { commit: string | null; deployedAt: string | null } | null;
+  incidents: {
+    openCount: number;
+    open: Array<{
+      id: string;
+      target: string;
+      label: string;
+      startedAt: string;
+      message: string;
+    }>;
+    lastResolved: {
+      id: string;
+      target: string;
+      label: string;
+      startedAt: string;
+      endedAt: string | null;
+      durationSeconds: number | null;
+    } | null;
+  };
+};
+
 export type SystemStatusMeta = {
   checkedAt: string;
   deploy: {
@@ -330,6 +418,7 @@ export type SystemStatusMeta = {
     shop: SslStatusInfo;
     admin: SslStatusInfo;
   };
+  ci?: CiStatusInfo;
   stats: {
     productCount: number | null;
   };
@@ -341,6 +430,7 @@ export type SystemStatusMeta = {
   };
   links: {
     githubActions: string;
+    statusPage?: string;
     shop?: string;
     admin?: string;
   };

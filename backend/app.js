@@ -43,7 +43,9 @@ const apiLimiter = rateLimit({
     return (
       path === '/api/test-db' ||
       path === '/api/version' ||
-      path.startsWith('/api/version/')
+      path.startsWith('/api/version/') ||
+      path === '/api/status' ||
+      path.startsWith('/api/status/')
     );
   },
   message: { success: false, error: 'Cok fazla istek. Lutfen biraz sonra tekrar dene.' },
@@ -81,6 +83,7 @@ app.use('/api/contact', require('./routes/contact.routes'));
 app.use('/api/store-settings', require('./routes/store-settings.routes'));
 app.use('/api/admin/uploads', require('./routes/uploads.routes'));
 app.use('/api/admin', adminRoutes);
+app.use('/api/status', require('./routes/status.routes'));
 app.use('/api/version', versionRoutes);
 
 module.exports = app;
