@@ -103,5 +103,7 @@ describe('Admin auth', () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.services.database.status).toBe('up');
     expect(response.body.data.stats.productCount).toBe(2);
+    expect(response.body.data.backup).toBeDefined();
+    expect(response.body.data.backup.status).toBeDefined();
   });
 });

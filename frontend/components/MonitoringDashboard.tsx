@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AdminAuthError, adminGetStatus } from '@/lib/admin-api';
 import { getAdminPaths } from '@/lib/admin-paths';
 import { useAdminGuard } from '@/lib/use-admin-guard';
-import type { ServiceCheck, SystemStatus } from '@/lib/types';
+import type { BackupStatus, ServiceCheck, SystemStatus } from '@/lib/types';
 
 const REFRESH_MS = 15_000;
 
@@ -126,6 +126,100 @@ function ServiceCard({
         ) : null}
         {check.error ? <p className="text-sm text-admin-danger">{check.error}</p> : null}
       </div>
+    </article>
+  );
+}
+
+function backupTone(status: BackupStatus['status']) {
+  if (status === 'ok') {
+    return {
+      border: 'border-emerald-500/30',
+      badge: 'bg-emerald-500/15 text-emerald-700',
+      label: 'GUNCEL',
+    };
+  }
+  if (status === 'stale') {
+    return {
+      border: 'border-admin-primary/40',
+      badge: 'bg-admin-primary/15 text-admin-primary',
+      label: 'ESKI',
+    };
+  }
+  return {
+    border: 'border-admin-danger/40',
+    badge: 'bg-admin-danger/15 text-admin-danger',
+    label: status === 'error' ? 'HATA' : 'YOK',
+  };
+}
+
+function BackupCard({ backup }: { backup: BackupStatus }) {
+  const tone = backupTone(backup.status);
+
+  return (
+    <article className={`rounded-xl border bg-admin-surface-low p-6 shadow-sm ${tone.border}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-admin-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-admin-muted">
+            Yedekleme
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-admin-text">Gunluk Backup</h3>
+          <p className="mt-1 text-sm text-admin-muted">
+            Postgres + uploads · {backup.retentionDays} gun saklama
+          </p>
+        </div>
+        <span className={`rounded-full px-3 py-1 font-admin-mono text-xs font-semibold ${tone.badge}`}>
+          {tone.label}
+        </span>
+      </div>
+
+      <dl className="mt-5 space-y-4 text-sm">
+        <div>
+          <dt className="text-admin-muted">Son yedek</dt>
+          <dd className="mt-1 font-medium text-admin-text">
+            {backup.latest
+              ? new Date(backup.latest.createdAt).toLocaleString('tr-TR')
+              : 'Henuz yedek yok'}
+          </dd>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border border-admin-border bg-admin-bg p-3">
+            <p className="text-xs text-admin-muted">Boyut</p>
+            <p className="mt-1 font-semibold text-admin-text">
+              {backup.latest ? `${backup.latest.sizeMb} MB` : '-'}
+            </p>
+          </div>
+          <div className="rounded-lg border border-admin-border bg-admin-bg p-3">
+            <p className="text-xs text-admin-muted">Dosya sayisi</p>
+            <p className="mt-1 font-semibold text-admin-text">{backup.count}</p>
+          </div>
+        </div>
+        {backup.latest ? (
+          <div>
+            <dt className="text-admin-muted">Dosya</dt>
+            <dd className="mt-1 break-all font-admin-mono text-xs text-admin-text">
+              {backup.latest.fileName}
+            </dd>
+            <p className="mt-1 text-xs text-admin-muted">
+              {backup.latest.ageHours != null ? `${backup.latest.ageHours} saat once` : ''}
+            </p>
+          </div>
+        ) : null}
+        {backup.error ? <p className="text-sm text-admin-danger">{backup.error}</p> : null}
+      </dl>
+
+      {backup.recent.length > 1 ? (
+        <ul className="mt-5 space-y-2 border-t border-admin-border pt-4">
+          {backup.recent.slice(0, 3).map((file) => (
+            <li
+              key={file.fileName}
+              className="flex items-center justify-between gap-2 text-xs text-admin-muted"
+            >
+              <span className="truncate font-admin-mono">{file.fileName}</span>
+              <span className="shrink-0">{file.sizeMb} MB</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </article>
   );
 }
@@ -403,38 +497,42 @@ export default function MonitoringDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-admin-text">Deploy & CI</h3>
-                <dl className="mt-5 space-y-4 text-sm">
-                  <div>
-                    <dt className="text-admin-muted">Son commit</dt>
-                    <dd className="mt-1 font-mono text-admin-text">
-                      {status.deploy?.commit ?? 'Bilinmiyor'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-admin-muted">Deploy zamani</dt>
-                    <dd className="mt-1 text-admin-text">
-                      {status.deploy?.deployedAt
-                        ? new Date(status.deploy.deployedAt).toLocaleString('tr-TR')
-                        : 'Bilinmiyor'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-admin-muted">Son kontrol</dt>
-                    <dd className="mt-1 text-admin-text">
-                      {new Date(status.checkedAt).toLocaleString('tr-TR')}
-                    </dd>
-                  </div>
-                </dl>
-                <a
-                  href={status.links.githubActions}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
-                >
-                  GitHub Actions
-                </a>
+              <div className="space-y-4">
+                <div className="rounded-xl border border-admin-border bg-admin-surface-low p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-admin-text">Deploy & CI</h3>
+                  <dl className="mt-5 space-y-4 text-sm">
+                    <div>
+                      <dt className="text-admin-muted">Son commit</dt>
+                      <dd className="mt-1 font-mono text-admin-text">
+                        {status.deploy?.commit ?? 'Bilinmiyor'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-admin-muted">Deploy zamani</dt>
+                      <dd className="mt-1 text-admin-text">
+                        {status.deploy?.deployedAt
+                          ? new Date(status.deploy.deployedAt).toLocaleString('tr-TR')
+                          : 'Bilinmiyor'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-admin-muted">Son kontrol</dt>
+                      <dd className="mt-1 text-admin-text">
+                        {new Date(status.checkedAt).toLocaleString('tr-TR')}
+                      </dd>
+                    </div>
+                  </dl>
+                  <a
+                    href={status.links.githubActions}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-admin-border px-4 py-3 text-sm font-medium text-admin-muted transition hover:border-admin-primary hover:text-admin-primary"
+                  >
+                    GitHub Actions
+                  </a>
+                </div>
+
+                {status.backup ? <BackupCard backup={status.backup} /> : null}
               </div>
             </section>
           </>

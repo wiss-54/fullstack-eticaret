@@ -65,6 +65,36 @@ pm2 save
 pm2 startup
 ```
 
+### Gunluk backup (DB + uploads)
+
+Sunucuda bir kez:
+
+```bash
+chmod +x /home/beratav/fullstack-eticaret/scripts/backup.sh
+mkdir -p /home/beratav/backups
+# Manuel deneme
+/home/beratav/fullstack-eticaret/scripts/backup.sh
+```
+
+Cron (her gun 03:15, 14 gun saklar):
+
+```bash
+crontab -e
+# ekle:
+15 3 * * * /home/beratav/fullstack-eticaret/scripts/backup.sh >> /home/beratav/backups/backup.log 2>&1
+```
+
+Yedekler: `/home/beratav/backups/eticaret_YYYYMMDD_HHMMSS.tar.gz`  
+Icerik: Postgres custom dump + `uploads.tar.gz`
+
+Geri yukleme (ornek):
+
+```bash
+cd /tmp && tar -xzf /home/beratav/backups/eticaret_XXXX.tar.gz
+pg_restore --clean --if-exists -h 127.0.0.1 -U DB_USER -d DB_NAME /tmp/STAMP/DB_NAME.dump
+tar -xzf /tmp/STAMP/uploads.tar.gz -C /home/beratav/fullstack-eticaret/backend
+```
+
 ## Lokal geliştirme
 
 ### Backend

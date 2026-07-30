@@ -269,12 +269,29 @@ export type ServiceCheck = {
   error?: string;
 };
 
+export type BackupFileInfo = {
+  fileName: string;
+  sizeMb: number;
+  createdAt: string;
+};
+
+export type BackupStatus = {
+  status: 'ok' | 'stale' | 'empty' | 'missing' | 'error';
+  backupRoot: string;
+  retentionDays: number;
+  count: number;
+  latest: (BackupFileInfo & { ageHours: number | null }) | null;
+  recent: BackupFileInfo[];
+  error?: string;
+};
+
 export type SystemStatus = {
   checkedAt: string;
   deploy: {
     commit: string;
     deployedAt: string;
   } | null;
+  backup?: BackupStatus;
   services: {
     database: ServiceCheck;
     api: ServiceCheck;

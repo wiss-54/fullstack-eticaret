@@ -50,11 +50,11 @@ const productSelect = `
 
 async function listProducts(limit = 20, offset = 0, categoryId = null) {
   const params = [limit, offset];
-  let whereClause = '';
+  let whereClause = `WHERE p.name NOT LIKE 'Arsiv Urun%'`;
 
   if (categoryId) {
     params.push(categoryId);
-    whereClause = `WHERE p.category_id = $3`;
+    whereClause += ` AND p.category_id = $3`;
   }
 
   const result = await pool.query(
