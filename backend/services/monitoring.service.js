@@ -191,6 +191,56 @@ async function runServiceCheck(name) {
   throw error;
 }
 
+/**
+ * Uptime skoru: ayni hedefe N kez istek at, kacinin donup "up" oldugunu olc.
+ * Varsayilan hedef: public API health URL.
+ */
+async function runUptimeScore({ attempts = 10, target = 'api' } = {}) {
+  const total = Math.min(20, Math.max(1, Number(attempts) || 10));
+  if (!SERVICE_CHECK_KEYS.includes(target)) {
+    const error = new Error(`Gecerli uptime hedefleri: ${SERVICE_CHECK_KEYS.join(', ')}`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const startedAt = Date.now();
+  const probes = await Promise.all(
+    Array.from({ length: total }, async (_, index) => {
+      const result = await runServiceCheck(target);
+      return {
+        index: index + 1,
+        ok: result.status === 'up',
+        status: result.status,
+        latencyMs: result.latencyMs,
+        statusCode: result.statusCode,
+        error: result.error,
+      };
+    }),
+  );
+
+  const success = probes.filter((probe) => probe.ok).length;
+  const failed = total - success;
+
+  return {
+    target,
+    targetUrl:
+      target === 'shop'
+        ? monitorUrls().shopUrl
+        : target === 'adminPanel'
+          ? monitorUrls().adminUrl
+          : target === 'api'
+            ? monitorUrls().apiUrl
+            : 'database',
+    attempts: total,
+    success,
+    failed,
+    scorePercent: Math.round((success / total) * 100),
+    durationMs: Date.now() - startedAt,
+    checkedAt: new Date().toISOString(),
+    probes,
+  };
+}
+
 async function getSystemStatus() {
   const [meta, database, shop, adminPanel, api] = await Promise.all([
     getStatusMeta(),
@@ -221,5 +271,6 @@ module.exports = {
   SERVICE_CHECK_KEYS,
   getStatusMeta,
   runServiceCheck,
+  runUptimeScore,
   getSystemStatus,
 };

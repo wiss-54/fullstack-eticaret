@@ -319,6 +319,27 @@ export type SystemStatusCheckResult = {
   checkedAt: string;
 };
 
+export type UptimeScoreProbe = {
+  index: number;
+  ok: boolean;
+  status: 'up' | 'down';
+  latencyMs?: number;
+  statusCode?: number;
+  error?: string;
+};
+
+export type UptimeScore = {
+  target: SystemStatusCheckName;
+  targetUrl: string;
+  attempts: number;
+  success: number;
+  failed: number;
+  scorePercent: number;
+  durationMs: number;
+  checkedAt: string;
+  probes: UptimeScoreProbe[];
+};
+
 export type SystemStatus = {
   checkedAt: string;
   deploy: {

@@ -136,4 +136,23 @@ describe('Admin auth', () => {
     expect(checkResponse.body.data.name).toBe('database');
     expect(checkResponse.body.data.check.status).toBe('up');
   });
+
+  it('token ile uptime skoru doner', async () => {
+    const token = jwt.sign({ role: 'admin', username: 'admin' }, process.env.JWT_SECRET);
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+    });
+
+    const response = await request(app)
+      .get('/api/admin/status/uptime?attempts=3&target=api')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.attempts).toBe(3);
+    expect(response.body.data.success).toBe(3);
+    expect(response.body.data.scorePercent).toBe(100);
+    expect(response.body.data.probes).toHaveLength(3);
+  });
 });

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { requireAdmin } = require('../middleware/auth.middleware');
-const { getSystemStatus, getStatusMeta, runServiceCheck, SERVICE_CHECK_KEYS } = require('../services/monitoring.service');
+const { getSystemStatus, getStatusMeta, runServiceCheck, runUptimeScore, SERVICE_CHECK_KEYS } = require('../services/monitoring.service');
 const { updateOrderStatusSchema } = require('../validation/orders.schemas');
 const {
   getOrderById,
@@ -94,6 +94,22 @@ router.get('/status/check/:name', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Servis kontrolu basarisiz' });
+  }
+});
+
+router.get('/status/uptime', requireAdmin, async (req, res) => {
+  const attempts = Number(req.query.attempts ?? 10);
+  const target = String(req.query.target || 'api');
+
+  try {
+    const data = await runUptimeScore({ attempts, target });
+    res.json({ success: true, data });
+  } catch (err) {
+    if (err && err.statusCode === 400) {
+      return res.status(400).json({ success: false, error: err.message });
+    }
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Uptime skoru alinamadi' });
   }
 });
 
