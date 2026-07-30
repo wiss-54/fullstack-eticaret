@@ -323,8 +323,11 @@ export default function StoreEditorCanvas({
             <div className="pointer-events-none">
               <StoreFooter
                 brandName={settings.brandName}
+                logoUrl={settings.logoUrl}
                 leftText={settings.footerLeft}
                 rightText={settings.footerRight}
+                navItem2Href={settings.navItem2Href}
+                preview
               />
             </div>
           </div>

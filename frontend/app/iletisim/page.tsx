@@ -79,8 +79,10 @@ export default async function ContactPage() {
 
       <StoreFooter
         brandName={settings.brandName}
+        logoUrl={settings.logoUrl}
         leftText={settings.footerLeft}
         rightText={settings.footerRight}
+        navItem2Href={settings.navItem2Href}
       />
     </div>
   );

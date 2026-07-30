@@ -120,8 +120,10 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <StoreFooter
         brandName={settings.brandName}
+        logoUrl={settings.logoUrl}
         leftText={settings.footerLeft}
         rightText={settings.footerRight}
+        navItem2Href={settings.navItem2Href}
       />
     </div>
   );
