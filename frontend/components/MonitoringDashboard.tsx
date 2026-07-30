@@ -484,13 +484,18 @@ function formatClock(ts: number) {
   });
 }
 
-function UptimeHourChart({ points }: { points: UptimeHistoryPoint[] }) {
+function UptimeHourChart({
+  points,
+  now,
+}: {
+  points: UptimeHistoryPoint[];
+  now: number;
+}) {
   const width = 920;
   const height = 260;
   const pad = { top: 16, right: 16, bottom: 28, left: 40 };
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
-  const now = Date.now();
   const start = now - 60 * 60 * 1000;
 
   const xFor = (at: number) =>
@@ -644,11 +649,10 @@ export default function MonitoringDashboard() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uptimeBoard, setUptimeBoard] = useState<UptimeBoard>(() => emptyUptimeBoard());
   const [uptimeRunning, setUptimeRunning] = useState(false);
-  const [uptimeHistory, setUptimeHistory] = useState<UptimeHistoryPoint[]>([]);
-
-  useEffect(() => {
-    setUptimeHistory(readUptimeHistory());
-  }, []);
+  const [uptimeHistory, setUptimeHistory] = useState<UptimeHistoryPoint[]>(() =>
+    typeof window === 'undefined' ? [] : readUptimeHistory(),
+  );
+  const [chartNow] = useState(() => Date.now());
 
   const completedCount = useMemo(
     () => Object.values(settled).filter(Boolean).length,
@@ -1042,7 +1046,10 @@ export default function MonitoringDashboard() {
             </div>
           </section>
 
-          <UptimeHourChart points={uptimeHistory} />
+          <UptimeHourChart
+            points={uptimeHistory}
+            now={lastUpdated?.getTime() ?? chartNow}
+          />
 
           <section className="space-y-3">
             <div className="flex flex-wrap items-end justify-between gap-2">
