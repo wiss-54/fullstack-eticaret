@@ -31,11 +31,7 @@ Acil durum disinda manuel deploy yasaktir.
 
 Repo → **Settings → Secrets and variables → Actions** altına ekle:
 
-| Secret | Değer |
-|--------|-------|
-| `SSH_HOST` | `161.35.198.70` |
-| `SSH_USER` | `beratav` |
-| `SSH_PRIVATE_KEY` | SSH private key içeriği (`id_ed25519`) |
+
 
 ### GitHub Environment
 
@@ -47,23 +43,8 @@ Deploy job'u bu environment üzerinden çalışır; istersen "Required reviewers
 
 Deploy kullanıcısının (`beratav`) SSH key'ine GitHub Actions public key'i eklenmeli:
 
-```bash
-# Sunucuda beratav kullanıcısı için
-echo "GITHUB_ACTIONS_PUBLIC_KEY" >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-```
 
 Sunucuda PM2 kurulu olmalı ve proje klonlanmış olmalı:
-
-```bash
-git clone https://github.com/wiss-54/fullstack-eticaret.git /home/beratav/fullstack-eticaret
-cd /home/beratav/fullstack-eticaret/backend
-cp .env.example .env   # sunucuya özel değerlerle doldur
-npm ci --omit=dev
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup
-```
 
 ### Gunluk backup (DB + uploads)
 
